@@ -1,0 +1,25 @@
+# Build output
+dist/
+extension/build/
+*.zip
+release/
+
+# Dependencies
+node_modules/
+
+# Notes captured at runtime (this is user content, never commit)
+notes/
+!notes/.gitkeep
+
+# Logs / runtime
+*.log
+.stickyfix-token
+.DS_Store
+Thumbs.db
+
+# Editor / local agent config (never publish internal agent identity files)
+.vscode/
+.idea/
+.claude/
+
+# GSD planning is committed; nothing to ignore there
