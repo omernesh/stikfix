@@ -305,7 +305,21 @@ async function handleSendAnnotation(
 
   // 5. Map host response → SfxResponse (200 / 401 / 400 / 413)
   if (resp.ok) {
-    return resp.json() as Promise<AnnotationResponse>;
+    // WR-01: validate the host response shape before forwarding to the CS.
+    // A host returning 200 with a malformed body (missing file/serial) would
+    // produce "sent ✓ undefined" in the chip. Normalize to {ok:false,error}
+    // if the shape is wrong so the chip shows a real error instead.
+    let body: Partial<AnnotationResponse & { ok: true; file: string; serial: number }>;
+    try {
+      body = (await resp.json()) as typeof body;
+    } catch {
+      return { ok: false, error: 'Host returned non-JSON on 200' };
+    }
+    if (typeof (body as { file?: unknown }).file === 'string' &&
+        typeof (body as { serial?: unknown }).serial === 'number') {
+      return { ok: true, file: (body as { file: string }).file, serial: (body as { serial: number }).serial };
+    }
+    return { ok: false, error: 'Malformed host response (missing file/serial)' };
   }
 
   // Non-2xx: parse error body if possible
