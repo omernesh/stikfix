@@ -75,6 +75,13 @@ export type SfxMsgType = (typeof SFX_MSG)[keyof typeof SFX_MSG];
  */
 export const SFX_SET_ROUTE = 'SFX_SET_ROUTE' as const;
 export const SFX_GET_TAB_ID = 'SFX_GET_TAB_ID' as const;
+// Add alongside SFX_SET_ROUTE, SFX_GET_TAB_ID (side-effect-free — see invariant A comment above)
+export const SFX_CAPTURE_TAB = 'SFX_CAPTURE_TAB' as const;
+
+export interface MsgCaptureTab {
+  type: typeof SFX_CAPTURE_TAB;
+  tabId: number;
+}
 
 // ---------------------------------------------------------------------------
 // Discriminated union for all SW-bound messages
