@@ -124,3 +124,254 @@
   color: #111111;
   background: #e0e0e0;
 }
+
+/* ============================================================
+ * FAB — floating action button (FREE-01 / UI-SPEC §1)
+ * ============================================================ */
+
+#sfx-fab {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #cccccc;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  pointer-events: auto;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+#sfx-fab:hover {
+  background: #f0f0f0;
+}
+
+#sfx-fab:active {
+  background: #e0e0e0;
+}
+
+.sfx-fab-icon {
+  font-size: 20px;
+  color: #111111;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* ============================================================
+ * Post-it card (FREE-01, FREE-02 / UI-SPEC §2)
+ * ============================================================ */
+
+#sfx-card {
+  position: fixed;
+  bottom: 88px;
+  right: 32px;
+  width: 300px;
+  min-height: 160px;
+  background: #ffffff;
+  border: 1px solid #cccccc;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  color: #111111;
+}
+
+.sfx-card-header {
+  padding: 8px 12px;
+  background: #f0f0f0;
+  border-bottom: 1px solid #cccccc;
+  border-radius: 6px 6px 0 0;
+  cursor: grab;
+  user-select: none;
+  display: flex;
+  align-items: center;
+}
+
+.sfx-card-header:active {
+  cursor: grabbing;
+}
+
+.sfx-card-header-label {
+  font-size: 13px;
+  color: #111111;
+  font-weight: 400;
+}
+
+.sfx-card-body {
+  padding: 8px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+#sfx-card-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 100px;
+  resize: vertical;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #111111;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  padding: 6px 8px;
+  background: #ffffff;
+}
+
+#sfx-card-textarea::placeholder {
+  color: #666666;
+}
+
+#sfx-card-textarea:focus {
+  outline: 2px solid #1d6ed8;
+  outline-offset: 1px;
+}
+
+.sfx-card-footer {
+  padding: 8px;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  justify-content: flex-end;
+  border-top: 1px solid #f0f0f0;
+}
+
+#sfx-card-send {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  background: #1d6ed8;
+  color: #ffffff;
+}
+
+#sfx-card-send:hover:not(:disabled) {
+  background: #1558b0;
+}
+
+#sfx-card-send:disabled {
+  background: #f0f0f0;
+  color: #999999;
+  border: 1px solid #cccccc;
+  cursor: not-allowed;
+}
+
+#sfx-card-cancel {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  padding: 5px 12px;
+  border-radius: 4px;
+  border: 1px solid #cccccc;
+  background: #f0f0f0;
+  color: #666666;
+  cursor: pointer;
+}
+
+#sfx-card-cancel:hover {
+  background: #e0e0e0;
+}
+
+/* ============================================================
+ * Toast surface (FREE-04, REL-01 / UI-SPEC §3)
+ * ============================================================ */
+
+.sfx-toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  border-radius: 6px;
+  border: 1px solid #cccccc;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  color: #111111;
+  pointer-events: auto;
+  opacity: 1;
+  transition: opacity 200ms ease;
+}
+
+.sfx-toast-stripe {
+  width: 4px;
+  flex-shrink: 0;
+  background: #16a34a; /* success — overridden for error via .sfx-toast-error */
+}
+
+.sfx-toast.sfx-toast-error .sfx-toast-stripe {
+  background: #dc2626;
+}
+
+.sfx-toast-body {
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.sfx-toast-icon {
+  font-size: 14px;
+  color: #16a34a; /* success */
+  flex-shrink: 0;
+}
+
+.sfx-toast.sfx-toast-error .sfx-toast-icon {
+  color: #dc2626;
+}
+
+.sfx-toast-msg {
+  font-size: 13px;
+  color: #111111;
+  word-break: break-word;
+}
+
+.sfx-toast-dismiss {
+  padding: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #666666;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.sfx-toast-dismiss:hover {
+  color: #111111;
+}
+
+/* ============================================================
+ * Re-map affordance on chip label (D-09 / UI-SPEC §4)
+ * ============================================================ */
+
+.sfx-chip-label.sfx-label-routed {
+  cursor: pointer;
+  text-decoration: underline dotted #666666;
+}
+
+.sfx-chip-label.sfx-label-routed:hover {
+  color: #1d6ed8;
+}
