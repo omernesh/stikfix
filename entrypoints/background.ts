@@ -16,7 +16,7 @@
  *  - The relay is the only localhost path; content-script fetch is forbidden.
  */
 
-import { SFX_MSG } from '../lib/types.js';
+import { SFX_MSG, SFX_SET_ROUTE, SFX_GET_TAB_ID } from '../lib/types.js';
 import type {
   SfxMessage,
   SfxResponse,
@@ -349,7 +349,11 @@ async function handleSendAnnotation(
 // Message protocol — SFX_SET_ROUTE (added in Plan 03-02) and SFX_GET_TAB_ID
 // ---------------------------------------------------------------------------
 
-export const SFX_SET_ROUTE = 'SFX_SET_ROUTE' as const;
+// SFX_SET_ROUTE / SFX_GET_TAB_ID are imported from ../lib/types.js (a
+// side-effect-free module) so the content script can share these strings
+// WITHOUT importing this background module (which would drag SW-only
+// onStartup/onInstalled.addListener registrations into the content script
+// and crash it on startup).
 
 interface MsgSetRoute {
   type: typeof SFX_SET_ROUTE;
@@ -363,8 +367,6 @@ interface MsgSetRoute {
  * standard workaround: the SW reads sender.tab.id and echoes it back.
  * Synchronous response (no `return true` needed — no async work).
  */
-export const SFX_GET_TAB_ID = 'SFX_GET_TAB_ID' as const;
-
 interface MsgGetTabId {
   type: typeof SFX_GET_TAB_ID;
 }

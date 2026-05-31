@@ -15,8 +15,7 @@
  *  - sfx-* / stickyfix namespace (clean-room gate)
  */
 
-import { SFX_MSG } from '../../lib/types.js';
-import { SFX_SET_ROUTE, SFX_GET_TAB_ID } from '../background.js';
+import { SFX_MSG, SFX_SET_ROUTE, SFX_GET_TAB_ID } from '../../lib/types.js';
 import type { HostEntry, AnnotationPayload } from '../../lib/types.js';
 
 // ---------------------------------------------------------------------------

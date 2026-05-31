@@ -63,6 +63,19 @@ export const SFX_MSG = {
 
 export type SfxMsgType = (typeof SFX_MSG)[keyof typeof SFX_MSG];
 
+/**
+ * Two extra message-type constants used by the content script ↔ SW channel.
+ *
+ * They live HERE (a side-effect-free module) and NOT in background.ts: the
+ * content script imports these strings, and importing from background.ts would
+ * drag its top-level SW registrations (chrome.runtime.onStartup/onInstalled/
+ * onMessage.addListener) into the content-script bundle, where onStartup is
+ * undefined → "Cannot read properties of undefined (reading 'addListener')"
+ * crashes the content script on startup.
+ */
+export const SFX_SET_ROUTE = 'SFX_SET_ROUTE' as const;
+export const SFX_GET_TAB_ID = 'SFX_GET_TAB_ID' as const;
+
 // ---------------------------------------------------------------------------
 // Discriminated union for all SW-bound messages
 // ---------------------------------------------------------------------------
