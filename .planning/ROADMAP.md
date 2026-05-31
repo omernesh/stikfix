@@ -129,7 +129,7 @@ Plans:
 
 **Wave 1** *(blocked on Wave 0)*
 
-- [ ] 04-02-PLAN.md — Free-note vertical slice: + FAB + post-it card (interactjs) + toast + Send via SFX_SEND_ANNOTATION + chip re-map (FREE-01/02/03/04)
+- [x] 04-02-PLAN.md — Free-note vertical slice: + FAB + post-it card (interactjs) + toast + Send via SFX_SEND_ANNOTATION + chip re-map (FREE-01/02/03/04)
 
 **Wave 2** *(blocked on Waves 0+1)*
 
@@ -209,7 +209,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 1. Scaffold & Clean-Room Foundation | 3/3 | Complete    | 2026-05-31 |
 | 2. Host MVP | 3/3 | Complete    | 2026-05-31 |
 | 3. Extension Skeleton + SW Relay Proof | 4/4 | Complete    | 2026-05-31 |
-| 4. Free-Note Mode + Capture Utilities | 1/3 | In Progress|  |
+| 4. Free-Note Mode + Capture Utilities | 2/3 | In Progress|  |
 | 5. Element-Note Mode + Rich Context Capture | 0/TBD | Not started | - |
 | 6. Region Capture + Visual Design | 0/TBD | Not started | - |
 | 7. review-notes Skill + Docs | 0/TBD | Not started | - |
