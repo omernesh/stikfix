@@ -34,7 +34,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Extension Shell & Routing (EXT)
 
 - [x] **EXT-01**: MV3 manifest with `activeTab`, `scripting`, `storage`, `tabs` permissions; localhost host_permissions; `optional_host_permissions` requested on demand
-- [ ] **EXT-02**: Review UI is injected dynamically via `chrome.scripting.executeScript` only on entering Review Mode (no static content_scripts)
+- [x] **EXT-02**: Review UI is injected dynamically via `chrome.scripting.executeScript` only on entering Review Mode (no static content_scripts)
 - [x] **EXT-03**: Toolbar popup lists every discovered host with project name + per-host token entry/state and an Enter/Exit Review Mode toggle
 - [x] **EXT-04**: Service worker probes ports 39240–39260 and builds a registry of all live hosts from `/status`
 - [x] **EXT-05**: All localhost fetches route through the service worker (not the content script) to satisfy Chrome LNA/CORS
@@ -43,7 +43,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **EXT-08**: Same-origin clashes are resolved by page self-id (`<meta name="stickyfix-project">` / `window.__stickyfix_project`) preferred over the origin map
 - [x] **EXT-09**: Registry, per-host tokens, `origin → host` map, and prefs persist in `chrome.storage.local` and survive Chrome restart + service-worker recycling
 - [x] **EXT-10**: On wake the worker re-discovers hosts and re-binds by project name+origin (not port) when a host restarts on a different port
-- [ ] **EXT-11**: A draggable, viewport-clamped connection chip (`z-index: 2147483647`) shows connection state + target project/notes dir with an Exit button
+- [x] **EXT-11**: A draggable, viewport-clamped connection chip (`z-index: 2147483647`) shows connection state + target project/notes dir with an Exit button
 
 ### Free-Note Mode (FREE)
 
@@ -150,7 +150,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HOST-12 | Phase 2 | Complete |
 | HOST-13 | Phase 2 | Complete |
 | EXT-01 | Phase 3 | Complete |
-| EXT-02 | Phase 3 | Pending |
+| EXT-02 | Phase 3 | Complete |
 | EXT-03 | Phase 3 | Complete |
 | EXT-04 | Phase 3 | Complete |
 | EXT-05 | Phase 3 | Complete |
@@ -159,7 +159,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EXT-08 | Phase 3 | Complete |
 | EXT-09 | Phase 3 | Complete |
 | EXT-10 | Phase 3 | Complete |
-| EXT-11 | Phase 3 | Pending |
+| EXT-11 | Phase 3 | Complete |
 | FREE-01 | Phase 4 | Pending |
 | FREE-02 | Phase 4 | Pending |
 | FREE-03 | Phase 4 | Pending |

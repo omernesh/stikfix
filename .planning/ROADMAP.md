@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Scaffold & Clean-Room Foundation** - Cross-platform WXT + host build succeeds; sfx-* identifier namespace established; no GPL artifacts (completed 2026-05-31)
 - [x] **Phase 2: Host MVP** - stickyfix-host writes .md + .png files with serial mutex, token auth, path safety, and CORS (completed 2026-05-31)
-- [ ] **Phase 3: Extension Skeleton + SW Relay Proof** - Popup, host discovery, chrome.storage.local state, on-demand injection, dummy POST relay proven end-to-end
+- [x] **Phase 3: Extension Skeleton + SW Relay Proof** - Popup, host discovery, chrome.storage.local state, on-demand injection, dummy POST relay proven end-to-end (completed 2026-05-31)
 - [ ] **Phase 4: Free-Note Mode + Capture Utilities** - Draggable FAB → post-it → Send → .md on disk; DPR crop, double-rAF flush, captureVisibleTab relay established as reusable utilities
 - [ ] **Phase 5: Element-Note Mode + Rich Context Capture** - Element picker with @medv/finder selector, React fiber, computed styles, outerHTML, auto-highlight screenshot
 - [ ] **Phase 6: Region Capture + Visual Design** - Camera tool drag-marquee crop; full paper-aesthetic sticky-note UI inside shadow DOM
@@ -104,7 +104,7 @@ Plans:
 **Wave 3** *(blocked on Wave 2)*
 
 - [x] 03-03-PLAN.md — Popup: discovered-host list + per-host token persistence + Review Mode toggle with the permission gesture (EXT-03/07/09)
-- [ ] 03-04-PLAN.md — review.content chip: runtime injection + shadow-root createShadowRootUi, draggable+clamped, one-time dropdown, stub Send relay proof (EXT-02/05/07/08/11)
+- [x] 03-04-PLAN.md — review.content chip: runtime injection + shadow-root createShadowRootUi, draggable+clamped, one-time dropdown, stub Send relay proof (EXT-02/05/07/08/11)
 
 **UI hint**: yes
 
@@ -195,7 +195,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 |-------|----------------|--------|-----------|
 | 1. Scaffold & Clean-Room Foundation | 3/3 | Complete    | 2026-05-31 |
 | 2. Host MVP | 3/3 | Complete    | 2026-05-31 |
-| 3. Extension Skeleton + SW Relay Proof | 3/4 | In Progress|  |
+| 3. Extension Skeleton + SW Relay Proof | 4/4 | Complete   | 2026-05-31 |
 | 4. Free-Note Mode + Capture Utilities | 0/TBD | Not started | - |
 | 5. Element-Note Mode + Rich Context Capture | 0/TBD | Not started | - |
 | 6. Region Capture + Visual Design | 0/TBD | Not started | - |
