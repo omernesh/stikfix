@@ -705,24 +705,21 @@ const { values } = parseArgs({
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> All three questions were resolved during planning; the resolutions are baked into plans 01-01 / 01-02. Listed here for traceability.
 
 1. **Does `wxt prepare` generate `types: ["chrome"]` in `.wxt/tsconfig.json`?**
+   - RESOLVED: Do NOT rely on WXT for it. Plan 01-01 Task 2 adds `"types": ["chrome"]` explicitly in the root `tsconfig.json` (per D-10 / Pitfall 1). This is harmless if WXT already includes it and essential if it does not, so the question is moot for the build.
    - What we know: WXT installs `@types/chrome` as a peer dep and its generated tsconfig extends WXT's internal config.
-   - What's unclear: Whether WXT automatically includes `"types": ["chrome"]` or leaves it to the project.
-   - Recommendation: Always add `"types": ["chrome"]` explicitly in root `tsconfig.json` — harmless if WXT already adds it, essential if it doesn't.
 
 2. **Does `tsc -p tsconfig.host.json` with NodeNext emit runnable ESM?**
+   - RESOLVED: Verify on first build. Plan 01-02 Task 1 compiles with `tsc -p tsconfig.host.json` and then runs `node dist/host/index.js --root .` as part of its automated verify, so a CJS/ESM emit problem fails the task immediately rather than silently. The single-root `package.json "type": "module"` governs `dist/host/` (nearest package.json).
    - What we know: NodeNext module mode emits `import` statements with `.js` extensions; `"type": "module"` in package.json makes Node treat them as ESM.
-   - What's unclear: Whether the single-root `package.json "type": "module"` applies to files in `dist/host/` (it should — Node uses the nearest package.json).
-   - Recommendation: Test `node dist/host/index.js` after first `tsc -p tsconfig.host.json` run. If it fails with a CJS/ESM error, the fix is straightforward.
 
 3. **Icon path format in manifest.icons: `/icon/16.png` vs `icon/16.png`?**
-   - What we know: WXT docs show leading-slash form (`/icon/16.png`) for manifest.icons.
-   - What's unclear: Whether WXT requires the leading slash or strips it.
-   - Recommendation: Use leading slash as shown in official docs. Files go in `public/icon/16.png`.
-
----
+   - RESOLVED: Use the leading-slash form `/icon/NN.png` per the official WXT docs. Plan 01-01 Task 2 writes `manifest.icons` with `/icon/16.png`..`/icon/128.png`; Task 3's verify confirms the built `.output/chrome-mv3/manifest.json` resolves them to `icon/NN.png` and the files are copied. Source files live at `public/icon/NN.png`.
+   - What we know: WXT docs show the leading-slash form for manifest.icons.
 
 ## Environment Availability
 

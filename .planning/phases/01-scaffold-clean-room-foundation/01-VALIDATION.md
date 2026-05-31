@@ -38,11 +38,11 @@ created: 2026-05-31
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 1-01-xx | 01 | 1 | BUILD-02 | — | N/A | build | `wxt build` (via `npm run build`) | ❌ W0 | ⬜ pending |
-| 1-01-xx | 01 | 1 | BUILD-03 | — | N/A | asset | grep manifest for `/icon/16.png`..`/icon/128.png`; files exist in `public/icon/` | ❌ W0 | ⬜ pending |
+| 1-01-xx | 01 | 1 | BUILD-02 | — | N/A | build | `npx wxt build` (Task 3 verify; also via `npm run build`) + manifest icon assertion | ❌ W0 | ⬜ pending |
+| 1-01-xx | 01 | 1 | BUILD-03 | — | N/A | asset | grep manifest for `icon/16.png`..`icon/128.png`; files exist in `public/icon/` and `.output/chrome-mv3/icon/` | ❌ W0 | ⬜ pending |
 | 1-02-xx | 02 | 1 | BUILD-01 | — | N/A | build | `npm run build` exits 0 on Windows (no sips/Bun) | ❌ W0 | ⬜ pending |
 | 1-02-xx | 02 | 1 | BUILD-05 | — | N/A | smoke | host smoke test spawns stub, asserts `app==stickyfix`, exit 0 | ❌ W0 | ⬜ pending |
-| 1-03-xx | 03 | 2 | BUILD-04 | — | clean-room: zero GPL artifacts | grep-gate | clean-room script exits non-zero on `__opc_`/`opencode`/`JodusNodus` match | ❌ W0 | ⬜ pending |
+| 1-03-xx | 03 | 2 | BUILD-04 | — | clean-room: zero GPL artifacts | grep-gate | clean-room script exits non-zero on `__opc_`/`opencode`/`JodusNodus` match (RED), exit 0 on clean tree (GREEN) | ❌ W0 | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky. Exact task IDs assigned by the planner.*
 
@@ -65,6 +65,8 @@ created: 2026-05-31
 | Built extension loads in Chrome without manifest errors | BUILD-02 | Requires Chrome `chrome://extensions` Load-unpacked UI; not automatable in this phase | Run `npm run build`, open `chrome://extensions`, enable Developer mode, Load unpacked `.output/chrome-mv3`, confirm no errors and icons render |
 | Icons appear in the loaded extension | BUILD-03 | Visual confirmation in Chrome toolbar/extensions page | After load, confirm 16/48/128 icons render in extensions list and toolbar |
 
+> Note: BUILD-02's *structural* half (a valid MV3 manifest is emitted with correct icon refs) is proven automatically by plan 01-01 Task 3 (`npx wxt build` + manifest assertion). Only the visual Chrome-load confirmation remains manual.
+
 ---
 
 ## Validation Sign-Off
@@ -75,5 +77,7 @@ created: 2026-05-31
 - [ ] No watch-mode flags (`wxt build`, not `wxt dev`, in check path)
 - [ ] Feedback latency < 60s
 - [ ] `nyquist_compliant: true` set in frontmatter (set by planner/checker)
+
+> Note on `nyquist_compliant` / `wave_0_complete` flags: these remain `false` during planning by design. They are flipped to `true` by **execute-phase** once the Wave 1 scripts (`scripts/clean-room-check.mjs`, `scripts/host-smoke-test.mjs`) and the host stub actually exist on disk and their automated verifies are green — not during planning. A `false` value here at plan time is expected and is not a checker defect.
 
 **Approval:** pending
