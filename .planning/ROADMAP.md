@@ -91,7 +91,21 @@ Plans:
   4. All state (host registry, tokens, origin map) survives a 5-minute SW idle eviction; a subsequent Send still routes correctly
   5. An unknown-origin tab prompts a one-time host dropdown; the same origin is never re-asked on subsequent visits
 
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+**Wave 1**
+
+- [ ] 03-01-PLAN.md — lib/ core (types, storage schema, routing+discovery + node:test), MV3 manifest perms, Wave-0 CSS-inject (A4) build check (EXT-01/04/06/07/08/09/10)
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [ ] 03-02-PLAN.md — Background SW: discovery, routing, self-id probe, the single 127.0.0.1/annotation relay (SW = sole HTTP client) (EXT-04/05/06/08/09/10)
+
+**Wave 3** *(blocked on Wave 2)*
+
+- [ ] 03-03-PLAN.md — Popup: discovered-host list + per-host token persistence + Review Mode toggle with the permission gesture (EXT-03/07/09)
+- [ ] 03-04-PLAN.md — review.content chip: runtime injection + shadow-root createShadowRootUi, draggable+clamped, one-time dropdown, stub Send relay proof (EXT-02/05/07/08/11)
+
 **UI hint**: yes
 
 ### Phase 4: Free-Note Mode + Capture Utilities
@@ -181,7 +195,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 |-------|----------------|--------|-----------|
 | 1. Scaffold & Clean-Room Foundation | 3/3 | Complete    | 2026-05-31 |
 | 2. Host MVP | 3/3 | Complete    | 2026-05-31 |
-| 3. Extension Skeleton + SW Relay Proof | 0/TBD | Not started | - |
+| 3. Extension Skeleton + SW Relay Proof | 0/4 | Planned     | - |
 | 4. Free-Note Mode + Capture Utilities | 0/TBD | Not started | - |
 | 5. Element-Note Mode + Rich Context Capture | 0/TBD | Not started | - |
 | 6. Region Capture + Visual Design | 0/TBD | Not started | - |
