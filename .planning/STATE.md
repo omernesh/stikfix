@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 2 context gathered
-last_updated: "2026-05-31T02:58:37.616Z"
-last_activity: 2026-05-31 -- Phase 2 planning complete
+stopped_at: Phase 2 Plan 1 complete
+last_updated: "2026-05-31T04:30:00.000Z"
+last_activity: 2026-05-31 -- Phase 02-01 executed (26 unit tests, 4 modules)
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 6
-  completed_plans: 3
-  percent: 13
+  completed_plans: 4
+  percent: 17
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-31)
 
 **Core value:** A note dropped on a page reliably becomes a precise, context-rich .md file on disk in the right project's notes/ folder — never silently lost.
-**Current focus:** Phase 01 — Scaffold & Clean-Room Foundation
+**Current focus:** Phase 02 — Host MVP
 
 ## Current Position
 
-Phase: 2
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-05-31 -- Phase 2 planning complete
+Phase: 02 (Host MVP) — EXECUTING
+Plan: 2 of 3
+Status: Executing Phase 02
+Last activity: 2026-05-31 -- Phase 02-01 complete (4 tasks, 26 tests, 4 commits)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] 17%
 
 ## Performance Metrics
 
@@ -65,6 +65,8 @@ Recent decisions affecting current work:
 - [Pre-phase]: SW-as-sole-HTTP-client boundary is the single riskiest invariant — proven with a dummy relay in Phase 3 before any real note UI ships
 - [Pre-phase]: DPR-correct crop + double-rAF flush + captureVisibleTab relay are a reusable trio built once in Phase 4, inherited by Phases 5 and 6
 - [Pre-phase]: GPL clean-room hygiene (sfx-* identifiers, @medv/finder, zero upstream text) enforced from Phase 1, not a pre-release checklist
+- [02-01]: tsconfig.host.json rootDir changed from host/src to host — required to compile both host/src/**/*.ts and host/test/**/*.ts; compiled test paths use dist/host/test/ prefix
+- [02-01]: writeNote takes serial as parameter (not calling getNextSerial internally) — keeps write-note.ts testable without mutex dependency; server wires them together in 02-02
 
 ### Pending Todos
 
@@ -90,6 +92,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-31T02:32:26.212Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/02-host-mvp/02-CONTEXT.md
+Last session: 2026-05-31T04:30:00.000Z
+Stopped at: Phase 02-01 complete
+Resume file: .planning/phases/02-host-mvp/02-02-PLAN.md

@@ -67,7 +67,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — Host core modules + unit tests: config, serial mutex, security (token/path/body-cap), write-note (frontmatter+PNG) (HOST-05/06/07/08/09/11/12/13)
+- [x] 02-01-PLAN.md — Host core modules + unit tests: config, serial mutex, security (token/path/body-cap), write-note (frontmatter+PNG) (HOST-05/06/07/08/09/11/12/13)
 
 **Wave 2** *(blocked on Wave 1)*
 
@@ -180,7 +180,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Scaffold & Clean-Room Foundation | 3/3 | Complete    | 2026-05-31 |
-| 2. Host MVP | 0/3 | Not started | - |
+| 2. Host MVP | 1/3 | In progress | - |
 | 3. Extension Skeleton + SW Relay Proof | 0/TBD | Not started | - |
 | 4. Free-Note Mode + Capture Utilities | 0/TBD | Not started | - |
 | 5. Element-Note Mode + Rich Context Capture | 0/TBD | Not started | - |
