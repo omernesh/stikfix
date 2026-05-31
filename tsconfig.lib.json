@@ -6,7 +6,7 @@
     "outDir": "dist/lib",
     "rootDir": ".",
     "strict": true,
-    "types": ["node"],
+    "types": ["node", "chrome"],
     "esModuleInterop": true,
     "skipLibCheck": true
   },
@@ -14,6 +14,7 @@
     "lib/types.ts",
     "lib/routing.ts",
     "lib/discovery.ts",
+    "lib/capture.ts",
     "lib/test/**/*.ts"
   ],
   "exclude": [
