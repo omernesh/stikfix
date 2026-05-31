@@ -12,6 +12,32 @@
 
 No cloud. No accounts. Localhost-only. Your notes never leave your machine.
 
+## Running the host
+
+After `npm run build`, start the local host with:
+
+```bash
+# bash / macOS / Linux — standard form
+npm run host -- --root /path/to/project --origin http://localhost:3000
+```
+
+**Windows PowerShell** — npm 11.x intercepts unknown `--flags` before passing them on, so use one of these instead:
+
+```powershell
+# Option A: equals-sign form (npm exposes these via npm_config_* env vars internally)
+npm run host -- --root=C:\path\to\project --origin=http://localhost:3000
+
+# Option B: set env vars explicitly, then start
+$env:STICKYFIX_ROOT = "C:\path\to\project"
+$env:STICKYFIX_ORIGINS = "http://localhost:3000"
+npm run host
+
+# Option C: invoke node directly (bypasses npm flag parsing entirely)
+node dist/host/src/index.js --root C:\path\to\project --origin http://localhost:3000
+```
+
+All three options produce the same result. Option B also works when you need multiple origins: set `STICKYFIX_ORIGINS` to a comma-separated list (e.g. `"http://localhost:3000,http://localhost:4000"`).
+
 ## Status
 
 🚧 **Pre-build.** This repo currently contains the product spec only — see **[PRD.md](./PRD.md)**. It is written to be executed autonomously by an AI coding session (e.g. via the GSD `/gsd:new-project` flow). Build it, then this README gets the real install/usage instructions.

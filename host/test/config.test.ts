@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { resolveConfig } from '../src/config.js';
+import { resolveConfig, resolveConfigValues } from '../src/config.js';
 
 // ---------------------------------------------------------------------------
 // resolveConfig -- WR-05: --port validation
@@ -78,5 +78,89 @@ describe('resolveConfig — port validation (WR-05)', () => {
         return true;
       }
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resolveConfigValues — three-tier precedence (Windows PowerShell compat)
+// ---------------------------------------------------------------------------
+
+describe('resolveConfigValues — env fallback precedence', () => {
+  let tmpRoot: string;
+
+  test.before(() => {
+    tmpRoot = mkdtempSync(join(tmpdir(), 'sfx-config-env-test-'));
+  });
+
+  test.after(() => {
+    rmSync(tmpRoot, { recursive: true, force: true });
+  });
+
+  test('parsed flag wins over STICKYFIX_ROOT', () => {
+    const v = resolveConfigValues(
+      { root: tmpRoot },
+      { STICKYFIX_ROOT: '/some/other/path', npm_config_root: '/npm/path' },
+    );
+    assert.strictEqual(v['root'], tmpRoot);
+  });
+
+  test('STICKYFIX_ROOT used when no flag', () => {
+    const v = resolveConfigValues(
+      {},
+      { STICKYFIX_ROOT: tmpRoot, npm_config_root: '/npm/path' },
+    );
+    assert.strictEqual(v['root'], tmpRoot);
+  });
+
+  test('npm_config_root used as last resort', () => {
+    const v = resolveConfigValues(
+      {},
+      { npm_config_root: tmpRoot },
+    );
+    assert.strictEqual(v['root'], tmpRoot);
+  });
+
+  test('STICKYFIX_ORIGINS comma-split into array', () => {
+    const v = resolveConfigValues(
+      {},
+      { STICKYFIX_ROOT: tmpRoot, STICKYFIX_ORIGINS: 'http://localhost:3000,http://localhost:4000' },
+    );
+    assert.deepStrictEqual(v['origin'], ['http://localhost:3000', 'http://localhost:4000']);
+  });
+
+  test('npm_config_origin wrapped in array when no flag or STICKYFIX_ORIGINS', () => {
+    const v = resolveConfigValues(
+      {},
+      { STICKYFIX_ROOT: tmpRoot, npm_config_origin: 'http://localhost:5173' },
+    );
+    assert.deepStrictEqual(v['origin'], ['http://localhost:5173']);
+  });
+
+  test('parsed origin flag wins over STICKYFIX_ORIGINS', () => {
+    const v = resolveConfigValues(
+      { origin: ['http://flag-origin.test'] },
+      { STICKYFIX_ROOT: tmpRoot, STICKYFIX_ORIGINS: 'http://env-origin.test' },
+    );
+    assert.deepStrictEqual(v['origin'], ['http://flag-origin.test']);
+  });
+
+  test('resolveConfig uses STICKYFIX_ROOT end-to-end', () => {
+    // Simulate PowerShell: no argv flags, but STICKYFIX_ROOT set
+    // We call resolveConfig with empty values and inject env via resolveConfigValues
+    const merged = resolveConfigValues({}, { STICKYFIX_ROOT: tmpRoot });
+    const cfg = resolveConfig(merged);
+    assert.strictEqual(cfg.root, tmpRoot);
+  });
+
+  test('resolveConfig uses npm_config_root end-to-end', () => {
+    // Simulate npm-on-Windows: flag stripped, re-exposed as npm_config_root
+    const merged = resolveConfigValues({}, { npm_config_root: tmpRoot });
+    const cfg = resolveConfig(merged);
+    assert.strictEqual(cfg.root, tmpRoot);
+  });
+
+  test('resolveConfig still throws when root absent from all sources', () => {
+    const merged = resolveConfigValues({}, {});
+    assert.throws(() => resolveConfig(merged), /--root is required/);
   });
 });

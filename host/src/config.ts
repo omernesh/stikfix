@@ -4,6 +4,9 @@
  * D-09: ensureNotesDir creates notesDir + .gitkeep (HOST-12)
  * D-10: resolveConfig rejects notesDir outside root (HOST-09)
  * Pattern 11: VERSION read from package.json at runtime via import.meta.url
+ * Windows-PowerShell compat: npm 11.x on Windows strips unknown flags and exposes
+ *   them as process.env.npm_config_<key>. resolveConfig accepts all three sources
+ *   with precedence: parsed flag > STICKYFIX_* env > npm_config_* env.
  */
 
 import { readFileSync, mkdirSync, writeFileSync, existsSync, rmSync } from 'node:fs';
@@ -22,25 +25,100 @@ const _pkg = JSON.parse(readFileSync(join(__dirname, '../../../package.json'), '
 export const VERSION: string = _pkg.version;
 
 // ---------------------------------------------------------------------------
+// resolveConfigValues — three-tier env resolution (exported for testing)
+// ---------------------------------------------------------------------------
+
+/**
+ * Merge parsed CLI flags with env-variable fallbacks.
+ *
+ * Precedence (first defined wins) per key:
+ *   1. Real parsed flag  (values.root, values.origin, …)         — git bash / macOS / Linux
+ *   2. STICKYFIX_* env   (STICKYFIX_ROOT, STICKYFIX_ORIGINS, …) — explicit env override
+ *   3. npm_config_* env  (npm_config_root, npm_config_origin, …) — npm-on-Windows PowerShell
+ *
+ * Callers must not assume root is present — resolveConfig validates below.
+ */
+export function resolveConfigValues(
+  values: Record<string, unknown>,
+  env: Record<string, string | undefined> = process.env as Record<string, string | undefined>,
+): Record<string, unknown> {
+  // root
+  const root =
+    (values['root'] as string | undefined) ??
+    env['STICKYFIX_ROOT'] ??
+    env['npm_config_root'];
+
+  // origin / origins — flag: string[] (multiple:true); env: comma-separated string
+  const originFlag = values['origin'] as string[] | undefined;
+  let origins: string[] | undefined;
+  if (originFlag !== undefined && originFlag.length > 0) {
+    origins = originFlag;
+  } else {
+    const originsEnv =
+      env['STICKYFIX_ORIGINS'] ??
+      env['npm_config_origin'];
+    if (originsEnv !== undefined && originsEnv !== '') {
+      origins = originsEnv.split(',').map((s) => s.trim()).filter(Boolean);
+    }
+  }
+
+  // name
+  const name =
+    (values['name'] as string | undefined) ??
+    env['STICKYFIX_NAME'] ??
+    env['npm_config_name'];
+
+  // notes-dir
+  const notesDir =
+    (values['notes-dir'] as string | undefined) ??
+    env['STICKYFIX_NOTES_DIR'] ??
+    env['npm_config_notes_dir'];
+
+  // port
+  const port =
+    (values['port'] as string | undefined) ??
+    env['STICKYFIX_PORT'] ??
+    env['npm_config_port'];
+
+  // token — D-07 (STICKYFIX_TOKEN already documented in PRD §8.1)
+  const token =
+    (values['token'] as string | undefined) ??
+    env['STICKYFIX_TOKEN'] ??
+    env['npm_config_token'];
+
+  return {
+    root,
+    origin: origins,
+    name,
+    'notes-dir': notesDir,
+    port,
+    token,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // resolveConfig
 // ---------------------------------------------------------------------------
 
 /**
  * Resolve CLI parseArgs values into a validated Config.
+ * Applies three-tier env resolution via resolveConfigValues before validation.
  * Throws if notesDir resolves outside root (D-10).
  */
 export function resolveConfig(values: Record<string, unknown>): Config {
-  if (typeof values['root'] !== 'string' || !values['root']) {
+  const v = resolveConfigValues(values);
+
+  if (typeof v['root'] !== 'string' || !v['root']) {
     throw new Error('--root is required');
   }
 
-  const root = resolve(values['root'] as string);
-  const name = (values['name'] as string | undefined) ?? basename(root);
+  const root = resolve(v['root'] as string);
+  const name = (v['name'] as string | undefined) ?? basename(root);
 
-  // origins: parseArgs multiple:true gives string[], fallback to []
-  const origins = (values['origin'] as string[] | undefined) ?? [];
+  // origins: resolved by resolveConfigValues, fallback to []
+  const origins = (v['origin'] as string[] | undefined) ?? [];
 
-  const notesDirRaw = values['notes-dir'] as string | undefined;
+  const notesDirRaw = v['notes-dir'] as string | undefined;
   const notesDir = resolve(notesDirRaw ?? join(root, 'notes'));
 
   // D-10: notesDir must be inside root
@@ -50,7 +128,7 @@ export function resolveConfig(values: Record<string, unknown>): Config {
     );
   }
 
-  const portStr = values['port'] as string | undefined;
+  const portStr = v['port'] as string | undefined;
   let port: number | undefined;
   if (portStr !== undefined) {
     // WR-05: validate port — Number('abc') → NaN, Number('0x10') → 16, etc.
@@ -60,11 +138,8 @@ export function resolveConfig(values: Record<string, unknown>): Config {
     }
   }
 
-  // D-07 token resolution order
-  const token =
-    (values['token'] as string | undefined) ??
-    process.env['STICKYFIX_TOKEN'] ??
-    randomUUID();
+  // D-07 token resolution order (npm_config_token handled in resolveConfigValues)
+  const token = (v['token'] as string | undefined) ?? randomUUID();
 
   return { root, notesDir, name, origins, port, token };
 }

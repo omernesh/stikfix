@@ -10,7 +10,7 @@
 
 import { parseArgs } from 'node:util';
 import type { AddressInfo } from 'node:net';
-import { resolveConfig, ensureNotesDir, writeTokenFile } from './config.js';
+import { resolveConfig, resolveConfigValues, ensureNotesDir, writeTokenFile } from './config.js';
 import { createHostServer } from './server.js';
 import { bindServer, BIND_HOST } from './bind.js';
 
@@ -18,7 +18,7 @@ import { bindServer, BIND_HOST } from './bind.js';
 // CLI parsing (preserve Phase 1 stub options block — HOST-13)
 // ---------------------------------------------------------------------------
 
-const { values } = parseArgs({
+const { values: rawValues } = parseArgs({
   options: {
     root: { type: 'string' },
     origin: { type: 'string', multiple: true },
@@ -30,7 +30,12 @@ const { values } = parseArgs({
   strict: false,
 });
 
-if (!values.root) {
+// Apply three-tier env resolution (flag > STICKYFIX_* > npm_config_*) so that
+// `npm run host -- --root <dir>` works in Windows PowerShell, where npm 11.x
+// intercepts unknown flags and re-exposes them as npm_config_<key> env vars.
+const values = resolveConfigValues(rawValues as Record<string, unknown>);
+
+if (!values['root']) {
   console.error('stickyfix-host: --root is required');
   process.exit(1);
 }
