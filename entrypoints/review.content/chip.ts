@@ -32,6 +32,9 @@ interface RouteOkResponse {
 interface RouteErrResponse {
   ok: false;
   error: string;
+  /** WR-03: structured discriminator for the unmapped state */
+  reason?: 'unmapped';
+  origin?: string;
 }
 
 type RouteResponse = RouteOkResponse | RouteErrResponse;
@@ -134,8 +137,9 @@ export function mountChip(container: HTMLElement, unmountFn: () => void): void {
       type: SFX_MSG.GET_ROUTE,
       tabId,
       origin,
-    }, (resp: RouteResponse) => {
-      if (chrome.runtime.lastError) {
+    }, (resp: RouteResponse | undefined) => {
+      // WR-02: guard resp against undefined (SW handler returned without sendResponse)
+      if (chrome.runtime.lastError || !resp) {
         label.textContent = 'SW error';
         dot.classList.add('sfx-dot-error');
         return;
@@ -145,11 +149,11 @@ export function mountChip(container: HTMLElement, unmountFn: () => void): void {
         // Mapped — show routed label
         renderRoutedLabel(label, dot, resp.host);
         wireSendButton(sendBtn, feedback, tabId, resp.host);
-      } else if (resp.error.startsWith('unmapped:')) {
+      } else if (resp.reason === 'unmapped') {
         // Step 4 — one-time dropdown (EXT-07/EXT-08)
         renderDropdown(chip, label, dot, feedback, sendBtn, tabId, origin);
       } else {
-        label.textContent = 'Route error';
+        label.textContent = resp.error ?? 'Route error';
         dot.classList.add('sfx-dot-error');
       }
     });
@@ -294,9 +298,10 @@ function renderDropdown(
     // Persist origin → hostName via SW (EXT-07/EXT-08)
     chrome.runtime.sendMessage(
       { type: SFX_SET_ROUTE, tabId, hostName },
-      (resp: SetRouteResponse) => {
-        if (chrome.runtime.lastError || !resp.ok) {
-          showFeedback(feedback, `Set route failed: ${resp?.ok === false ? resp.error : 'unknown'}`, true);
+      (resp: SetRouteResponse | undefined) => {
+        // WR-02: guard resp against undefined
+        if (chrome.runtime.lastError || !resp || !resp.ok) {
+          showFeedback(feedback, `Set route failed: ${resp && !resp.ok ? resp.error : 'unknown'}`, true);
           return;
         }
 
@@ -360,10 +365,11 @@ function wireSendButton(
 
     chrome.runtime.sendMessage(
       { type: SFX_MSG.SEND_ANNOTATION, tabId, payload },
-      (resp: AnnotationResponse) => {
+      (resp: AnnotationResponse | undefined) => {
         sendBtn.disabled = false;
-        if (chrome.runtime.lastError) {
-          showFeedback(feedback, 'SW error: ' + chrome.runtime.lastError.message, true);
+        // WR-02: guard resp against undefined
+        if (chrome.runtime.lastError || !resp) {
+          showFeedback(feedback, 'SW error: ' + (chrome.runtime.lastError?.message ?? 'no response'), true);
           return;
         }
         if (resp.ok) {

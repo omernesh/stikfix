@@ -37,10 +37,9 @@ import { resolveRoute, reconcileRegistry } from '../lib/routing.js';
 // Type aliases for handler return shapes
 // ---------------------------------------------------------------------------
 
-type RouteResponse = SfxResponse<{
-  host: HostEntry;
-  mapped?: boolean;
-}>;
+type RouteResponse =
+  | ({ ok: true; host: HostEntry; mapped?: boolean })
+  | ({ ok: false; error: string; reason?: 'unmapped'; origin?: string });
 
 type AnnotationResponse = SfxResponse<{
   file: string;
@@ -211,8 +210,10 @@ async function handleGetRoute(
     }
   }
 
-  // Step 4: no route found — caller shows one-time dropdown
-  return { ok: false, error: `unmapped:${origin}` };
+  // Step 4: no route found — caller shows one-time dropdown.
+  // WR-03: use a structured 'reason' discriminator instead of an in-band
+  // error string prefix so callers can branch on type, not string-match.
+  return { ok: false, error: `No route for ${origin}`, reason: 'unmapped', origin } as const;
 }
 
 /**
