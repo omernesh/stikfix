@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "dist/lib",
+    "rootDir": ".",
+    "strict": true,
+    "types": ["node"],
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "lib/types.ts",
+    "lib/routing.ts",
+    "lib/discovery.ts",
+    "lib/test/**/*.ts"
+  ],
+  "exclude": [
+    "lib/storage.ts"
+  ]
+}
