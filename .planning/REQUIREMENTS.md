@@ -131,13 +131,76 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (populated during roadmap creation) | — | Pending |
+| BUILD-01 | Phase 1 | Pending |
+| BUILD-02 | Phase 1 | Pending |
+| BUILD-03 | Phase 1 | Pending |
+| BUILD-04 | Phase 1 | Pending |
+| BUILD-05 | Phase 1 | Pending |
+| HOST-01 | Phase 2 | Pending |
+| HOST-02 | Phase 2 | Pending |
+| HOST-03 | Phase 2 | Pending |
+| HOST-04 | Phase 2 | Pending |
+| HOST-05 | Phase 2 | Pending |
+| HOST-06 | Phase 2 | Pending |
+| HOST-07 | Phase 2 | Pending |
+| HOST-08 | Phase 2 | Pending |
+| HOST-09 | Phase 2 | Pending |
+| HOST-10 | Phase 2 | Pending |
+| HOST-11 | Phase 2 | Pending |
+| HOST-12 | Phase 2 | Pending |
+| HOST-13 | Phase 2 | Pending |
+| EXT-01 | Phase 3 | Pending |
+| EXT-02 | Phase 3 | Pending |
+| EXT-03 | Phase 3 | Pending |
+| EXT-04 | Phase 3 | Pending |
+| EXT-05 | Phase 3 | Pending |
+| EXT-06 | Phase 3 | Pending |
+| EXT-07 | Phase 3 | Pending |
+| EXT-08 | Phase 3 | Pending |
+| EXT-09 | Phase 3 | Pending |
+| EXT-10 | Phase 3 | Pending |
+| EXT-11 | Phase 3 | Pending |
+| FREE-01 | Phase 4 | Pending |
+| FREE-02 | Phase 4 | Pending |
+| FREE-03 | Phase 4 | Pending |
+| FREE-04 | Phase 4 | Pending |
+| ELEM-01 | Phase 5 | Pending |
+| ELEM-02 | Phase 5 | Pending |
+| ELEM-03 | Phase 5 | Pending |
+| ELEM-04 | Phase 5 | Pending |
+| ELEM-05 | Phase 5 | Pending |
+| ELEM-06 | Phase 5 | Pending |
+| ELEM-07 | Phase 5 | Pending |
+| ELEM-08 | Phase 5 | Pending |
+| ELEM-09 | Phase 5 | Pending |
+| CAM-01 | Phase 6 | Pending |
+| CAM-02 | Phase 6 | Pending |
+| CAM-03 | Phase 6 | Pending |
+| CAM-04 | Phase 6 | Pending |
+| CAM-05 | Phase 6 | Pending |
+| CAM-06 | Phase 6 | Pending |
+| UI-01 | Phase 6 | Pending |
+| UI-02 | Phase 6 | Pending |
+| UI-03 | Phase 6 | Pending |
+| UI-04 | Phase 6 | Pending |
+| REL-01 | Phase 8 | Pending |
+| REL-02 | Phase 8 | Pending |
+| REL-03 | Phase 8 | Pending |
+| SKILL-01 | Phase 7 | Pending |
+| SKILL-02 | Phase 7 | Pending |
+| SKILL-03 | Phase 7 | Pending |
+| SKILL-04 | Phase 7 | Pending |
+| SKILL-05 | Phase 7 | Pending |
+| DOC-01 | Phase 7 | Pending |
+| DOC-02 | Phase 7 | Pending |
 
 **Coverage:**
-- v1 requirements: 56 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 56 ⚠️
+- v1 requirements: 62 total (BUILD×5 + HOST×13 + EXT×11 + FREE×4 + ELEM×9 + CAM×6 + UI×4 + REL×3 + SKILL×5 + DOC×2)
+- Mapped to phases: 62
+- Unmapped: 0 ✓
+
+Note: The requirements document header previously stated 56 total; the actual count from enumerated REQ-IDs is 62. All 62 are mapped.
 
 ---
 *Requirements defined: 2026-05-31*
-*Last updated: 2026-05-31 after initial definition*
+*Last updated: 2026-05-31 — traceability populated after roadmap creation*
