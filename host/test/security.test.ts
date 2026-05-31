@@ -32,6 +32,26 @@ describe('checkToken', () => {
     const req = makeReq('short');
     assert.strictEqual(checkToken(req as any, 'much-longer-token-value'), false);
   });
+
+  // CR-01 regression: same UTF-16 length but different UTF-8 byte length must
+  // return false (not throw RangeError → 500). An emoji is 1 UTF-16 code unit
+  // on modern engines but 4 UTF-8 bytes; a token of length 3 UTF-16 chars
+  // with an emoji has a different UTF-8 byte length than a plain 3-char ASCII token.
+  test('CR-01: multibyte provided token with same UTF-16 length but different byte length returns false (never throws)', () => {
+    // expected: 3 ASCII chars → 3 UTF-8 bytes
+    const expected = 'abc';
+    // provided: 'a' + emoji (4 UTF-8 bytes) + 'b' = 3 UTF-16 code units but 6 UTF-8 bytes
+    // (The emoji \u{1F600} is a supplementary char = 2 UTF-16 code units, but \u{00E9}
+    //  is 1 UTF-16 code unit and 2 UTF-8 bytes — use that for a clean same-UTF16-length mismatch.)
+    // 'aéb' → UTF-16 length 3, UTF-8 bytes 4 (é = 2 bytes)
+    const provided = 'aéb'; // length === 3, but 4 UTF-8 bytes
+    const req = makeReq(provided);
+    // Must not throw; must return false
+    assert.doesNotThrow(() => {
+      const result = checkToken(req as any, expected);
+      assert.strictEqual(result, false);
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------

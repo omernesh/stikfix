@@ -22,9 +22,13 @@ const MAX_BODY = 12 * 1024 * 1024; // 12 MB hard cap (D-04)
 export function checkToken(req: Pick<IncomingMessage, 'headers'>, expectedToken: string): boolean {
   const provided = req.headers['x-stickyfix-token'];
   if (typeof provided !== 'string') return false;
-  // Length check first — timingSafeEqual requires equal-length buffers (Pattern 5)
-  if (provided.length !== expectedToken.length) return false;
-  return timingSafeEqual(Buffer.from(provided), Buffer.from(expectedToken));
+  // Compare UTF-8 byte lengths — timingSafeEqual requires equal-length buffers (Pattern 5)
+  // Using Buffer.from(...,'utf8') avoids a RangeError when multibyte chars make
+  // UTF-16 .length equal but UTF-8 byte length differ (CR-01).
+  const a = Buffer.from(provided, 'utf8');
+  const b = Buffer.from(expectedToken, 'utf8');
+  if (a.length !== b.length) return false; // byte-length guard
+  return timingSafeEqual(a, b);
 }
 
 // ---------------------------------------------------------------------------
