@@ -66,9 +66,9 @@ export function decodePngDataUrl(dataUrl: string): Buffer {
 /**
  * Build the YAML frontmatter block per PRD §9.2 (Pattern 8).
  * selector + react_component ONLY for element mode (D-11).
+ * IN-01: `base` parameter removed (was unused).
  */
 export function buildFrontmatter(
-  base: string,
   payload: AnnotationPayload,
   serial: number,
   screenshotRelPaths: string[]
@@ -174,7 +174,7 @@ export async function writeNote(
   const screenshotRelPaths = pngBuffers.map((_, i) => `${base}+${i + 1}.png`);
 
   // Build and write the .md file
-  const frontmatter = buildFrontmatter(base, payload, serial, screenshotRelPaths);
+  const frontmatter = buildFrontmatter(payload, serial, screenshotRelPaths);
   const body = buildNoteBody(base, payload);
   await writeFile(mdPath, frontmatter + body, 'utf8');
 
