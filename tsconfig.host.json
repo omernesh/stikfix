@@ -4,11 +4,11 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "outDir": "dist/host",
-    "rootDir": "host/src",
+    "rootDir": "host",
     "strict": true,
     "types": ["node"],
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "include": ["host/src/**/*.ts"]
+  "include": ["host/src/**/*.ts", "host/test/**/*.ts"]
 }

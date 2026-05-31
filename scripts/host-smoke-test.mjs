@@ -7,7 +7,7 @@ import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-const HOST_DIST = 'dist/host/index.js';
+const HOST_DIST = 'dist/host/src/index.js';
 
 // Pitfall 6 guard: fail with a helpful message if host has not been built yet
 if (!existsSync(HOST_DIST)) {
