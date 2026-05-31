@@ -100,6 +100,23 @@ async function handleAnnotation(
     return;
   }
 
+  // 4b. WR-02: Runtime payload shape guard before reaching the disk-write path.
+  // buildFrontmatter/buildNoteBody dereference page.url, viewport.width, etc.
+  // unconditionally — a missing field causes a TypeError (500). Validate first.
+  if (
+    (payload.mode !== 'free' && payload.mode !== 'element') ||
+    typeof payload.comment !== 'string' ||
+    !payload.page || typeof payload.page.url !== 'string' || typeof payload.page.title !== 'string' ||
+    !payload.viewport ||
+    typeof payload.viewport.width !== 'number' ||
+    typeof payload.viewport.height !== 'number' ||
+    typeof payload.viewport.devicePixelRatio !== 'number'
+  ) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: 'invalid payload' }));
+    return;
+  }
+
   // 5. Write under serial lock (D-03 / Pitfall 3)
   try {
     const { file, serial } = await withSerialLock(async () => {

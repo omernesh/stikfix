@@ -246,6 +246,32 @@ describe('stickyfix-host server integration', () => {
   });
 
   // -------------------------------------------------------------------------
+  // WR-02: missing required payload fields → 400 {ok:false,error:'invalid payload'}
+  // -------------------------------------------------------------------------
+  it('WR-02: POST /annotation with empty body {} and valid token returns 400 invalid payload', async () => {
+    const { readdirSync } = await import('node:fs');
+    const beforeFiles = readdirSync(fixture.cfg.notesDir);
+
+    const res = await fetch(`${fixture.baseUrl}/annotation`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Stickyfix-Token': TEST_TOKEN,
+      },
+      body: JSON.stringify({}),
+    });
+
+    assert.equal(res.status, 400);
+    const body = await res.json() as { ok: boolean; error: string };
+    assert.equal(body.ok, false);
+    assert.equal(body.error, 'invalid payload');
+
+    // No files should be written
+    const afterFiles = readdirSync(fixture.cfg.notesDir);
+    assert.deepEqual(afterFiles.sort(), beforeFiles.sort(), 'No files should be created for invalid payload (WR-02)');
+  });
+
+  // -------------------------------------------------------------------------
   // CR-02 regression: bad screenshot dataUrl → 400, NO partial on-disk state
   // -------------------------------------------------------------------------
   it('CR-02: POST /annotation with non-PNG screenshot dataUrl returns 400 and leaves no .md or .png on disk', async () => {
