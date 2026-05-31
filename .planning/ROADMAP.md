@@ -121,7 +121,20 @@ Plans:
   3. A success toast shows the written filename; a failure (host down) shows a visible error toast — never a silent drop
   4. DPR-correct canvas crop utility is implemented, tested at DPR=1, DPR=1.25, and DPR=2; double-rAF flush utility eliminates own-UI in captures
 
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+**Wave 0**
+
+- [ ] 04-01-PLAN.md — Capture lib (pure computeCropCoords DPR=1/1.25/2 + browser helpers), SFX_CAPTURE_TAB type, single-active-card guard, interactjs@1.10.27 install + test:lib wiring (FREE-02 / SC-4)
+
+**Wave 1** *(blocked on Wave 0)*
+
+- [ ] 04-02-PLAN.md — Free-note vertical slice: + FAB + post-it card (interactjs) + toast + Send via SFX_SEND_ANNOTATION + chip re-map (FREE-01/02/03/04)
+
+**Wave 2** *(blocked on Waves 0+1)*
+
+- [ ] 04-03-PLAN.md — captureVisibleTab SW relay (handleCaptureTab) + double-rAF/crop integration proof, standalone (NOT wired into free-note Send) (SC-4)
+
 **UI hint**: yes
 
 ### Phase 5: Element-Note Mode + Rich Context Capture
@@ -196,7 +209,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 1. Scaffold & Clean-Room Foundation | 3/3 | Complete    | 2026-05-31 |
 | 2. Host MVP | 3/3 | Complete    | 2026-05-31 |
 | 3. Extension Skeleton + SW Relay Proof | 4/4 | Complete    | 2026-05-31 |
-| 4. Free-Note Mode + Capture Utilities | 0/TBD | Not started | - |
+| 4. Free-Note Mode + Capture Utilities | 0/3 | Not started | - |
 | 5. Element-Note Mode + Rich Context Capture | 0/TBD | Not started | - |
 | 6. Region Capture + Visual Design | 0/TBD | Not started | - |
 | 7. review-notes Skill + Docs | 0/TBD | Not started | - |
