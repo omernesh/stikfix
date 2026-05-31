@@ -322,7 +322,7 @@ async function handleSendAnnotation(
 }
 
 // ---------------------------------------------------------------------------
-// Message protocol — SFX_SET_ROUTE (added here per plan action §Task 2)
+// Message protocol — SFX_SET_ROUTE (added in Plan 03-02) and SFX_GET_TAB_ID
 // ---------------------------------------------------------------------------
 
 export const SFX_SET_ROUTE = 'SFX_SET_ROUTE' as const;
@@ -331,6 +331,18 @@ interface MsgSetRoute {
   type: typeof SFX_SET_ROUTE;
   tabId: number;
   hostName: string;
+}
+
+/**
+ * SFX_GET_TAB_ID — used by content scripts to discover their own tabId.
+ * Content scripts cannot call chrome.tabs.getCurrent(); this message is the
+ * standard workaround: the SW reads sender.tab.id and echoes it back.
+ * Synchronous response (no `return true` needed — no async work).
+ */
+export const SFX_GET_TAB_ID = 'SFX_GET_TAB_ID' as const;
+
+interface MsgGetTabId {
+  type: typeof SFX_GET_TAB_ID;
 }
 
 // ---------------------------------------------------------------------------
@@ -345,11 +357,15 @@ interface MsgSetRoute {
  */
 chrome.runtime.onMessage.addListener(
   (
-    msg: SfxMessage | MsgSetRoute,
-    _sender: chrome.runtime.MessageSender,
+    msg: SfxMessage | MsgSetRoute | MsgGetTabId,
+    sender: chrome.runtime.MessageSender,
     sendResponse: (response: unknown) => void
   ): true | void => {
     switch (msg.type) {
+      case SFX_GET_TAB_ID:
+        // Synchronous — sender.tab.id is immediately available
+        sendResponse({ tabId: sender.tab?.id ?? null });
+        return; // no async, no `return true`
       case SFX_MSG.REFRESH_HOSTS:
         handleRefreshHosts()
           .then(sendResponse)

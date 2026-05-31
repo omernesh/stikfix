@@ -1,0 +1,126 @@
+/*
+ * stickyfix connection chip — shadow-root scoped CSS
+ *
+ * Rules:
+ *  - :host all:initial ensures zero inheritance from the host page (Pattern 9)
+ *  - px units ONLY — rem refers to host page <html> font-size which may be
+ *    anything (Pitfall 5 / WXT FAQ)
+ *  - z-index 2147483647 (INT32_MAX) so chip renders above any host page element
+ *  - pointer-events:none on :host so page interaction is not blocked except at
+ *    the chip's own footprint
+ *  - Neutral functional palette (NOT post-it aesthetics — deferred to Phase 6)
+ */
+
+:host {
+  all: initial;
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2147483647;
+  box-sizing: border-box;
+}
+
+#sfx-chip {
+  pointer-events: auto;
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  background: #ffffff;
+  border: 1px solid #cccccc;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  line-height: 1;
+  color: #111111;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  cursor: default;
+  user-select: none;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 400px;
+  white-space: nowrap;
+}
+
+/* Status dot */
+.sfx-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  flex-shrink: 0;
+}
+
+.sfx-status-dot.sfx-dot-error {
+  background: #ef4444;
+}
+
+/* Route label */
+.sfx-chip-label {
+  font-size: 13px;
+  color: #111111;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+/* Inline confirmation / error message */
+.sfx-chip-feedback {
+  font-size: 12px;
+  color: #16a34a;
+  white-space: nowrap;
+}
+
+.sfx-chip-feedback.sfx-feedback-error {
+  color: #dc2626;
+}
+
+/* One-time project dropdown */
+.sfx-chip-dropdown {
+  font-size: 12px;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  padding: 2px 4px;
+  background: #f9f9f9;
+  color: #111111;
+  cursor: pointer;
+  max-width: 180px;
+}
+
+/* Buttons */
+.sfx-chip-btn {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  padding: 3px 8px;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  background: #f0f0f0;
+  color: #111111;
+  cursor: pointer;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.sfx-chip-btn:hover {
+  background: #e0e0e0;
+}
+
+.sfx-chip-btn.sfx-btn-exit {
+  padding: 3px 6px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #666666;
+}
+
+.sfx-chip-btn.sfx-btn-exit:hover {
+  color: #111111;
+  background: #e0e0e0;
+}
