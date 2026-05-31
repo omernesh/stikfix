@@ -1,0 +1,23 @@
+{
+  "name": "stickyfix",
+  "version": "0.1.0",
+  "description": "Pin sticky notes on any page — your AI reads them.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt build && tsc -p tsconfig.host.json",
+    "host": "node dist/host/index.js",
+    "check": "tsc --noEmit && tsc --noEmit -p tsconfig.host.json && node scripts/clean-room-check.mjs && node scripts/host-smoke-test.mjs",
+    "postinstall": "wxt prepare"
+  },
+  "devDependencies": {
+    "@types/chrome": "0.1.42",
+    "@types/node": "25.9.1",
+    "typescript": "6.0.3",
+    "wxt": "0.20.26"
+  },
+  "dependencies": {
+    "yaml": "2.9.0"
+  }
+}
