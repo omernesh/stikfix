@@ -1,7 +1,8 @@
 // scripts/host-smoke-test.mjs
 // Spawns the compiled host server against a temp --root, reads the startup JSON line
 // via readline (Pattern 12 — server runs indefinitely; spawnSync would hang).
-// Part of npm run check: asserts startup line shape and GET /status response.
+// Part of npm run check: asserts startup line shape, GET /status, token-gated POST
+// /annotation (200 + .md on disk), and no-token POST /annotation (401).
 
 import { spawn } from 'node:child_process';
 import { createInterface } from 'node:readline';
@@ -10,6 +11,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const HOST_DIST = 'dist/host/src/index.js';
+
+const PORT_RANGE_START = 39240;
+const PORT_RANGE_END = 39260;
 
 // Guard: fail with a helpful message if host has not been built yet
 if (!existsSync(HOST_DIST)) {
@@ -76,13 +80,29 @@ try {
     console.error(`smoke test: expected numeric port in startup, got: ${JSON.stringify(startup.port)}`);
     process.exit(1);
   }
+  if (startup.port < PORT_RANGE_START || startup.port > PORT_RANGE_END) {
+    console.error(
+      `smoke test: port ${startup.port} is outside expected range ${PORT_RANGE_START}-${PORT_RANGE_END}`
+    );
+    process.exit(1);
+  }
   if (startup.root !== tmpRoot) {
     console.error(`smoke test: root mismatch — expected ${tmpRoot}, got ${startup.root}`);
     process.exit(1);
   }
+  if (!startup.token || typeof startup.token !== 'string') {
+    console.error(`smoke test: expected non-empty string token in startup, got: ${JSON.stringify(startup.token)}`);
+    process.exit(1);
+  }
+  if (!startup.notesDir || typeof startup.notesDir !== 'string') {
+    console.error(`smoke test: expected notesDir in startup, got: ${JSON.stringify(startup.notesDir)}`);
+    process.exit(1);
+  }
 
-  // Probe GET /status
-  const statusRes = await fetch(`http://127.0.0.1:${startup.port}/status`);
+  const BASE = `http://127.0.0.1:${startup.port}`;
+
+  // 1. Probe GET /status
+  const statusRes = await fetch(`${BASE}/status`);
   if (!statusRes.ok) {
     console.error(`smoke test: GET /status returned ${statusRes.status}`);
     process.exit(1);
@@ -95,6 +115,63 @@ try {
   }
   if (status.token !== undefined) {
     console.error('smoke test: /status must NOT include the token field');
+    process.exit(1);
+  }
+
+  // 2. POST /annotation — no token -> 401
+  const noTokenRes = await fetch(`${BASE}/annotation`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      mode: 'free',
+      comment: 'no-token probe',
+      page: { url: 'http://localhost:5173/', title: 'smoke' },
+      viewport: { width: 1440, height: 900, devicePixelRatio: 1 },
+    }),
+  });
+  if (noTokenRes.status !== 401) {
+    console.error(
+      `smoke test: POST /annotation without token expected 401, got ${noTokenRes.status}`
+    );
+    process.exit(1);
+  }
+
+  // 3. POST /annotation — with token -> 200 + .md on disk
+  const annotRes = await fetch(`${BASE}/annotation`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Stickyfix-Token': startup.token,
+    },
+    body: JSON.stringify({
+      mode: 'free',
+      comment: 'smoke test note',
+      page: { url: 'http://localhost:5173/', title: 'smoke' },
+      viewport: { width: 1440, height: 900, devicePixelRatio: 1 },
+    }),
+  });
+  if (annotRes.status !== 200) {
+    const body = await annotRes.text().catch(() => '(unreadable)');
+    console.error(
+      `smoke test: POST /annotation with token expected 200, got ${annotRes.status}: ${body}`
+    );
+    process.exit(1);
+  }
+
+  const annotBody = await annotRes.json();
+  if (!annotBody.ok) {
+    console.error(`smoke test: POST /annotation response ok:false — ${JSON.stringify(annotBody)}`);
+    process.exit(1);
+  }
+  if (!annotBody.file || typeof annotBody.file !== 'string') {
+    console.error(`smoke test: POST /annotation response missing file field — ${JSON.stringify(annotBody)}`);
+    process.exit(1);
+  }
+
+  // body.file is the absolute path returned by writeNote
+  const notePath = annotBody.file;
+  if (!existsSync(notePath)) {
+    console.error(`smoke test: expected .md file not found on disk: ${notePath}`);
     process.exit(1);
   }
 
