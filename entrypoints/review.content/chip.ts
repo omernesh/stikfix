@@ -146,8 +146,8 @@ export function mountChip(container: HTMLElement, unmountFn: () => void): void {
       }
 
       if (resp.ok) {
-        // Mapped — show routed label
-        renderRoutedLabel(label, dot, resp.host);
+        // Mapped — show routed label + wire D-09 re-map affordance
+        renderRoutedLabel(label, dot, resp.host, chip, feedback, sendBtn, tabId, origin);
         wireSendButton(sendBtn, feedback, tabId, resp.host);
       } else if (resp.reason === 'unmapped') {
         // Step 4 — one-time dropdown (EXT-07/EXT-08)
@@ -204,15 +204,35 @@ export function teardownChip(container: HTMLElement): void {
 // Render helpers
 // ---------------------------------------------------------------------------
 
-/** Render the "→ name · notesDir" label for a mapped host. */
+/**
+ * Render the "→ name · notesDir" label for a mapped host.
+ *
+ * D-09 re-map affordance: sets label.onclick = () => renderDropdown(...)
+ * using .onclick assignment (NOT addEventListener) to prevent listener
+ * stacking on re-renders (Shared Pattern 4 / UI-SPEC §4).
+ */
 function renderRoutedLabel(
   label: HTMLSpanElement,
   dot: HTMLSpanElement,
-  host: HostEntry
+  host: HostEntry,
+  chip: HTMLDivElement,
+  feedback: HTMLSpanElement,
+  sendBtn: HTMLButtonElement,
+  tabId: number,
+  origin: string
 ): void {
   // textContent only — no innerHTML (Pattern 9)
   label.textContent = `→ ${host.name} · ${host.notesDir}`;
   dot.classList.remove('sfx-dot-error');
+
+  // D-09: .onclick = assignment (idempotent — prevents stacking on re-renders)
+  label.onclick = () => {
+    renderDropdown(chip, label, dot, feedback, sendBtn, tabId, origin);
+  };
+  // UI-SPEC §4: cursor + tooltip signal clickability
+  label.style.cursor = 'pointer';
+  label.title = 'Change project';
+  label.classList.add('sfx-label-routed');
 }
 
 /**
@@ -299,8 +319,8 @@ function renderDropdown(
           select.parentElement.removeChild(select);
         }
 
-        // Render the mapped label
-        renderRoutedLabel(label, dot, resp.host);
+        // Render the mapped label + wire D-09 re-map affordance
+        renderRoutedLabel(label, dot, resp.host, chip, feedback, sendBtn, tabId, origin);
 
         // Wire the Send button now that we have a host
         wireSendButton(sendBtn, feedback, tabId, resp.host);
@@ -501,8 +521,11 @@ function makeDraggable(el: HTMLElement): void {
  * Get the current tab's ID by sending SFX_GET_TAB_ID to the SW.
  * Content scripts cannot call chrome.tabs.getCurrent(); this is the standard
  * workaround — the SW reads sender.tab.id from the message and echoes it.
+ *
+ * Exported so index.ts can resolve the tabId once and share it with
+ * mountFab / openCard without duplicating this implementation (04-02 / Task 3).
  */
-async function getTabId(): Promise<number> {
+export async function getTabId(): Promise<number> {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage({ type: SFX_GET_TAB_ID }, (resp: unknown) => {
       if (chrome.runtime.lastError) {

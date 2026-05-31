@@ -11,7 +11,10 @@
 
 import './styles.css'; // MUST be top-level for cssInjectionMode:'ui' to pick it up
 
-import { mountChip, teardownChip } from './chip.js';
+import { mountChip, teardownChip, getTabId } from './chip.js';
+import { mountFab } from './fab.js';
+import { openCard, closeCard } from './card.js';
+import { showToast } from './toast.js';
 import { SFX_MSG } from '../../lib/types.js';
 
 export default defineContentScript({
@@ -31,6 +34,26 @@ export default defineContentScript({
       onMount(container: HTMLElement) {
         // Pass the ui.remove function so the chip's Exit button can unmount
         mountChip(container, () => ui.remove());
+
+        // Shared toast adapter — all surfaces (card) use this single function
+        // to surface feedback inside the ONE shared shadow-root container (D-01/D-08)
+        const toast = (msg: string, isError: boolean) =>
+          showToast(container, msg, isError);
+
+        // Resolve tabId once from chip's canonical getTabId (not duplicated here)
+        // and mount the FAB. openCard/closeCard share the same container.
+        getTabId()
+          .then(tabId => {
+            mountFab(container, () => {
+              openCard(container, tabId, () => {}, toast);
+            });
+          })
+          .catch(() => {
+            // If tabId resolution fails, FAB is not mounted — the chip already
+            // shows 'Tab error' in this case. Silently skip FAB (not a regression
+            // from the chip-only Phase 3 baseline).
+          });
+
         // Return teardown object so WXT calls onRemove on invalidation
         return { container };
       },
@@ -38,6 +61,8 @@ export default defineContentScript({
       onRemove(elements: { container: HTMLElement } | undefined) {
         if (elements?.container) {
           teardownChip(elements.container);
+          // Also close any open card so card-state stays consistent
+          closeCard();
         }
       },
     });
