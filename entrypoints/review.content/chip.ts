@@ -426,6 +426,16 @@ function makeDraggable(el: HTMLElement): void {
     // Only primary button (left click) starts drag
     if (e.button !== 0) return;
 
+    // Yield to interactive controls: if the gesture starts on a button, the
+    // project <select>, or an input, do NOT start a drag. Capturing the pointer
+    // and calling preventDefault() here would suppress the control's native
+    // action (a <select> would never open; buttons could be swallowed). Only
+    // the chip's own chrome (dot/label/background) initiates a drag.
+    const target = e.target as HTMLElement | null;
+    if (target && target.closest('button, select, input, option, a, textarea')) {
+      return;
+    }
+
     el.setPointerCapture(e.pointerId);
     isDragging = true;
 
