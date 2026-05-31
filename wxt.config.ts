@@ -14,9 +14,20 @@ export default defineConfig({
     // Phase 3 additions — D-04 / EXT-01
     permissions: ['activeTab', 'scripting', 'storage', 'tabs'],
     host_permissions: ['http://127.0.0.1/*', 'http://localhost/*'],
-    // @ts-ignore — valid MV3 key; WXT 0.20.x types do not include this field yet (A1)
+    // @ts-expect-error — valid MV3 key; WXT 0.20.x types do not include this field yet (A1)
     optional_host_permissions: ['<all_urls>'],
     // Note: no static content_scripts — review UI is injected on-demand via
     // chrome.scripting.executeScript (D-04 / EXT-02)
+  },
+  hooks: {
+    // CR-01: WXT hoists web_accessible_resources[].matches into host_permissions,
+    // including the '<all_urls>' pattern from the runtime content-script CSS.
+    // PRD §7.1 mandates host_permissions contain ONLY localhost at install time;
+    // '<all_urls>' must be requested on demand via optional_host_permissions.
+    // Strip it here after WXT's manifest generation so the grant model is correct.
+    'build:manifestGenerated'(_wxt, manifest) {
+      manifest.host_permissions = (manifest.host_permissions ?? [])
+        .filter((p: string) => p !== '<all_urls>');
+    },
   },
 });
