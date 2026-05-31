@@ -1,0 +1,111 @@
+/**
+ * Shared TypeScript types for the stickyfix extension.
+ * Consumed by: background.ts, popup/main.ts, review.content/index.ts
+ *
+ * Re-exports AnnotationPayload/ElementContext/Screenshot from the host package
+ * (single source of truth — do NOT redefine these interfaces here).
+ */
+
+// Re-export host payload types — the extension is a consumer of these shapes.
+export type { AnnotationPayload, ElementContext, Screenshot } from '../host/src/types.js';
+
+// ---------------------------------------------------------------------------
+// Host registry types
+// ---------------------------------------------------------------------------
+
+/**
+ * A single discovered stickyfix host.
+ * Keyed by `name` in the registry (not port — ports change on restart).
+ */
+export interface HostEntry {
+  name: string;
+  port: number;
+  origins: string[];
+  notesDir: string;
+  /** null until the user enters a token in the popup */
+  token: string | null;
+}
+
+// ---------------------------------------------------------------------------
+// Storage state
+// ---------------------------------------------------------------------------
+
+/**
+ * The full shape of everything the SW reads from chrome.storage.local.
+ * The SW re-reads this at the top of every message handler.
+ */
+export interface StorageState {
+  /** host name → HostEntry */
+  registry: Record<string, HostEntry>;
+  /** host name → token string */
+  tokens: Record<string, string>;
+  /** origin → host name */
+  originMap: Record<string, string>;
+  /** extension preferences */
+  prefs: { reviewMode: Record<string, boolean> };
+}
+
+// ---------------------------------------------------------------------------
+// Message protocol (D-02) — content script ↔ service worker
+// ---------------------------------------------------------------------------
+
+/**
+ * Message-type constants. Uppercase snake, sfx-namespaced.
+ * Downstream plans (02/03/04) use these exact strings.
+ */
+export const SFX_MSG = {
+  ENTER_REVIEW: 'SFX_ENTER_REVIEW',
+  EXIT_REVIEW: 'SFX_EXIT_REVIEW',
+  GET_ROUTE: 'SFX_GET_ROUTE',
+  SEND_ANNOTATION: 'SFX_SEND_ANNOTATION',
+  REFRESH_HOSTS: 'SFX_REFRESH_HOSTS',
+} as const;
+
+export type SfxMsgType = (typeof SFX_MSG)[keyof typeof SFX_MSG];
+
+// ---------------------------------------------------------------------------
+// Discriminated union for all SW-bound messages
+// ---------------------------------------------------------------------------
+
+export interface MsgEnterReview {
+  type: typeof SFX_MSG.ENTER_REVIEW;
+  tabId: number;
+  origin: string;
+}
+
+export interface MsgExitReview {
+  type: typeof SFX_MSG.EXIT_REVIEW;
+  tabId: number;
+}
+
+export interface MsgGetRoute {
+  type: typeof SFX_MSG.GET_ROUTE;
+  tabId: number;
+  origin: string;
+}
+
+export interface MsgSendAnnotation {
+  type: typeof SFX_MSG.SEND_ANNOTATION;
+  tabId: number;
+  payload: import('../host/src/types.js').AnnotationPayload;
+}
+
+export interface MsgRefreshHosts {
+  type: typeof SFX_MSG.REFRESH_HOSTS;
+}
+
+/** Discriminated union of all messages the SW handles */
+export type SfxMessage =
+  | MsgEnterReview
+  | MsgExitReview
+  | MsgGetRoute
+  | MsgSendAnnotation
+  | MsgRefreshHosts;
+
+// ---------------------------------------------------------------------------
+// Response shapes
+// ---------------------------------------------------------------------------
+
+export type SfxResponse<T = Record<string, unknown>> =
+  | ({ ok: true } & T)
+  | { ok: false; error: string };
