@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Scaffold & Clean-Room Foundation** - Cross-platform WXT + host build succeeds; sfx-* identifier namespace established; no GPL artifacts (completed 2026-05-31)
 - [x] **Phase 2: Host MVP** - stickyfix-host writes .md + .png files with serial mutex, token auth, path safety, and CORS (completed 2026-05-31)
 - [x] **Phase 3: Extension Skeleton + SW Relay Proof** - Popup, host discovery, chrome.storage.local state, on-demand injection, dummy POST relay proven end-to-end (completed 2026-05-31)
-- [ ] **Phase 4: Free-Note Mode + Capture Utilities** - Draggable FAB → post-it → Send → .md on disk; DPR crop, double-rAF flush, captureVisibleTab relay established as reusable utilities
+- [x] **Phase 4: Free-Note Mode + Capture Utilities** - Draggable FAB → post-it → Send → .md on disk; DPR crop, double-rAF flush, captureVisibleTab relay established as reusable utilities (completed 2026-05-31)
 - [ ] **Phase 5: Element-Note Mode + Rich Context Capture** - Element picker with @medv/finder selector, React fiber, computed styles, outerHTML, auto-highlight screenshot
 - [ ] **Phase 6: Region Capture + Visual Design** - Camera tool drag-marquee crop; full paper-aesthetic sticky-note UI inside shadow DOM
 - [ ] **Phase 7: review-notes Skill + Docs** - Portable AI skill ships; README with demo GIF; clean-room provenance documented
@@ -133,7 +133,7 @@ Plans:
 
 **Wave 2** *(blocked on Waves 0+1)*
 
-- [ ] 04-03-PLAN.md — captureVisibleTab SW relay (handleCaptureTab) + double-rAF/crop integration proof, standalone (NOT wired into free-note Send) (SC-4)
+- [x] 04-03-PLAN.md — captureVisibleTab SW relay (handleCaptureTab) + double-rAF/crop integration proof, standalone (NOT wired into free-note Send) (SC-4)
 
 **UI hint**: yes
 
@@ -209,7 +209,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 1. Scaffold & Clean-Room Foundation | 3/3 | Complete    | 2026-05-31 |
 | 2. Host MVP | 3/3 | Complete    | 2026-05-31 |
 | 3. Extension Skeleton + SW Relay Proof | 4/4 | Complete    | 2026-05-31 |
-| 4. Free-Note Mode + Capture Utilities | 2/3 | In Progress|  |
+| 4. Free-Note Mode + Capture Utilities | 3/3 | Complete   | 2026-05-31 |
 | 5. Element-Note Mode + Rich Context Capture | 0/TBD | Not started | - |
 | 6. Region Capture + Visual Design | 0/TBD | Not started | - |
 | 7. review-notes Skill + Docs | 0/TBD | Not started | - |
