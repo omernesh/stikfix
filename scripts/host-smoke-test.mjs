@@ -177,11 +177,18 @@ try {
 
   console.log('smoke test: PASS');
 } finally {
-  // Always kill the child and clean up temp dir
-  if (child) {
-    child.kill('SIGTERM');
-    // Wait briefly for clean exit on Windows (SIGTERM may not be immediate)
-    await new Promise((resolve) => setTimeout(resolve, 200));
+  // WR-03: await actual child exit before rmSync to avoid EBUSY on Windows.
+  // Send SIGTERM, then after 2 s fall back to SIGKILL so rmSync never races
+  // a live server holding the notes dir / token file open.
+  if (child && child.exitCode === null) {
+    await new Promise((res) => {
+      child.once('exit', res);
+      child.kill('SIGTERM');
+      setTimeout(() => {
+        try { child.kill('SIGKILL'); } catch { /* already dead */ }
+        res(undefined);
+      }, 2000);
+    });
   }
   rmSync(tmpRoot, { recursive: true, force: true });
 }
