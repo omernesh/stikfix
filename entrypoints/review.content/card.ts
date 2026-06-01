@@ -294,11 +294,11 @@ function _doSend(
       } else {
         // Error: card stays open; restore controls (user can retry)
         showToastFn(resp.error, true);
-        sendBtn.disabled = false;
         sendBtn.textContent = 'Send';
         cancelBtn.disabled = false;
         textarea.readOnly = false;
-        // Re-apply disabled rule based on current textarea content
+        // Re-apply disabled rule based on current textarea content (WR-02: removed
+        // the preceding sendBtn.disabled=false which was immediately overwritten here)
         const hasText = textarea.value.trim().length > 0;
         sendBtn.disabled = !hasText;
       }
