@@ -462,7 +462,7 @@ export function listAnnotations(notesDir: string, pageUrl: string): PinDescripto
       text,
       selector: fm['selector'] as string | undefined,
       rect: fm['rect'] as PinDescriptor['rect'],
-      viewportCoords: fm['viewport_coords'] as PinDescriptor['viewportCoords'],
+      viewportCoords: fm['note_position'] as PinDescriptor['viewportCoords'], // canonical key: note_position (NOT viewport_coords)
       screenshots: (fm['screenshots'] as string[]) ?? [],
     });
   }
@@ -721,7 +721,7 @@ async function handleListAnnotations(tabId: number): Promise<...> {
 - **Trusting `pageUrl` from message body in SW:** For `handleListAnnotations`, `handleEditAnnotation`, `handleDeleteAnnotation`, the page URL MUST be derived from `chrome.tabs.get(tabId).url` — never from `msg.url`. Same anti-spoof invariant as `handleSendAnnotation`. [VERIFIED: background.ts:291]
 - **Perturbing `getNextSerial` with PUT/DELETE:** `resolveSerialFile` uses `readdirSync` to find existing files — it does NOT call `getNextSerial` and does NOT need the serial lock. PUT/DELETE must not call `withSerialLock` / `getNextSerial`. [VERIFIED: serial.ts:27-36]
 - **Scrim pointer-events blocking own UI:** The scrim must be inside the shadow root but below the chip/FAB in z-index, OR use `z-index` stacking within the shadow DOM carefully. The chip sits at `position: fixed` in the shadow root; the scrim should be behind it. [VERIFIED: styles.css z-index structure]
-- **Free-note pin position at page center if no position persisted:** If `note_position` is missing from frontmatter (existing notes), default gracefully to a sensible position rather than crashing. The list endpoint should return `viewportCoords: undefined` and the pin renderer should fall back to a default corner position.
+- **Free-note pin position at page center if no position persisted:** If `note_position` is missing from frontmatter (existing notes), default gracefully to a sensible position rather than crashing. The list endpoint should return `viewportCoords: undefined` (reading the canonical `fm['note_position']` key) and the pin renderer should fall back to a default corner position.
 
 ---
 
@@ -979,22 +979,22 @@ const obj = parse(raw); // { id: 1, url: '...', mode: 'free', status: 'unread' }
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **`setSfxVisibility` scope**
    - What we know: `card.ts:587` calls `setSfxVisibility(false)` before capture.
-   - What's unclear: Whether this function sets `display:none` on the shadow host element (hiding everything) or just the card. If it hides only the card, the scrim would still be visible in the screenshot.
-   - Recommendation: Read `setSfxVisibility` source (it may be in `card.ts` as a local helper). If it doesn't hide the scrim, exit marquee mode (remove scrim) FIRST, then call `setSfxVisibility`.
+   - What was unclear: Whether this function sets `display:none` on the shadow host element (hiding everything) or just the card. If it hides only the card, the scrim would still be visible in the screenshot.
+   - **RESOLVED:** The executor MUST exit marquee mode (remove the scrim DOM) FIRST, then call `setSfxVisibility(false)` → `waitTwoRafs` → `captureTab`, regardless of `setSfxVisibility`'s scope. Plan 06-02 Task 2 sequences `cleanup()` (scrim removal) before `setSfxVisibility`. This is also threat T-06-07 (own-UI leak) — the ordering is mandatory, not advisory.
 
 2. **Free note pin position**
    - What we know: D-03 says "stored viewport coords" for free notes. The card has a CSS `position: fixed; bottom: 88px; right: 32px` initial position but is draggable.
-   - What's unclear: Whether to read the card's actual drag-translated position at Send time, or use a fixed default.
-   - Recommendation: At Send time, read `card.getBoundingClientRect()` and include `{ x: rect.left, y: rect.top }` as `note_position` in the payload. This is the most accurate approach.
+   - What was unclear: Whether to read the card's actual drag-translated position at Send time, or use a fixed default.
+   - **RESOLVED:** At Send time, read `card.getBoundingClientRect()` and include `{ x: rect.left, y: rect.top }` in the payload. **Canonical field name: `note_position`** (snake_case) in BOTH the payload, the YAML frontmatter written by `buildFrontmatter`, AND the field read by `listAnnotations` (`fm['note_position']`). Do NOT use `viewport_coords` anywhere — `note_position` is the single canonical name (resolves the prior write/read field-name mismatch).
 
 3. **Pin rehydration timing: once on entry or also after each Send?**
    - What we know: CONTEXT.md says "must at minimum reflect a just-sent note as a new pin."
-   - What's unclear: Whether to re-fetch all pins after each Send (simplest, one source of truth) or append just the new pin from the Send response.
-   - Recommendation: Re-fetch all pins after each Send. One extra GET request is negligible; it ensures pins reflect any external renames (*.read.md) that happened between entry and the Send.
+   - What was unclear: Whether to re-fetch all pins after each Send (simplest, one source of truth) or append just the new pin from the Send response.
+   - **RESOLVED:** Re-fetch all pins after each Send (`teardownPins()` → `mountPins()`), guarded by `if (resolvedTabId !== null)`. One extra GET is negligible; it ensures pins reflect any external renames (*.read.md) between entry and Send.
 
 ---
 
