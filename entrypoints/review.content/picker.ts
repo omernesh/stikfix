@@ -46,6 +46,16 @@ export function enterPickMode(
 
   _container = container;
 
+  // Resolve the stickyfix shadow HOST element (the <sfx-review-ui> custom element
+  // in the PAGE tree). Shadow-DOM event retargeting reports `e.target` as this host
+  // for ANY hover/click on our own UI (chip, FAB, card, overlay) — and the host is
+  // NOT inside `container` (container lives inside the host's shadow root), so the
+  // `container.contains(target)` guard alone misses it. Exclude the host explicitly
+  // so the picker never highlights/picks stickyfix's own UI (T-05-06).
+  const rootNode = container.getRootNode();
+  const sfxHost: Element | null =
+    rootNode instanceof ShadowRoot ? rootNode.host : null;
+
   // -------------------------------------------------------------------------
   // Build hover-highlight overlay via createElement/textContent — INVARIANT C
   // -------------------------------------------------------------------------
@@ -73,8 +83,11 @@ export function enterPickMode(
     const target = e.target as Element | null;
     if (!target) return;
 
-    // Guard 1 (synchronous): shadow-host guard — skip sfx-internal targets (T-05-06 / Pitfall 5)
+    // Guard 1 (synchronous): shadow-host guard — skip sfx-internal targets (T-05-06 / Pitfall 5).
+    // Covers both the inner mount container AND the page-tree shadow host element
+    // (retargeting reports the host for anything inside our shadow root).
     if (target === container || container.contains(target)) return;
+    if (sfxHost !== null && (target === sfxHost || sfxHost.contains(target))) return;
 
     // Guard 2 (synchronous): identity guard — skip if same element already shown
     if (target === currentTarget) return;
@@ -99,8 +112,9 @@ export function enterPickMode(
     const target = e.target as Element | null;
     if (!target) return;
 
-    // Skip sfx-internal targets (guard mirrors mousemove)
+    // Skip sfx-internal targets (guard mirrors mousemove — container + shadow host)
     if (target === container || container.contains(target)) return;
+    if (sfxHost !== null && (target === sfxHost || sfxHost.contains(target))) return;
 
     // UI-SPEC: do NOT call preventDefault/stopPropagation — page handles its own click (T-05-08)
     exitPickMode();
