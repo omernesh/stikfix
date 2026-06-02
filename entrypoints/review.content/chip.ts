@@ -450,7 +450,9 @@ function makeDraggable(el: HTMLElement): void {
     // action (a <select> would never open; buttons could be swallowed). Only
     // the chip's own chrome (dot/label/background) initiates a drag.
     const target = e.target as HTMLElement | null;
-    if (target && target.closest('button, select, input, option, a, textarea')) {
+    // FIX 2: also yield to the routed label (D-09 re-map click) and the project
+    // dropdown so their own click/change handlers are not suppressed by drag capture.
+    if (target && target.closest('button, select, input, option, a, textarea, .sfx-label-routed, .sfx-chip-dropdown')) {
       return;
     }
 
