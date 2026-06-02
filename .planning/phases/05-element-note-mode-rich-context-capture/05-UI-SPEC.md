@@ -54,8 +54,8 @@ New Phase 5 tokens are marked NEW.
 | Surface | Value | Justification |
 |---------|-------|---------------|
 | Picker button (`#sfx-picker-btn`) touch target | 44px × 44px | Minimum accessible touch target — same as FAB (WCAG 2.5.5) |
-| Hover-highlight overlay label padding | 4px 6px | Tight chip-style — must not obscure the element being labelled |
-| Context header (`sfx-ctx-header`) height | min 28px, padding 4px 8px | Compact read-only strip; must not overflow card width at 300px |
+| Hover-highlight overlay label padding | 4px 8px | Tight chip-style — must not obscure the element being labelled |
+| Context header (`sfx-ctx-header`) height | min 28px, padding 4px 12px | Compact read-only strip; horizontal padding matches card-body left padding for alignment; must not overflow card width at 300px |
 | Canvas highlight box stroke | 2px | Legibility at any DPR on the captured PNG |
 
 Source: WCAG 2.5.5, existing FAB 44×44 baseline, Phase 4 card width 300px.
@@ -103,7 +103,7 @@ Source: Phase 4 `styles.css` baseline (13px chip label, 14px body, 12px button).
 | Secondary (30%) | `#f0f0f0` | Card header, button resting state, input background |
 | Tertiary border | `#cccccc` | All borders: chip, card, FAB, input, buttons |
 | Foreground primary | `#111111` | All body text, header labels |
-| Foreground muted | `#666666` | Placeholder, cancel button text, dismiss button |
+| Foreground muted | `#666666` | Placeholder, discard button text, dismiss button |
 | Foreground dimmed | `#444444` | Context header text (NEW) |
 | Accent (10%) | `#1d6ed8` | Send button bg, textarea focus ring, re-map hover |
 | Success | `#16a34a` | Toast stripe (success), feedback text, status dot |
@@ -233,7 +233,7 @@ color: #ffffff
 font-size: 13px
 font-weight: 400
 line-height: 1
-padding: 4px 6px
+padding: 4px 8px
 border-radius: 3px
 white-space: nowrap
 pointer-events: none
@@ -259,6 +259,13 @@ the overlay, and resets the picker button to resting state. No card opens.
 The element-mode card extends the existing `#sfx-card` structure. The card
 itself keeps the same ID and class conventions; the element variant adds
 `.sfx-card-element` modifier class on the root `#sfx-card` element.
+
+**Focal-point intent:** The context header strip draws the eye first — it is
+pre-filled with content and carries a distinctive warm off-white background
+(`#f8f4f0`) that visually separates it from the white card body. This confirms
+"the picker grabbed the right element" at a glance, then directs attention
+downward to the (empty) textarea where the developer types, and finally to the
+Send CTA. The reading order is: context confirmation → write comment → Send.
 
 **Context header position:** Inserted between `.sfx-card-header` (drag handle) and `.sfx-card-body` (textarea). It is a read-only, non-interactive display strip.
 
@@ -361,7 +368,7 @@ the extension opens the card independently.
 | Esc | Pick mode active, no card | Exit pick mode, hide overlay, reset picker button |
 | Esc | Card open (element or free) | Close card (existing Phase 4 behavior) |
 | Ctrl+Enter / Cmd+Enter | Card textarea focused, Send enabled | Send note |
-| Tab | Card open | Standard focus cycling within card (textarea → Send → Cancel) |
+| Tab | Card open | Standard focus cycling within card (textarea → Send → Discard note) |
 
 ### Focus Management
 
@@ -382,9 +389,12 @@ read-only; it does not count toward Send enablement. The developer writes their
 comment into the textarea; the element context lands in the `.md` regardless.
 
 Send button label: `"Send"` (same as free-note). In-flight: `"Sending…"`.
+The secondary button is labelled `"Discard note"` — it removes the unsent card
+(same card-state discard behavior as the free-note card; only the visible label
+text differs from Phase 4).
 
 **In-flight state during capture:**
-1. Send button → disabled + `"Sending…"`. Cancel disabled. Textarea readOnly.
+1. Send button → disabled + `"Sending…"`. Discard-note button disabled. Textarea readOnly.
 2. Hide all sfx UI from DOM visibility (`display:none` on card, chip, FAB,
    hover overlay if visible).
 3. `waitTwoRafs()` — ensures repaint before capture.
@@ -406,13 +416,13 @@ Send button label: `"Send"` (same as free-note). In-flight: `"Sending…"`.
 | Context header aria-label | `Element context` |
 | Textarea placeholder | `Type your note…` (same as free-note) |
 | Send button | `Send` (resting) / `Sending…` (in-flight) |
-| Cancel button | `Cancel` |
+| Discard button | `Discard note` |
 | Hover-highlight label format | `{tag} · {W}×{H}` or `{tag#id} · {W}×{H}` |
 | Toast — success | `wrote notes\{filename}` (same as free-note; uses `resp.file` from host) |
 | Toast — error (host down) | Error message from `resp.error` (host-returned) |
 | Toast — error (capture fail) | `Screenshot capture failed — note not sent` |
 | Empty state | n/a — element card pre-fills with context header; textarea is intentionally empty |
-| Destructive actions | None in this phase — Cancel removes an unsent card (no confirmation needed) |
+| Destructive actions | "Discard note" removes an unsent card — non-destructive to disk (no `.md` written yet), so no confirmation dialog needed |
 
 **Context summary format (written in code, not user-visible copy):**
 `{shortSelector} · "{text}" · <{Component}> · {W}×{H}`
@@ -432,7 +442,7 @@ existing surfaces — only existing files are extended.
 | Phase 4 File | Phase 5 Change |
 |---|---|
 | `styles.css` | Add: `.sfx-picker-btn`, `.sfx-picker-btn.sfx-active`, `.sfx-hover-highlight`, `.sfx-hover-label`, `.sfx-ctx-header`, `.sfx-ctx-header-text`, `#sfx-card.sfx-card-element`, `:host.sfx-pick-mode { cursor: crosshair }` |
-| `card.ts` | Add: `openElementCard(container, tabId, elementCtx, onDismiss, showToastFn)` — parallel to `openCard`; shares `closeCard`, `closeCardState`, drag setup. Context header rendered above textarea. Send path includes captureTab + box-draw. |
+| `card.ts` | Add: `openElementCard(container, tabId, elementCtx, onDismiss, showToastFn)` — parallel to `openCard`; shares `closeCard`, `closeCardState`, drag setup. Context header rendered above textarea. Secondary button label "Discard note". Send path includes captureTab + box-draw. |
 | `chip.ts` | Add: picker button after route label. Mount/unmount pick mode. Attach/detach mousemove + click document listeners. |
 | `index.ts` | Wire picker button → pick mode → `openElementCard`. Pass shared `toast` adapter and `tabId` to picker. |
 
