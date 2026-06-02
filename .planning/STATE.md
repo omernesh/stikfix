@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Phase 5 UI-SPEC approved
-last_updated: "2026-06-02T16:42:49.514Z"
+status: verifying
+stopped_at: Phase 5 plan 03 complete (code) — consolidated Chrome UAT pending
+last_updated: "2026-06-02T16:53:31.821Z"
 last_activity: 2026-06-02
 progress:
   total_phases: 8
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 16
-  completed_plans: 15
-  percent: 50
+  completed_plans: 16
+  percent: 63
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-05-31)
 
 Phase: 05 (element-note-mode-rich-context-capture) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-06-02
 
 Progress: [██░░░░░░░░] 22%
@@ -65,6 +65,7 @@ Progress: [██░░░░░░░░] 22%
 | Phase 04 P03 | 8 | 1 tasks | 1 files |
 | Phase 05 P01 | 427 | 3 tasks | 7 files |
 | Phase 05 P05-02 | 236s | 2 tasks | 3 files |
+| Phase 05 P03 | 0 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -92,6 +93,10 @@ Recent decisions affecting current work:
 - [Phase ?]: [05-02]: picker.ts is a pure DOM/event module (no chrome.* calls); exitPickMode() idempotent; mousemove guards synchronous before rAF; currentTarget assigned after updateOverlay (T-05-06)
 - [Phase ?]: [05-02]: mountChip gains optional 3rd param onPickerClick?:(el:Element)=>void — existing 2-arg call site unchanged; Plan 03 wires the real callback
 - [Phase ?]: [05-02]: Task 3 Chrome UAT (ELEM-01) DEFERRED-MANUAL (🟡M) to consolidated end-of-phase Chrome session alongside Plan 03 — ELEM-01 NOT yet runtime-verified
+- [Phase ?]: [05-03]: openElementCard / _doElementSend are NEW parallel functions — openCard / _doSend (free path) untouched; regression guard held
+- [Phase ?]: [05-03]: frozen rect (elementCtx.rect at click time) reused for canvas box-draw AND payload screenshot rect — never re-measured at Send (Pitfall 2)
+- [Phase ?]: [05-03]: own-UI hidden then waitTwoRafs then captureTab; box drawn on canvas AFTER capture (D-02a) so +1.png has zero sfx surfaces (T-05-13)
+- [Phase ?]: [05-03]: Task 3 Chrome UAT (ELEM-01/02/03/08/09) DEFERRED-MANUAL (🟡M) to consolidated Phase-5 session covering 05-02 + 05-03 — code-complete, NOT runtime-verified
 
 ### Pending Todos
 
@@ -103,6 +108,7 @@ None yet.
 - `interactjs` drag-marquee inside shadow DOM `context` option is not extensively tested in WXT contexts — budget exploration time in Phase 6 planning
 - Windows 125% DPR (fractional) crop correctness requires `Math.round` after multiply — must be tested on developer's machine in Phase 4
 - [05-02] Chrome UAT for ELEM-01 (pick-mode hover overlay / Esc / focus-restore) DEFERRED-MANUAL (🟡M) — code-complete + tsc green but NOT runtime-verified; verify in consolidated end-of-phase Chrome session alongside Plan 03
+- [Phase 05] Consolidated Chrome UAT (covering 05-02 pick-mode + 05-03 element-note slice — ELEM-01/02/03/08/09 runtime/visual confirmation) is the REMAINING GATE before Phase 5 verification can fully pass. Code-complete + automated gates green (tsc 0, test:lib 81/81); only runtime confirmation outstanding.
 
 ## Deferred Items
 
@@ -118,6 +124,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-06-02T16:39:11.044Z
-Stopped at: Phase 5 UI-SPEC approved
+Last session: 2026-06-02T16:53:31.810Z
+Stopped at: Phase 5 plan 03 complete (code) — consolidated Chrome UAT pending
 Resume file: None

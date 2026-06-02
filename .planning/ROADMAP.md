@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Host MVP** - stickyfix-host writes .md + .png files with serial mutex, token auth, path safety, and CORS (completed 2026-05-31)
 - [x] **Phase 3: Extension Skeleton + SW Relay Proof** - Popup, host discovery, chrome.storage.local state, on-demand injection, dummy POST relay proven end-to-end (completed 2026-05-31)
 - [x] **Phase 4: Free-Note Mode + Capture Utilities** - Draggable FAB → post-it → Send → .md on disk; DPR crop, double-rAF flush, captureVisibleTab relay established as reusable utilities (completed 2026-05-31)
-- [ ] **Phase 5: Element-Note Mode + Rich Context Capture** - Element picker with @medv/finder selector, React fiber, computed styles, outerHTML, auto-highlight screenshot
+- [x] **Phase 5: Element-Note Mode + Rich Context Capture** - Element picker with @medv/finder selector, React fiber, computed styles, outerHTML, auto-highlight screenshot (completed 2026-06-02)
 - [ ] **Phase 6: Region Capture + Visual Design** - Camera tool drag-marquee crop; full paper-aesthetic sticky-note UI inside shadow DOM
 - [ ] **Phase 7: review-notes Skill + Docs** - Portable AI skill ships; README with demo GIF; clean-room provenance documented
 - [ ] **Phase 8: Hardening + Pre-Release Audit** - All error paths surface toasts; concurrent-Send stress test; GPL grep audit; idle-eviction regression pass
@@ -162,7 +162,7 @@ Plans:
 
 **Wave 2** *(blocked on Waves 0+1)*
 
-- [ ] 05-03-PLAN.md — Capture+write slice: openElementCard context header + +1.png box-draw Send pipeline + index wiring (ELEM-02/03/04/05/06/07/08/09)
+- [x] 05-03-PLAN.md — Capture+write slice: openElementCard context header + +1.png box-draw Send pipeline + index wiring (ELEM-02/03/04/05/06/07/08/09)
 
 **UI hint**: yes
 
@@ -223,7 +223,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 2. Host MVP | 3/3 | Complete    | 2026-05-31 |
 | 3. Extension Skeleton + SW Relay Proof | 4/4 | Complete    | 2026-05-31 |
 | 4. Free-Note Mode + Capture Utilities | 3/3 | Complete    | 2026-06-01 |
-| 5. Element-Note Mode + Rich Context Capture | 2/3 | In Progress|  |
+| 5. Element-Note Mode + Rich Context Capture | 3/3 | Complete   | 2026-06-02 |
 | 6. Region Capture + Visual Design | 0/TBD | Not started | - |
 | 7. review-notes Skill + Docs | 0/TBD | Not started | - |
 | 8. Hardening + Pre-Release Audit | 0/TBD | Not started | - |

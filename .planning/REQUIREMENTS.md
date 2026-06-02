@@ -62,7 +62,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **ELEM-06**: Capture includes `nearestTestId` (closest ancestor-or-self `data-testid`)
 - [x] **ELEM-07**: The post-it pre-fills with a compact context summary; full detail goes into the `.md`
 - [x] **ELEM-08**: On Send, an auto element-highlight screenshot (`+1`) is captured with the highlight box drawn on the selected element
-- [ ] **ELEM-09**: The element note `.md` includes selector + react_component frontmatter, a curated computed-styles table, and truncated outerHTML
+- [x] **ELEM-09**: The element note `.md` includes selector + react_component frontmatter, a curated computed-styles table, and truncated outerHTML
 
 ### Region Capture (CAM)
 
@@ -172,7 +172,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ELEM-06 | Phase 5 | Complete |
 | ELEM-07 | Phase 5 | Complete |
 | ELEM-08 | Phase 5 | Complete |
-| ELEM-09 | Phase 5 | Pending |
+| ELEM-09 | Phase 5 | Complete |
 | CAM-01 | Phase 6 | Pending |
 | CAM-02 | Phase 6 | Pending |
 | CAM-03 | Phase 6 | Pending |
