@@ -465,6 +465,42 @@
 }
 
 /* ============================================================
+ * Element-note card — context header (ELEM-07 / D-03 / UI-SPEC §3)
+ * ============================================================ */
+
+/* Modifier class on #sfx-card root for element-mode cards */
+#sfx-card.sfx-card-element {
+  /* No visual override needed at root — modifier enables child selectors */
+}
+
+/* Read-only context strip between header and body */
+.sfx-ctx-header {
+  padding: 4px 12px;
+  min-height: 28px;
+  background: #f8f4f0;
+  border-bottom: 1px solid #e8e0d8;
+  font-size: 13px;
+  font-weight: 400;
+  color: #444444;
+  line-height: 1.4;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+}
+
+.sfx-ctx-header-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 400;
+  color: #444444;
+  line-height: 1.4;
+}
+
+/* ============================================================
  * Re-map affordance on chip label (D-09 / UI-SPEC §4)
  * ============================================================ */
 
