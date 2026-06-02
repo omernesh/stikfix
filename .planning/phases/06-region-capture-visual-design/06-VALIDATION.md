@@ -16,6 +16,13 @@ source: [06-RESEARCH.md]
 > marquee UI, region crop, thumbnail attach, paper-aesthetic CSS isolation, and
 > live on-page pin rendering/edit/delete are Chrome-runtime-bound and verified
 > by manual UAT.
+>
+> Sampling-continuity note (Nyquist): `computePinPosition` is a PURE DOM-free
+> function in `lib/pin-position.ts` (Plan 06-01 Task 1), unit-tested in
+> `lib/test/pin-position.test.ts`. Plan 06-04's `pin.ts` IMPORTS it and supplies
+> only `el.getBoundingClientRect()` + `window.scrollX/scrollY` as glue. This
+> gives Plan 06-04's Wave-3 auto tasks (Tasks 1–3) automated behavioral coverage
+> for the pin-position math even though their per-task `<verify>` is `npm run build`.
 
 ---
 
@@ -46,8 +53,8 @@ source: [06-RESEARCH.md]
 |--------|----------|-----------|-------------------|-------------|--------|
 | CAM-03 | `buildMarqueeRect` + `isBelowThreshold` — rect math, DPR, <6px threshold | unit | `npm run test:lib` | ❌ W0: `lib/test/marquee.test.ts` | ⬜ pending |
 | PIN-01/02 | `matchesUrlPath` — exact path match, query ignored | unit | `npm run test:lib` | ❌ W0: `lib/test/pin-position.test.ts` | ⬜ pending |
-| PIN-02/03 | `computePinPosition(el, storedRect, orphaned)` — anchored / floating / orphaned-fallback math | unit | `npm run test:lib` | ❌ W0: `lib/test/pin-position.test.ts` | ⬜ pending |
-| HOST-14 | `listAnnotations` — reads frontmatter, path matches, serial extraction | unit | `npm test` | ❌ W0: `host/test/read-note.test.ts` | ⬜ pending |
+| PIN-02/03 | `computePinPosition(anchorRect, storedRect, scrollX, scrollY, orphaned)` — pure DOM-free: element-anchored / free-floating / orphaned-fallback-at-last-known-rect math (lives in `lib/pin-position.ts`, imported by `pin.ts`) | unit | `npm run test:lib` | ❌ W0: `lib/pin-position.ts` + `lib/test/pin-position.test.ts` | ⬜ pending |
+| HOST-14 | `listAnnotations` — reads frontmatter, path matches (imports matchesUrlPath), serial extraction, `note_position`→`viewportCoords` | unit | `npm test` | ❌ W0: `host/test/read-note.test.ts` | ⬜ pending |
 | HOST-15 | `editNote` — overwrites body, preserves frontmatter, re-marks unread | unit | `npm test` | ❌ W0: `host/test/read-note.test.ts` | ⬜ pending |
 | HOST-16 | `deleteNote` — removes .md + +N.png; 404 if not found; path-confined | unit | `npm test` | ❌ W0: `host/test/read-note.test.ts` | ⬜ pending |
 | HOST-14 | `GET /annotations?url=…` route — token gate, 200 + JSON, CORS | integration | `npm test` | ❌ W0: extend `host/test/server.test.ts` | ⬜ pending |
@@ -55,7 +62,7 @@ source: [06-RESEARCH.md]
 | HOST-16 | `DELETE /annotation/<serial>` route — 404 / 200 / 401 | integration | `npm test` | ❌ W0: extend `host/test/server.test.ts` | ⬜ pending |
 | CAM-01..06 | Marquee UI, scrim+crosshair, region crop, deletable thumbnails, Send with +N.png | manual | — (Chrome runtime) | 🟡M |
 | UI-01..04 | Paper aesthetic, mode header strips, styled toasts, no CSS bleed (Tailwind + reset page) | manual | — (visual, Chrome runtime) | 🟡M |
-| PIN-01..06 | Pin rendering, anchored/floating/orphaned, scroll/resize reposition, click → card, edit (PUT), delete (DELETE) | manual | — (Chrome runtime + host) | 🟡M |
+| PIN-01..06 | Pin rendering (positioned via the unit-tested computePinPosition), anchored/floating/orphaned, scroll/resize reposition, click → card, edit (PUT), delete (DELETE) | manual | — (Chrome runtime + host) | 🟡M |
 
 *Status: ⬜ pending · ✅ green · 🟢M manual-verified · 🟡M manual-deferred · ❌ red.*
 
@@ -64,11 +71,12 @@ source: [06-RESEARCH.md]
 ## Wave 0 Requirements
 
 - [ ] `lib/marquee.ts` — `buildMarqueeRect`, `isBelowThreshold` (pure, node:test-safe; no top-level chrome/document/window)
-- [ ] `lib/pin-position.ts` — `matchesUrlPath`, `computePinPosition` (pure, node:test-safe)
+- [ ] `lib/pin-position.ts` — `matchesUrlPath` + `computePinPosition` (BOTH pure, DOM-free, node:test-safe; computePinPosition takes scrollX/scrollY as params — never reads window.scrollX)
 - [ ] `lib/test/marquee.test.ts` — rect math, sub-threshold cancel, DPR scaling
-- [ ] `lib/test/pin-position.test.ts` — URL path match (query ignored), element pin, free pin, orphaned fallback
-- [ ] `host/src/read-note.ts` — `resolveSerialFile`, `listAnnotations`, `editNote`, `deleteNote` (path-confined via `isInsideDir`)
-- [ ] `host/test/read-note.test.ts` — unit tests for all four functions
+- [ ] `lib/test/pin-position.test.ts` — URL path match (query ignored) + computePinPosition: element-anchored, free-floating, orphaned-fallback at last-known rect
+- [ ] `host/src/read-note.ts` — `resolveSerialFile`, `listAnnotations` (imports matchesUrlPath from lib/pin-position; reads `fm['note_position']` → `viewportCoords`), `editNote`, `deleteNote` (path-confined via `isInsideDir`)
+- [ ] `host/src/write-note.ts` — buildFrontmatter writes canonical `note_position` (free) + `rect` (element); no `viewport_coords`
+- [ ] `host/test/read-note.test.ts` — unit tests for all four functions (incl. note_position round-trip)
 - [ ] Extend `host/test/server.test.ts` — `GET /annotations`, `PUT /annotation/<serial>`, `DELETE /annotation/<serial>` routes
 - [ ] Extend `tsconfig.lib.json` include (`lib/marquee.ts`, `lib/pin-position.ts`) + `tsconfig.host.json` include (`host/src/read-note.ts`); wire into `npm run test:lib` / `npm test`
 
@@ -83,15 +91,15 @@ source: [06-RESEARCH.md]
 | Camera tool dims page (scrim) + crosshair; Esc / sub-6px drag cancels | CAM-01/02/03 | Live pointer events + scrim DOM | Open a note → 📷 → drag a region (thumbnail attaches); Esc and a tiny drag both cancel cleanly |
 | Region crop + multi-thumbnail + Send | CAM-04/05/06 | Native captureVisibleTab + paint timing | Drag two regions → two deletable thumbnails (+1/+2) → delete one → Send → `.md` records remaining `+N.png`, host writes the PNGs |
 | Paper aesthetic + CSS isolation | UI-01/02/03/04 | Visual + shadow-DOM bleed | Verify warm paper card, mode-colored header (free vs element), styled toasts; no CSS bleed on a Tailwind-heavy and a CSS-reset-heavy page |
-| Pins rehydrate from disk on review-entry | PIN-01/02/04 | Live host GET + DOM anchoring | Re-enter Review Mode on the same URL → one pin per note for that path; element pins on their element (reposition on scroll/resize), free pins floating; mode color + unread/read dot + hover preview |
-| Orphaned pin fallback | PIN-03 | DOM-dependent | Navigate so a pinned element is gone → pin shows greyed/dashed at last-known rect with tooltip, never hidden |
+| Pins rehydrate from disk on review-entry | PIN-01/02/04 | Live host GET + DOM anchoring (math itself unit-tested via computePinPosition) | Re-enter Review Mode on the same URL → one pin per note for that path; element pins on their element (reposition on scroll/resize), free pins floating; mode color + unread/read dot + hover preview |
+| Orphaned pin fallback | PIN-03 | DOM-dependent (fallback math unit-tested via computePinPosition orphaned case) | Navigate so a pinned element is gone → pin shows greyed/dashed at last-known rect with tooltip, never hidden |
 | Pin click → view/edit/delete | PIN-05/06 | Live host PUT/DELETE | Click a pin → card opens; edit text → PUT overwrites same serial in place (re-marked unread); delete (confirm) → DELETE removes `.md` + `+N.png`; pin updates/disappears; failures surface a toast |
 
 ---
 
 ## Validation Sign-Off
 
-- [ ] Pure lib functions (marquee rect/threshold, url-path match, pin-position) have `node:test` coverage
+- [ ] Pure lib functions (marquee rect/threshold, url-path match, computePinPosition) have `node:test` coverage
 - [ ] Host functions (serial→file resolve, list, edit, delete) have `node:test` coverage + route integration tests
 - [ ] Type-check (`tsc --noEmit`) green for extension + host
 - [ ] `tsconfig.lib.json` + `tsconfig.host.json` updated; `npm run test:lib` and `npm test` green
@@ -100,3 +108,4 @@ source: [06-RESEARCH.md]
 - [ ] `nyquist_compliant: true` set in frontmatter once Wave 0 lands
 
 **Approval:** pending
+</content>
