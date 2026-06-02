@@ -547,6 +547,10 @@ reviewBtn.addEventListener('click', async () => {
     routingLineEl.textContent =
       '→ ' + host.name + ' · ' + host.notesDir;
   }
+
+  // Review Mode is now active — close the popup so the user lands straight on
+  // the page (no extra click to dismiss). Success path only.
+  window.close();
 });
 
 // ---------------------------------------------------------------------------

@@ -83,12 +83,15 @@ const teardownMap = new WeakMap<HTMLElement, () => void>();
  * @param container      The shadow-root mounting point provided by createShadowRootUi
  * @param unmountFn      Callback to fully remove the shadow-root UI (Exit button)
  * @param onPickerClick  Optional callback invoked when the user clicks a page element
- *                       in pick mode (wired by index.ts in Plan 03; default: no-op)
+ *                       in pick mode (wired by index.ts in Plan 03; default: no-op).
+ *                       Receives the clicked element AND a `reArm` callback that
+ *                       re-enters pick mode — the element card calls it after a
+ *                       successful Send for sticky-picker UX.
  */
 export function mountChip(
   container: HTMLElement,
   unmountFn: () => void,
-  onPickerClick?: (el: Element) => void
+  onPickerClick?: (el: Element, reArm: () => void) => void
 ): void {
   // WR-03: feedbackTimer scoped per-instance (not module-level) so re-injection
   // cannot cancel a detached chip's auto-dismiss timer.
@@ -170,28 +173,34 @@ export function mountChip(
     pickerBtn.classList.add('sfx-active');
   }
 
+  /** Enter pick mode with the standard callbacks. Reusable so the element card
+   *  can re-arm it after a successful Send (sticky-picker UX). */
+  function startPick(): void {
+    activatePicker();
+    enterPickMode(
+      container,
+      // onElementClick: pick mode already exited inside picker.ts on click;
+      // reset button visual + invoke injected onPickerClick callback (Plan 03).
+      // The 2nd arg re-enters pick mode — the element card calls it after Send.
+      (el: Element) => {
+        deactivatePicker();
+        onPickerClick?.(el, () => startPick());
+      },
+      // onEsc: reset button visual + return focus to picker button (UI-SPEC §Focus)
+      () => {
+        deactivatePicker();
+        pickerBtn.focus();
+      }
+    );
+  }
+
   pickerBtn.addEventListener('click', () => {
     if (pickerActive) {
       // Toggle off — cancel pick mode
       deactivatePicker();
       exitPickMode();
     } else {
-      // Enter pick mode
-      activatePicker();
-      enterPickMode(
-        container,
-        // onElementClick: pick mode already exited inside picker.ts on click;
-        // reset button visual + invoke injected onPickerClick callback (Plan 03)
-        (el: Element) => {
-          deactivatePicker();
-          onPickerClick?.(el);
-        },
-        // onEsc: reset button visual + return focus to picker button (UI-SPEC §Focus)
-        () => {
-          deactivatePicker();
-          pickerBtn.focus();
-        }
-      );
+      startPick();
     }
   });
 

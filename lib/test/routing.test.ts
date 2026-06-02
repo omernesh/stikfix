@@ -107,15 +107,23 @@ describe('resolveRoute', () => {
   // resolveRoute — EXT-08: returns null for fully unmapped origin
   // -------------------------------------------------------------------------
 
-  test('returns null for unmapped origin (EXT-08 dropdown trigger)', () => {
-    const host = makeEntry({
-      name: 'proj-a',
-      port: 39240,
-      origins: ['https://advertised.com'],
-    });
-    const state = makeState({ 'proj-a': host });
+  test('returns null for unmapped origin with 2+ hosts (EXT-08 dropdown trigger)', () => {
+    // Dropdown only triggers when the choice is AMBIGUOUS (2+ known hosts and
+    // none advertise/map the origin). With a single host, step 2.5 auto-selects.
+    const hostA = makeEntry({ name: 'proj-a', port: 39240, origins: ['https://advertised.com'] });
+    const hostB = makeEntry({ name: 'proj-b', port: 39241 });
+    const state = makeState({ 'proj-a': hostA, 'proj-b': hostB });
     const result = resolveRoute('https://completely-unknown.com', state);
-    assert.strictEqual(result, null, 'no match should return null, not throw');
+    assert.strictEqual(result, null, '2+ hosts, no match → null (dropdown), not throw');
+  });
+
+  test('step 2.5: single known host auto-selects for an unmapped origin', () => {
+    const host = makeEntry({ name: 'only-proj', port: 39240 });
+    const state = makeState({ 'only-proj': host }, { 'only-proj': 'tok-1' });
+    const result = resolveRoute('https://brand-new-origin.com', state);
+    assert.ok(result, 'single host should auto-select, not return null');
+    assert.strictEqual(result.name, 'only-proj');
+    assert.strictEqual(result.token, 'tok-1', 'auto-selected host carries its token');
   });
 
   test('returns null for empty registry + empty originMap', () => {

@@ -347,13 +347,17 @@ function _doSend(
  * @param elementCtx   Frozen ElementContext captured at picker click time
  * @param onDismiss    Called on Discard or after Send success
  * @param showToastFn  Adapter: (msg, isError) => void (from index.ts)
+ * @param onSent       Optional — called ONLY after a successful Send (not on
+ *                     Discard/error). Used to re-arm pick mode so the user can
+ *                     immediately pick the next element (sticky-picker UX).
  */
 export function openElementCard(
   container: HTMLElement,
   tabId: number,
   elementCtx: ElementContext,
   onDismiss: () => void,
-  showToastFn: (msg: string, isError: boolean) => void
+  showToastFn: (msg: string, isError: boolean) => void,
+  onSent?: () => void
 ): void {
   // FREE-02 compatible: single-card guard (shared with openCard via card-state.ts)
   const decision = tryOpenCard();
@@ -457,7 +461,7 @@ export function openElementCard(
     } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       if (!sendBtn.disabled) {
-        _doElementSend(textarea, sendBtn, discardBtn, tabId, elementCtx, container, onDismiss, showToastFn);
+        _doElementSend(textarea, sendBtn, discardBtn, tabId, elementCtx, container, onDismiss, showToastFn, onSent);
       }
     }
   });
@@ -473,7 +477,7 @@ export function openElementCard(
   // Send button
   // -------------------------------------------------------------------------
   sendBtn.addEventListener('click', () => {
-    _doElementSend(textarea, sendBtn, discardBtn, tabId, elementCtx, container, onDismiss, showToastFn);
+    _doElementSend(textarea, sendBtn, discardBtn, tabId, elementCtx, container, onDismiss, showToastFn, onSent);
   });
 
   // -------------------------------------------------------------------------
@@ -543,7 +547,8 @@ function _doElementSend(
   elementCtx: ElementContext,
   container: HTMLElement,
   onDismiss: () => void,
-  showToastFn: (msg: string, isError: boolean) => void
+  showToastFn: (msg: string, isError: boolean) => void,
+  onSent?: () => void
 ): void {
   // Step 1: disable controls
   sendBtn.disabled = true;
@@ -668,6 +673,10 @@ function _doElementSend(
         if (resp.ok) {
           showToastFn(`wrote notes\\${resp.file}`, false);
           _doClose(onDismiss);
+          // Sticky-picker UX: re-arm pick mode after a successful element Send
+          // so the user can immediately pick the next element (success only —
+          // never on Discard/error).
+          onSent?.();
         } else {
           showToastFn(resp.error, true);
           restoreControls();

@@ -52,12 +52,15 @@ export default defineContentScript({
         // chip.ts will call onPickerClick(el) when the user clicks a page element
         // in pick mode. The handler is a safe no-op when resolvedTabId is still null
         // (matches the existing FAB skip behavior when tabId rejects).
-        mountChip(container, () => ui.remove(), (el: Element) => {
+        mountChip(container, () => ui.remove(), (el: Element, reArm: () => void) => {
           if (resolvedTabId === null) return;
           openElementCard(
             container, resolvedTabId, captureElementContext(el),
             () => { /* element card has no FAB to collapse */ },
-            toast
+            toast,
+            // onSent: re-arm pick mode after a successful Send so the user can
+            // immediately pick the next element (sticky-picker UX).
+            reArm
           );
         });
 

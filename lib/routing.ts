@@ -49,6 +49,18 @@ export function resolveRoute(
     };
   }
 
+  // Step 2.5: single-host auto-select — if exactly one host is known, route to
+  // it without asking. One project is unambiguous, so there is no dropdown to
+  // show. Applies uniformly to GET_ROUTE, SEND_ANNOTATION and ENTER_REVIEW.
+  const knownNames = Object.keys(state.registry);
+  if (knownNames.length === 1) {
+    const only = state.registry[knownNames[0]];
+    return {
+      ...only,
+      token: state.tokens[only.name] ?? only.token ?? null,
+    };
+  }
+
   // Step 3 / Step 4: not found — caller handles self-id probe or dropdown
   return null;
 }
