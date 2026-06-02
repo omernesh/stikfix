@@ -748,22 +748,25 @@ export function buildContextSummary(ctx: ElementContext): string {
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **aria-* beyond ariaLabel**
    - What we know: `ElementContext` has `ariaLabel` and `role` named fields. No `ariaAttributes: Record<string,string>` field.
    - What's unclear: ELEM-03 says "ariaLabel + aria-*" — should other `aria-*` attributes (aria-expanded, aria-checked, aria-selected) be captured?
    - Recommendation: Capture all `aria-*` attributes as a suffix appended to the `text` field (`[aria-expanded=true]`), OR fold them into `dataset` by converting to `data-aria-*` convention. The simplest approach that satisfies ELEM-03 without a host-side change: include them in `text` as a bracketed suffix. Note: they are NOT in `el.dataset` (aria-* are not `data-*` attributes). The planner should pick one approach and be explicit in the task.
+   - **RESOLVED:** Append remaining `aria-*` attributes as a bracketed suffix on the `text` field (e.g. `[aria-expanded=true]`). No host-side change. Locked in Plan 05-01 Task 2 action.
 
 2. **`findRootDocument` and shadow DOM in `@medv/finder@4.0.2`**
    - What we know: The source has some shadow-root detection code (`getRootNode()` check).
    - What's unclear: Whether v4.0.2 fully supports element-in-shadow-root selector generation. However, Phase 5 only calls `finder` on PAGE elements (not shadow-root elements) — so this is moot for Phase 5.
    - Recommendation: Confirm in implementation that `finder` is never called on shadow-root elements. Document as FUT-03 (full shadow-DOM traversal is already a v2 deferred item).
+   - **RESOLVED:** Moot for Phase 5 — `finder` runs only on page elements (the picked target is in the page document, never the shadow root). Full shadow-DOM traversal stays deferred as FUT-03.
 
 3. **Pick mode intercepts page click events**
    - What we know: The click listener on `document` captures page clicks during pick mode. UI-SPEC recommends NOT calling `e.preventDefault()` or `e.stopPropagation()`.
    - What's unclear: On pages with aggressive click capture (e.g. React portals, document-level event delegation), NOT calling stopPropagation means the page also handles the click (e.g. navigates away or opens a modal).
    - Recommendation: Accept this behavior for v1 — the picker is a developer tool and momentary page interaction is acceptable. Document it. If page navigation occurs on click, the content script unmounts and the card is lost — this is a Phase 8 edge case.
+   - **RESOLVED:** Accepted for v1 — picker click does not call `stopPropagation`; momentary page interaction is acceptable for a developer tool. Aggressive-click-capture pages (navigation on click) are a Phase 8 edge case. Disposition recorded as `accept` in the Plan 05-02 `<threat_model>`.
 
 ---
 
