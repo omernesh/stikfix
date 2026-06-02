@@ -281,6 +281,16 @@ describe('getReactComponentName', () => {
     assert.strictEqual(ctx.reactComponent, 'MyRealComponent');
   });
 
+  test('accepts 2-character PascalCase component names (WR-02)', () => {
+    const fiber = {
+      type: { name: 'HR' },  // valid 2-char PascalCase — must NOT be skipped
+      return: null,
+    };
+    const el = makeEl({ '__reactFiber$abc': fiber });
+    const ctx = captureElementContext(el as unknown as Element);
+    assert.strictEqual(ctx.reactComponent, 'HR');
+  });
+
   test('does not loop forever on circular fiber.return', () => {
     // Self-referential fiber — maxSteps guard must break the loop
     const fiber: { type: { name: string }; return: unknown } = {

@@ -106,7 +106,7 @@ function getReactComponentName(el: Element): string | undefined {
       steps++;
 
       const name: unknown = fiber?.type?.name ?? fiber?.type?.displayName;
-      if (typeof name === 'string' && name.length > 2 && /^[A-Z]/.test(name)) {
+      if (typeof name === 'string' && name.length >= 2 && /^[A-Z]/.test(name)) {
         return name;
       }
       fiber = fiber.return;

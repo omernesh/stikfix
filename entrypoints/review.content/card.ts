@@ -660,6 +660,8 @@ function _doElementSend(
             true
           );
           restoreControls();
+          // Re-apply disabled rule (mirrors _doSend pattern)
+          sendBtn.disabled = textarea.value.trim().length === 0;
           return;
         }
 
@@ -669,6 +671,8 @@ function _doElementSend(
         } else {
           showToastFn(resp.error, true);
           restoreControls();
+          // Re-apply disabled rule (mirrors _doSend pattern)
+          sendBtn.disabled = textarea.value.trim().length === 0;
         }
       }
     );

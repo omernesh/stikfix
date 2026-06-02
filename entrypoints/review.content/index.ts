@@ -54,7 +54,11 @@ export default defineContentScript({
         // (matches the existing FAB skip behavior when tabId rejects).
         mountChip(container, () => ui.remove(), (el: Element) => {
           if (resolvedTabId === null) return;
-          openElementCard(container, resolvedTabId, captureElementContext(el), () => {}, toast);
+          openElementCard(
+            container, resolvedTabId, captureElementContext(el),
+            () => { /* element card has no FAB to collapse */ },
+            toast
+          );
         });
 
         // Resolve tabId once from chip's canonical getTabId (not duplicated here)

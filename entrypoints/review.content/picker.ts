@@ -49,11 +49,11 @@ export function enterPickMode(
   // -------------------------------------------------------------------------
   // Build hover-highlight overlay via createElement/textContent — INVARIANT C
   // -------------------------------------------------------------------------
-  const overlay = document.createElement('div');
+  const overlay = container.ownerDocument.createElement('div');
   overlay.className = 'sfx-hover-highlight';
   hoverOverlay = overlay;
 
-  const label = document.createElement('span');
+  const label = container.ownerDocument.createElement('span');
   label.className = 'sfx-hover-label';
   overlay.appendChild(label);
   hoverLabel = label;
