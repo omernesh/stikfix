@@ -351,16 +351,18 @@ All load-bearing examples are inline in the Architecture Patterns section above 
 
 **Note:** No assumption affects compliance, security model, or data retention — these are test/refactor-shape choices the planner+user can confirm cheaply.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should `chip.ts` route through the mapper, or is it out of scope as a stub?**
    - What we know: `chip.ts:7` labels it a "Stub Send (relay proof)"; its strings differ from `card.ts`.
    - What's unclear: whether Phase 8 wants the stub consolidated too.
    - Recommendation: Consolidate `card.ts` `_doSend` + `_doElementSend` (production paths) definitively. For `chip.ts`, the planner proposes either a mapper variant or leaving the stub — flag in PLAN for a quick user confirm. Either honors D-01a.
+   - **RESOLVED (discuss-phase, under `--auto`):** `chip.ts` is left untouched — the mapper consolidates `card.ts` `_doSend` + `_doElementSend` only. The Phase-3 relay-proof stub has distinct strings and is out of scope for D-01 consolidation; leaving it untouched is the strictest reading of D-01a (no regression). Implemented by Plan 08-02 Task 1 (chip.ts git-diff is an acceptance criterion).
 
 2. **Exact placement of the 10-concurrent test: new `describe` in `server.test.ts` vs. bumping `serial.test.ts`.**
    - What we know: D-02 says "extends serial.test.ts patterns"; the integration needs the `server.test.ts` fixture.
    - Recommendation: integration block in `server.test.ts` (authoritative end-to-end proof) + optionally bump the `serial.test.ts` unit test to 10. CONTEXT.md grants file-placement discretion.
+   - **RESOLVED:** 10-concurrent integration block lands in `server.test.ts` (uses the booted `buildFixture`/`listenFixture`/`TEST_TOKEN` harness — authoritative end-to-end proof through the real HTTP server + mutex). Implemented by Plan 08-03 Task 1.
 
 ## Environment Availability
 
