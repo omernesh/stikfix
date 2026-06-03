@@ -512,3 +512,147 @@
 .sfx-chip-label.sfx-label-routed:hover {
   color: #1d6ed8;
 }
+
+/* ============================================================
+ * Phase 6: Visual design — paper aesthetic on card (UI-02, UI-03)
+ * ============================================================ */
+
+/* Free-note card — warm cream paper background */
+#sfx-card {
+  background: #fefce8;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.22);
+}
+
+/* Free-note header — amber strip */
+.sfx-card-header {
+  background: #fde68a;
+  border-bottom-color: #f59e0b;
+}
+
+/* Element-note card — very light blue paper tint */
+#sfx-card.sfx-card-element {
+  background: #eff6ff;
+}
+
+/* Element-note header — blue strip */
+#sfx-card.sfx-card-element .sfx-card-header {
+  background: #dbeafe;
+  border-bottom-color: #93c5fd;
+}
+
+/* Toast shadow upgrade (UI-04) */
+.sfx-toast {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.20);
+}
+
+/* ============================================================
+ * Phase 6: Camera button (.sfx-cam-btn) — CAM-01
+ * ============================================================ */
+
+.sfx-cam-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f0f0f0;
+  border: 1px solid #cccccc;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+  pointer-events: auto;
+  margin-left: auto;
+  font-family: system-ui, -apple-system, sans-serif;
+  line-height: 1;
+}
+
+.sfx-cam-btn:hover {
+  background: #e0e0e0;
+}
+
+.sfx-cam-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+ * Phase 6: Capture scrim + marquee rect — CAM-02, CAM-03
+ * ============================================================ */
+
+/* Full-viewport scrim — dims page during camera mode */
+.sfx-cam-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  pointer-events: auto;
+  cursor: crosshair;
+  z-index: 1;
+}
+
+/* Live rubber-band selection rect inside scrim */
+.sfx-cam-rect {
+  position: absolute;
+  border: 2px solid #1d6ed8;
+  background: rgba(29, 110, 216, 0.12);
+  display: none;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+/* ============================================================
+ * Phase 6: Thumbnail strip — CAM-05
+ * ============================================================ */
+
+/* Strip container — horizontal scroll row below textarea */
+.sfx-thumb-strip {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0;
+  min-height: 0;
+}
+
+/* Individual thumbnail wrapper */
+.sfx-thumb-wrap {
+  position: relative;
+  flex-shrink: 0;
+  width: 64px;
+  height: 48px;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* Thumbnail image */
+.sfx-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Delete button overlaid in top-right corner of thumbnail */
+.sfx-thumb-del {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+  pointer-events: auto;
+  font-family: system-ui, -apple-system, sans-serif;
+}
