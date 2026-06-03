@@ -168,3 +168,20 @@ If all checks pass, reply "approved" to the checkpoint.
 
 If any check fails, describe what diverged (e.g. "0004 was renamed to .read.md
 instead of flagged") so the skill prose can be corrected.
+
+---
+
+## Checkpoint Resolution
+
+**Status:** `pending (auto-approved checkpoint; manual run available)`
+
+**Note (2026-06-03):** This checkpoint was auto-approved in GSD chain mode. No live
+agent run was performed against the fixture set during execution. The runbook above
+remains available for Omer to execute manually against a scratch copy of
+`test/fixtures/notes/`. To do so, copy the fixtures to a scratch directory as
+instructed in "Before You Begin", then follow the Steps section with a Claude Code
+(or compatible) agent session.
+
+The automated verification gates (Task 1 prose structure gate + Task 2 fixture
+shape gate) both passed. End-to-end skill UAT (SKILL-03) has not been
+runtime-confirmed — it is the remaining human-verifiable gate.
