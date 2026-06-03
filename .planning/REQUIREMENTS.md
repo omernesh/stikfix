@@ -30,9 +30,9 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **HOST-11**: Body size cap of 12 MB; larger payloads rejected with 413
 - [x] **HOST-12**: Notes dir is created if missing with a `.gitkeep`; token also written to gitignored `<root>/.stickyfix-token`
 - [x] **HOST-13**: Host accepts `--origin` (repeatable), `--name`, `--notes-dir`, `--token` (else `STICKYFIX_TOKEN` env, else random UUID) via `util.parseArgs`
-- [ ] **HOST-14**: `GET /annotations?url=<page-url>` returns the notes whose frontmatter `url` path-matches (query string ignored), each with serial, mode, status, selector, rect, text, and screenshot paths read from `.md` frontmatter; token-gated
-- [ ] **HOST-15**: `PUT /annotation/<serial>` overwrites the body of the existing note in place (resolves serial → `<serial>-*.md`, preserves frontmatter + screenshots, re-marks status `unread`); path-confined, token-gated, 12 MB cap
-- [ ] **HOST-16**: `DELETE /annotation/<serial>` removes the note `.md` and its `+N.png` screenshots; path-confined, token-gated; 404 if serial not found
+- [x] **HOST-14**: `GET /annotations?url=<page-url>` returns the notes whose frontmatter `url` path-matches (query string ignored), each with serial, mode, status, selector, rect, text, and screenshot paths read from `.md` frontmatter; token-gated
+- [x] **HOST-15**: `PUT /annotation/<serial>` overwrites the body of the existing note in place (resolves serial → `<serial>-*.md`, preserves frontmatter + screenshots, re-marks status `unread`); path-confined, token-gated, 12 MB cap
+- [x] **HOST-16**: `DELETE /annotation/<serial>` removes the note `.md` and its `+N.png` screenshots; path-confined, token-gated; 404 if serial not found
 
 ### Extension Shell & Routing (EXT)
 
@@ -71,7 +71,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [ ] **CAM-01**: A 📷 camera tool is available on every note (free and element)
 - [ ] **CAM-02**: Activating it dims the page with a scrim and switches the cursor to a crosshair
-- [ ] **CAM-03**: The user drags a rectangle (via interact.js); sub-threshold (<~6px) drag or `Esc` cancels without capturing
+- [x] **CAM-03**: The user drags a rectangle (via interact.js); sub-threshold (<~6px) drag or `Esc` cancels without capturing
 - [ ] **CAM-04**: On release, stickyfix hides its own UI, captures the visible tab, crops to the dragged rect (DPR-corrected), and restores the UI
 - [ ] **CAM-05**: Each crop attaches as a deletable (`×`) thumbnail; multiple captures stack and increment `+2`, `+3`
 - [ ] **CAM-06**: Crops are sent as already-cropped PNG data-URLs; the host writes them as `<base>+<N>.png` and records paths in the `.md`
@@ -85,12 +85,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Persistent Pins (PIN)
 
-- [ ] **PIN-01**: On entering Review Mode, the extension fetches notes for the current page (exact URL path match, query ignored) via `GET /annotations` and renders one persistent on-page pin per note
-- [ ] **PIN-02**: Element-note pins anchor to the stored `@medv/finder` selector (re-queried on load), repositioning on scroll/resize; free-note pins float at the stored viewport coords (page-level, no anchor)
-- [ ] **PIN-03**: An orphaned pin (selector matches nothing) renders greyed/dashed at its last-known page-absolute rect with a tooltip; it is never hidden (a note is never silently lost)
+- [x] **PIN-01**: On entering Review Mode, the extension fetches notes for the current page (exact URL path match, query ignored) via `GET /annotations` and renders one persistent on-page pin per note
+- [x] **PIN-02**: Element-note pins anchor to the stored `@medv/finder` selector (re-queried on load), repositioning on scroll/resize; free-note pins float at the stored viewport coords (page-level, no anchor)
+- [x] **PIN-03**: An orphaned pin (selector matches nothing) renders greyed/dashed at its last-known page-absolute rect with a tooltip; it is never hidden (a note is never silently lost)
 - [ ] **PIN-04**: Pins encode mode (element vs free — same header colors as the cards, UI-03) and unread/read state (read = `*.read.md`); hover shows a note-text preview
 - [ ] **PIN-05**: Clicking a pin opens a card to view, edit, or delete the note
-- [ ] **PIN-06**: Editing saves via `PUT /annotation/<serial>` (overwrite in place); deleting via `DELETE /annotation/<serial>` (file + screenshots) behind a confirm guard; the on-page pin updates/disappears accordingly
+- [x] **PIN-06**: Editing saves via `PUT /annotation/<serial>` (overwrite in place); deleting via `DELETE /annotation/<serial>` (file + screenshots) behind a confirm guard; the on-page pin updates/disappears accordingly
 
 ### Reliability (REL)
 
@@ -170,9 +170,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HOST-11 | Phase 2 | Complete |
 | HOST-12 | Phase 2 | Complete |
 | HOST-13 | Phase 2 | Complete |
-| HOST-14 | Phase 6 | Pending |
-| HOST-15 | Phase 6 | Pending |
-| HOST-16 | Phase 6 | Pending |
+| HOST-14 | Phase 6 | Complete |
+| HOST-15 | Phase 6 | Complete |
+| HOST-16 | Phase 6 | Complete |
 | EXT-01 | Phase 3 | Complete |
 | EXT-02 | Phase 3 | Complete |
 | EXT-03 | Phase 3 | Complete |
@@ -199,7 +199,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ELEM-09 | Phase 5 | Complete |
 | CAM-01 | Phase 6 | Pending |
 | CAM-02 | Phase 6 | Pending |
-| CAM-03 | Phase 6 | Pending |
+| CAM-03 | Phase 6 | Complete |
 | CAM-04 | Phase 6 | Pending |
 | CAM-05 | Phase 6 | Pending |
 | CAM-06 | Phase 6 | Pending |
@@ -207,12 +207,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UI-02 | Phase 6 | Pending |
 | UI-03 | Phase 6 | Pending |
 | UI-04 | Phase 6 | Pending |
-| PIN-01 | Phase 6 | Pending |
-| PIN-02 | Phase 6 | Pending |
-| PIN-03 | Phase 6 | Pending |
+| PIN-01 | Phase 6 | Complete |
+| PIN-02 | Phase 6 | Complete |
+| PIN-03 | Phase 6 | Complete |
 | PIN-04 | Phase 6 | Pending |
 | PIN-05 | Phase 6 | Pending |
-| PIN-06 | Phase 6 | Pending |
+| PIN-06 | Phase 6 | Complete |
 | REL-01 | Phase 8 | Pending |
 | REL-02 | Phase 8 | Pending |
 | REL-03 | Phase 8 | Pending |

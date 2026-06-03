@@ -189,7 +189,7 @@ Plans:
 
 **Wave 0**
 
-- [ ] 06-01-PLAN.md — Foundation: pure marquee/url-match libs + host CRUD (GET /annotations, PUT/DELETE) + D-03 frontmatter + new SW message types + node:test (CAM-03/HOST-14/15/16/PIN-01/02/03/06)
+- [x] 06-01-PLAN.md — Foundation: pure marquee/url-match libs + host CRUD (GET /annotations, PUT/DELETE) + D-03 frontmatter + new SW message types + node:test (CAM-03/HOST-14/15/16/PIN-01/02/03/06)
 
 **Wave 1** *(blocked on Wave 0)*
 
@@ -250,6 +250,7 @@ Plans:
   5. (stretch) A documented packaging path exists for Edge (Chromium drop-in), Firefox, and Safari
 
 **Open design questions** (for `/gsd:discuss-phase 9`):
+
   - Packaging tech: per-OS installer (NSIS/.exe, .pkg, .deb/sh) vs. cross-platform `npx stickyfix init` bootstrapper vs. `pkg`/SEA single binary — must satisfy the cross-platform constraint (no Windows-only deliverable)
   - Pairing channel: **native messaging** (installer registers the manifest; no HTTP token at all) vs. **time-boxed loopback `/pair` endpoint** (host exposes token only within an N-second window after launch, SW fetches it) vs. `chrome.storage.managed` policy injection
   - Host lifecycle: tray app / OS service / native-messaging-spawned-on-demand — and how it learns the project `--root`
@@ -270,7 +271,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 3. Extension Skeleton + SW Relay Proof | 4/4 | Complete    | 2026-05-31 |
 | 4. Free-Note Mode + Capture Utilities | 3/3 | Complete    | 2026-06-01 |
 | 5. Element-Note Mode + Rich Context Capture | 3/3 | Complete   | 2026-06-02 |
-| 6. Region Capture + Visual Design + Persistent Pins | 0/4 | Not started | - |
+| 6. Region Capture + Visual Design + Persistent Pins | 1/4 | In Progress|  |
 | 7. review-notes Skill + Docs | 0/TBD | Not started | - |
 | 8. Hardening + Pre-Release Audit | 0/TBD | Not started | - |
 | 9. Turnkey Onboarding & Cross-Browser Distribution | 0/TBD | Not started | - |
