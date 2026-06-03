@@ -46,6 +46,8 @@ interface PinEntry {
   pin: HTMLElement;
   el: Element | null;
   data: PinDescriptor;
+  lastLeft?: number;
+  lastTop?: number;
 }
 
 let _pinEntries: PinEntry[] = [];
@@ -187,6 +189,20 @@ export async function mountPins(
     });
 
     container.appendChild(pinEl);
+  }
+
+  // autoUpdate (floating-ui pattern): element pins must follow their anchor
+  // through layout shifts that fire NEITHER scroll NOR resize — e.g. opening a
+  // sidebar reflows page content. A rAF loop recomputes element-pin positions
+  // each frame; _repositionElementPins only writes style when a position
+  // actually changed (change-guard above), so there is no layout thrash.
+  // Cancelled on teardown via _cleanupFns (no leak — T-06-09).
+  if (_pinEntries.some(e => e.data.mode === 'element')) {
+    let rafId = requestAnimationFrame(function tick() {
+      _repositionElementPins();
+      rafId = requestAnimationFrame(tick);
+    });
+    _cleanupFns.push(() => cancelAnimationFrame(rafId));
   }
 
   // FIX-3b: Late-anchor retry for element pins on SPA pages.
@@ -684,8 +700,12 @@ function _repositionElementPins(): void {
         orphaned
       );
 
-      entry.pin.style.left = `${left}px`;
-      entry.pin.style.top = `${top}px`;
+      if (entry.lastLeft !== left || entry.lastTop !== top) {
+        entry.pin.style.left = `${left}px`;
+        entry.pin.style.top = `${top}px`;
+        entry.lastLeft = left;
+        entry.lastTop = top;
+      }
 
       if (isOrphaned && !entry.pin.classList.contains('sfx-pin-orphaned')) {
         entry.pin.classList.add('sfx-pin-orphaned');
