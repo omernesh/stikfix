@@ -282,6 +282,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 4. Free-Note Mode + Capture Utilities | 3/3 | Complete    | 2026-06-01 |
 | 5. Element-Note Mode + Rich Context Capture | 3/3 | Complete   | 2026-06-02 |
 | 6. Region Capture + Visual Design + Persistent Pins | 4/4 | Complete   | 2026-06-03 |
-| 7. review-notes Skill + Docs | 3/3 | Complete   | 2026-06-03 |
+| 7. review-notes Skill + Docs | 3/3 | Complete    | 2026-06-03 |
 | 8. Hardening + Pre-Release Audit | 0/TBD | Not started | - |
 | 9. Turnkey Onboarding & Cross-Browser Distribution | 0/TBD | Not started | - |
