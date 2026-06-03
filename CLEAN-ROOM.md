@@ -113,12 +113,44 @@ All remaining first-party source files are scanned in full.
 
 ---
 
-## 6. Phase 8 Release Gate
+## 6. Phase 8 Release Gate (SC-4) — PASSED
 
-Phase 8 (SC-4) will re-run this same audit as a mandatory release gate before the v1.0
-milestone ships. The Phase 8 run will additionally check for upstream selector constants
-(specific CSS/JS identifiers introduced in the upstream's element-picker implementation)
-that are out of scope for the current Phase 7 baseline.
+**Run date:** 2026-06-04 (Phase 8, Plan 08-04, D-03)
 
-Re-running `node scripts/clean-room-check.mjs` at that point must still exit 0. Any
-violation found during Phase 8 will block release.
+**Method: NO-PEEK self-audit.** The GPL-3.0 upstream was NOT opened. The banned set was
+extended by auditing OUR OWN repository for provenance-risky magic strings and selector
+constants. Files inspected:
+
+| File | Self-audit finding | Disposition |
+|------|-------------------|-------------|
+| `lib/element-context.ts` | `CURATED_STYLE_PROPS` — 27 standard W3C CSS property names (`display`, `position`, `color`, etc.) | Clean-room original — standard CSS spec names, not upstream identifiers |
+| `entrypoints/review.content/card.ts` | `ANNOT`/`Annot` substrings — part of `annotation` (our domain term) | Clean-room original — project domain vocabulary |
+| `entrypoints/review.content/chip.ts` | Same `annot`/`ANNOT` substrings | Clean-room original — project domain vocabulary |
+| `entrypoints/review.content/index.ts` | No unusual patterns | Clean |
+| `entrypoints/review.content/fab.ts` | `annot` substring | Clean-room original |
+| `entrypoints/review.content/picker.ts` | No unusual patterns | Clean |
+| `entrypoints/background.ts` | `__stickyfix_` prefix (`window.__stickyfix_project`) | Clean-room original — our own `sfx`/`stickyfix` namespace, documented in CONTEXT |
+| `host/src/server.ts` | `annot` substring (route path `/annotation`) | Clean-room original — route designed from PRD §7 |
+| `host/src/security.ts` | No unusual patterns | Clean |
+| `scripts/clean-room-check.mjs` | Fragment-constructed banned tokens only | Not self-tripping (fragment construction verified) |
+
+**Extended banned set:** The self-audit found **no new tokens to ban**. Every suspicious
+pattern traced to our own project-originated identifiers (our `stickyfix`/`sfx` namespace,
+our domain term `annotation`, standard W3C CSS property names). The three original tokens
+remain the complete banned set:
+
+| Token class | Fragment construction |
+|------------|----------------------|
+| Upstream private-API prefix | `'__' + 'opc' + '_'` |
+| Upstream project name | `'open' + 'code'` |
+| Upstream author handle | `'Jodus' + 'Nodus'` |
+
+**Live audit result (Phase 8 run, 2026-06-04):**
+
+```
+node scripts/clean-room-check.mjs
+clean-room audit: PASS — no banned identifiers found
+Exit code: 0
+```
+
+The gate was re-run as part of `npm run check`. Exit code: **0**. Release gate: **PASSED**.

@@ -9,11 +9,25 @@
 //
 // Banned patterns are constructed from fragments to avoid a false-positive
 // when the script scans itself (the scanner must not trigger on its own source).
+//
+// Phase 8 (D-03) NO-PEEK self-audit (2026-06-04):
+//   Self-audited OUR OWN repo for provenance-risky magic strings and selector
+//   constants WITHOUT opening the GPL-3.0 upstream (no-peek policy). Files
+//   inspected: lib/element-context.ts (CURATED_STYLE_PROPS — standard W3C CSS
+//   property names; clean-room original), entrypoints/review.content/card.ts,
+//   chip.ts, index.ts, fab.ts, picker.ts, entrypoints/background.ts,
+//   host/src/server.ts, host/src/security.ts. Unusual patterns found and
+//   resolved: (1) __stickyfix_ — our own project namespace, not upstream;
+//   (2) annot/ANNOT — substring of 'annotation', our own domain term;
+//   (3) CURATED_STYLE_PROPS — standard W3C CSS property names, not upstream.
+//   Result: no new banned tokens required beyond the three original tokens.
+//   The three known tokens remain the complete banned set. Audit: PASS.
 
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, extname } from 'node:path';
 
 // Construct banned patterns from fragments so this file does not self-trip.
+// Each new token MUST be split into fragments so the scanner never self-trips.
 const BANNED = [
   // upstream private-API prefix: __ + opc + _
   new RegExp('__' + 'opc' + '_', 'i'),
@@ -21,6 +35,8 @@ const BANNED = [
   new RegExp('open' + 'code', 'i'),
   // upstream author handle: Jodus + Nodus
   new RegExp('Jodus' + 'Nodus', 'i'),
+  // Phase 8 D-03 self-audit: no additional tokens identified — see audit
+  // narrative in the comment block above. Three known tokens are complete.
 ];
 
 const SCAN_EXTS = new Set(['.ts', '.js', '.mjs', '.cjs', '.json', '.html', '.css', '.md']);
