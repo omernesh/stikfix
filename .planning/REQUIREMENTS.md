@@ -100,9 +100,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### review-notes Skill (SKILL)
 
-- [ ] **SKILL-01**: Ship `skill/SKILL.md` + install README that works for any folder-reading AI agent
+- [x] **SKILL-01**: Ship `skill/SKILL.md` + install README that works for any folder-reading AI agent
 - [x] **SKILL-02**: Skill globs `notes/*.md`, excludes `*.read.md`, sorts by leading serial ascending
-- [ ] **SKILL-03**: For each unread note, the skill reads frontmatter/body/element-context/screenshot path and performs the requested fix
+- [x] **SKILL-03**: For each unread note, the skill reads frontmatter/body/element-context/screenshot path and performs the requested fix
 - [x] **SKILL-04**: After handling a note, the skill renames it to `*.read.md`; a re-run reports "no unread notes" (idempotent)
 - [x] **SKILL-05**: Edge cases handled — empty queue, ambiguous note (left unread + flagged), missing screenshot (proceed with text)
 
@@ -216,9 +216,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REL-01 | Phase 8 | Pending |
 | REL-02 | Phase 8 | Pending |
 | REL-03 | Phase 8 | Pending |
-| SKILL-01 | Phase 7 | Pending |
+| SKILL-01 | Phase 7 | Complete |
 | SKILL-02 | Phase 7 | Complete |
-| SKILL-03 | Phase 7 | Pending |
+| SKILL-03 | Phase 7 | Complete |
 | SKILL-04 | Phase 7 | Complete |
 | SKILL-05 | Phase 7 | Complete |
 | DOC-01 | Phase 7 | Pending |

@@ -227,7 +227,7 @@ Plans:
 
 **Wave 1** *(blocked on Wave 0)*
 
-- [ ] 07-02-PLAN.md — Skill slice: portable skill/SKILL.md + .claude/skills wrapper + fixtures + human-UAT runbook (SKILL-01/02/03/04/05)
+- [x] 07-02-PLAN.md — Skill slice: portable skill/SKILL.md + .claude/skills wrapper + fixtures + human-UAT runbook (SKILL-01/02/03/04/05)
 - [ ] 07-03-PLAN.md — Docs slice: quickstart-first README + CLEAN-ROOM.md + clean-room skip-list + demo placeholder (DOC-01/02)
 
 ### Phase 8: Hardening + Pre-Release Audit
@@ -282,6 +282,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 4. Free-Note Mode + Capture Utilities | 3/3 | Complete    | 2026-06-01 |
 | 5. Element-Note Mode + Rich Context Capture | 3/3 | Complete   | 2026-06-02 |
 | 6. Region Capture + Visual Design + Persistent Pins | 4/4 | Complete   | 2026-06-03 |
-| 7. review-notes Skill + Docs | 1/3 | In Progress|  |
+| 7. review-notes Skill + Docs | 2/3 | In Progress|  |
 | 8. Hardening + Pre-Release Audit | 0/TBD | Not started | - |
 | 9. Turnkey Onboarding & Cross-Browser Distribution | 0/TBD | Not started | - |
