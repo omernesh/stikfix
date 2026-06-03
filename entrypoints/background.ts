@@ -744,14 +744,23 @@ chrome.runtime.onMessage.addListener(
           );
         return true;
 
-      case SFX_LIST_ANNOTATIONS:
-        // No IDOR guard needed for list — it only reads, and URL is derived from tab
-        handleListAnnotations((msg as MsgListAnnotations).tabId)
+      case SFX_LIST_ANNOTATIONS: {
+        // T-06-06 IDOR guard: bind requested tabId to sender.tab.id — a page in
+        // another tab must not enumerate notes for a URL it does not control
+        // (cross-tab info disclosure). Same trust model as capture/edit/delete:
+        // never trust tabId from the message body.
+        const listMsg = msg as MsgListAnnotations;
+        if (sender.tab?.id == null || sender.tab.id !== listMsg.tabId) {
+          sendResponse({ ok: false, error: 'forbidden' });
+          return true;
+        }
+        handleListAnnotations(listMsg.tabId)
           .then(sendResponse)
           .catch((err: unknown) =>
             sendResponse({ ok: false, error: String(err) })
           );
         return true;
+      }
 
       case SFX_EDIT_ANNOTATION: {
         // T-06-06 IDOR guard: only the tab that owns the note may edit it
