@@ -108,8 +108,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Documentation (DOC)
 
-- [ ] **DOC-01**: Root README has install + usage instructions and a demo GIF
-- [ ] **DOC-02**: README documents the clean-room MIT provenance and confirms no GPL code present
+- [x] **DOC-01**: Root README has install + usage instructions and a demo GIF
+- [x] **DOC-02**: README documents the clean-room MIT provenance and confirms no GPL code present
 
 ### Onboarding & Turnkey Distribution (ONB)
 
@@ -221,8 +221,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SKILL-03 | Phase 7 | Complete |
 | SKILL-04 | Phase 7 | Complete |
 | SKILL-05 | Phase 7 | Complete |
-| DOC-01 | Phase 7 | Pending |
-| DOC-02 | Phase 7 | Pending |
+| DOC-01 | Phase 7 | Complete |
+| DOC-02 | Phase 7 | Complete |
 | ONB-01 | Phase 9 | Pending |
 | ONB-02 | Phase 9 | Pending |
 | ONB-03 | Phase 9 | Pending |

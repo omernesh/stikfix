@@ -19,7 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: Free-Note Mode + Capture Utilities** - Draggable FAB → post-it → Send → .md on disk; DPR crop, double-rAF flush, captureVisibleTab relay established as reusable utilities (completed 2026-05-31)
 - [x] **Phase 5: Element-Note Mode + Rich Context Capture** - Element picker with @medv/finder selector, React fiber, computed styles, outerHTML, auto-highlight screenshot (completed 2026-06-02)
 - [x] **Phase 6: Region Capture + Visual Design + Persistent Pins** - Camera tool drag-marquee crop; full paper-aesthetic sticky-note UI inside shadow DOM; clickable on-page note pins (rehydrated from disk) with view/edit/delete via host CRUD (completed 2026-06-03)
-- [ ] **Phase 7: review-notes Skill + Docs** - Portable AI skill ships; README with demo GIF; clean-room provenance documented
+- [x] **Phase 7: review-notes Skill + Docs** - Portable AI skill ships; README with demo GIF; clean-room provenance documented (completed 2026-06-03)
 - [ ] **Phase 8: Hardening + Pre-Release Audit** - All error paths surface toasts; concurrent-Send stress test; GPL grep audit; idle-eviction regression pass
 - [ ] **Phase 9: Turnkey Onboarding & Cross-Browser Distribution** - One-step installer (host + extension), automatic/one-click token pairing (no manual copy-paste), host auto-start, clean uninstall; documented Edge/Firefox/Safari packaging path
 
@@ -228,7 +228,7 @@ Plans:
 **Wave 1** *(blocked on Wave 0)*
 
 - [x] 07-02-PLAN.md — Skill slice: portable skill/SKILL.md + .claude/skills wrapper + fixtures + human-UAT runbook (SKILL-01/02/03/04/05)
-- [ ] 07-03-PLAN.md — Docs slice: quickstart-first README + CLEAN-ROOM.md + clean-room skip-list + demo placeholder (DOC-01/02)
+- [x] 07-03-PLAN.md — Docs slice: quickstart-first README + CLEAN-ROOM.md + clean-room skip-list + demo placeholder (DOC-01/02)
 
 ### Phase 8: Hardening + Pre-Release Audit
 
@@ -282,6 +282,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 4. Free-Note Mode + Capture Utilities | 3/3 | Complete    | 2026-06-01 |
 | 5. Element-Note Mode + Rich Context Capture | 3/3 | Complete   | 2026-06-02 |
 | 6. Region Capture + Visual Design + Persistent Pins | 4/4 | Complete   | 2026-06-03 |
-| 7. review-notes Skill + Docs | 2/3 | In Progress|  |
+| 7. review-notes Skill + Docs | 3/3 | Complete   | 2026-06-03 |
 | 8. Hardening + Pre-Release Audit | 0/TBD | Not started | - |
 | 9. Turnkey Onboarding & Cross-Browser Distribution | 0/TBD | Not started | - |
