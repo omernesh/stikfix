@@ -896,6 +896,34 @@ chrome.runtime.onInstalled.addListener(() => {
   refreshHosts().catch(console.error);
 });
 
+// ---------------------------------------------------------------------------
+// Re-inject review UI after a page reload/navigation (pin persistence)
+// ---------------------------------------------------------------------------
+// When a tab that is in review mode reloads, Chrome destroys the injected
+// content script. Re-inject review.js + CSS once the document finishes loading
+// so the FAB, chip, and persistent pins reappear WITHOUT the user having to
+// exit and re-enter review mode. Best-effort, same posture as handleEnterReview:
+// restricted URLs (chrome://, web store) or a tab closed mid-load just no-op.
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (changeInfo.status !== 'complete') return;
+  void (async () => {
+    const prefs = await sfxPrefs.getValue();
+    if (!prefs.reviewMode[String(tabId)]) return;
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        files: ['content-scripts/review.js'],
+      });
+      await chrome.scripting.insertCSS({
+        target: { tabId },
+        files: ['content-scripts/review.css'],
+      });
+    } catch {
+      // Restricted URL or tab gone — ignore (not a regression; best-effort).
+    }
+  })();
+});
+
 export default defineBackground({
   type: 'module',
   main() {

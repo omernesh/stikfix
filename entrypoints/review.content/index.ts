@@ -26,6 +26,11 @@ export default defineContentScript({
   cssInjectionMode: 'ui',        // WXT injects CSS into the shadow root (A4 check on first build)
 
   async main(ctx) {
+    // Idempotency guard: if a previous injection already mounted the review UI
+    // host into this page, do not mount a second one (prevents duplicate FAB/pins
+    // when the SW re-injects on reload while a prior context is still alive).
+    if (document.querySelector('sfx-review-ui')) return;
+
     // createShadowRootUi must be called inside main(ctx) — ctx is not available
     // in a plain scripting.executeScript func injection (WXT Discussion #623)
     const ui = await createShadowRootUi(ctx, {

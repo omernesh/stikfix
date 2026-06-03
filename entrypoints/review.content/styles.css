@@ -723,10 +723,9 @@
 
 /* Hover preview tooltip — FIX-2: auto-size to text content */
 .sfx-pin-preview {
-  position: absolute;
-  bottom: calc(100% + 4px);
-  left: 50%;
-  transform: translateX(-50%);
+  /* left/top are set in JS on mouseenter (pin.ts) and clamped to the viewport
+   * so the box never sits behind the pin glyph or clips off the left/right edge. */
+  position: fixed;
   /* FIX-2: width:max-content lets the box expand to fit text on one line,
    * max-width:240px caps it so long notes wrap within a readable column.
    * Without width:max-content the box defaults to min-content (~1 char wide)

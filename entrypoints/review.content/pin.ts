@@ -158,16 +158,22 @@ export async function mountPins(
     const preview = pinEl.querySelector<HTMLElement>('.sfx-pin-preview');
     if (preview) {
       pinEl.addEventListener('mouseenter', () => {
-        // Flip preview below pin when within 130px of top of viewport
-        const rect = pinEl.getBoundingClientRect();
-        if (rect.top < 130) {
-          preview.style.bottom = '';
-          preview.style.top = 'calc(100% + 4px)';
-        } else {
-          preview.style.top = '';
-          preview.style.bottom = 'calc(100% + 4px)';
-        }
+        // Show first so the box has measurable dimensions, then place it adjacent
+        // to the pin and clamp into the viewport (8px margin) so it never sits
+        // behind the glyph or clips off the left/right edge.
         preview.style.display = 'block';
+        const pinRect = pinEl.getBoundingClientRect();
+        const pvRect = preview.getBoundingClientRect();
+        // Horizontal: align with the pin's left edge, clamp into [8, vw - w - 8]
+        let left = pinRect.left;
+        const maxLeft = window.innerWidth - pvRect.width - 8;
+        if (left > maxLeft) left = maxLeft;
+        if (left < 8) left = 8;
+        // Vertical: prefer above the pin; drop below if there isn't room
+        let top = pinRect.top - pvRect.height - 6;
+        if (top < 8) top = pinRect.bottom + 6;
+        preview.style.left = `${left}px`;
+        preview.style.top = `${top}px`;
       });
       pinEl.addEventListener('mouseleave', () => {
         preview.style.display = 'none';
