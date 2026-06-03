@@ -34,3 +34,7 @@ Thumbs.db
 private/
 
 # GSD planning is committed; nothing to ignore there
+
+# Stray JS files that tsc may emit next to source files (compiled output belongs in dist/)
+lib/*.js
+lib/test/*.js
