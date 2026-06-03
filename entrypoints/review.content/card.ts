@@ -30,6 +30,7 @@ import { enterMarqueeMode } from './marquee.js';
 import { mapSendOutcome } from '../../lib/error-toast.js';
 import type { SendOutcome } from '../../lib/error-toast.js';
 import { exceedsBodyCap } from '../../lib/payload-size.js';
+import { renumberThumbnailKinds } from '../../lib/thumbnail-number.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -60,7 +61,7 @@ interface ThumbnailEntry {
 // CAM-05: × button splices entry, renumbers remaining, re-renders
 // ---------------------------------------------------------------------------
 
-function renderThumbnails(container: HTMLElement, items: ThumbnailEntry[]): void {
+function renderThumbnails(container: HTMLElement, items: ThumbnailEntry[], baseOffset = 0): void {
   container.replaceChildren();
   items.forEach((t, i) => {
     const wrap = document.createElement('div');
@@ -77,9 +78,11 @@ function renderThumbnails(container: HTMLElement, items: ThumbnailEntry[]): void
     del.setAttribute('aria-label', `Remove screenshot ${i + 1}`);
     del.addEventListener('click', () => {
       items.splice(i, 1);
-      // Renumber remaining entries (preserves +1 slot for element auto-highlight)
-      items.forEach((item, j) => { item.kind = `+${j + 1}`; });
-      renderThumbnails(container, items);
+      // Renumber remaining entries using the path-aware offset:
+      // free path (baseOffset=0) → +1, +2, …
+      // element path (baseOffset=1) → +2, +3, … (reserves +1 for the element auto-highlight)
+      renumberThumbnailKinds(items, baseOffset);
+      renderThumbnails(container, items, baseOffset);
     });
 
     wrap.appendChild(img);
@@ -627,7 +630,7 @@ export function openElementCard(
           // Region thumbnails from the camera are numbered starting after +1.
           // We offset by 1 to reserve slot +1 for the element highlight.
           thumbnails.push({ kind: `+${thumbnails.length + 2}`, dataUrl: cropped });
-          renderThumbnails(thumbStrip, thumbnails);
+          renderThumbnails(thumbStrip, thumbnails, 1);
         } catch (_capErr) {
           setSfxVisibilityElem(true);
           showToastFn('Screenshot capture failed', true);
