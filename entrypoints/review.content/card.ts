@@ -30,7 +30,7 @@ import { enterMarqueeMode } from './marquee.js';
 import { mapSendOutcome } from '../../lib/error-toast.js';
 import type { SendOutcome } from '../../lib/error-toast.js';
 import { exceedsBodyCap } from '../../lib/payload-size.js';
-import { renumberThumbnailKinds } from '../../lib/thumbnail-number.js';
+import { renumberThumbnailKinds, nextThumbnailKind } from '../../lib/thumbnail-number.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -245,7 +245,7 @@ export function openCard(
           const dataUrl = await captureTab(tabId);
           const cropped = await cropToRect(dataUrl, rect, window.devicePixelRatio);
           setSfxVisibilityFree(true);
-          thumbnails.push({ kind: `+${thumbnails.length + 1}`, dataUrl: cropped });
+          thumbnails.push({ kind: nextThumbnailKind(thumbnails.length), dataUrl: cropped });
           renderThumbnails(thumbStrip, thumbnails);
         } catch (_capErr) {
           setSfxVisibilityFree(true);
@@ -629,7 +629,7 @@ export function openElementCard(
           // For element notes: +1 is the element auto-highlight (added in _doElementSend).
           // Region thumbnails from the camera are numbered starting after +1.
           // We offset by 1 to reserve slot +1 for the element highlight.
-          thumbnails.push({ kind: `+${thumbnails.length + 2}`, dataUrl: cropped });
+          thumbnails.push({ kind: nextThumbnailKind(thumbnails.length, 1), dataUrl: cropped });
           renderThumbnails(thumbStrip, thumbnails, 1);
         } catch (_capErr) {
           setSfxVisibilityElem(true);

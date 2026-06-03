@@ -128,3 +128,67 @@ describe('renumberThumbnailKinds — edge cases', () => {
     assert.deepStrictEqual(items.map(it => it.kind), ['+1', '+2']);
   });
 });
+import { nextThumbnailKind } from '../thumbnail-number.js';
+
+// ---------------------------------------------------------------------------
+// nextThumbnailKind — basic values
+// ---------------------------------------------------------------------------
+
+describe('nextThumbnailKind — basic values', () => {
+  test('nextThumbnailKind(0, 0) = "+1" (first free push onto empty array)', () => {
+    assert.strictEqual(nextThumbnailKind(0, 0), '+1');
+  });
+
+  test('nextThumbnailKind(2, 0) = "+3" (third free push onto 2-item array)', () => {
+    assert.strictEqual(nextThumbnailKind(2, 0), '+3');
+  });
+
+  test('nextThumbnailKind(0, 1) = "+2" (first element push onto empty array — reserves +1)', () => {
+    assert.strictEqual(nextThumbnailKind(0, 1), '+2');
+  });
+
+  test('nextThumbnailKind(2, 1) = "+4" (third element push onto 2-item array)', () => {
+    assert.strictEqual(nextThumbnailKind(2, 1), '+4');
+  });
+
+  test('default baseOffset is 0 (free path)', () => {
+    assert.strictEqual(nextThumbnailKind(0), '+1');
+    assert.strictEqual(nextThumbnailKind(3), '+4');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// nextThumbnailKind — consistency with renumberThumbnailKinds
+// ---------------------------------------------------------------------------
+
+describe('nextThumbnailKind — consistency with renumberThumbnailKinds', () => {
+  test('free path: next-kind after N items == renumber would assign to index N', () => {
+    // After renumbering N items with baseOffset=0, indices 0…N-1 get +1…+N.
+    // A new push at index N should get +(N+1) = nextThumbnailKind(N, 0).
+    for (const n of [0, 1, 2, 5]) {
+      const items = Array.from({ length: n }, (_, i) => ({ kind: `+${i + 1}` }));
+      renumberThumbnailKinds(items, 0);
+      const expected = `+${n + 1}`;
+      assert.strictEqual(
+        nextThumbnailKind(n, 0),
+        expected,
+        `free path n=${n}: expected ${expected}`,
+      );
+    }
+  });
+
+  test('element path: next-kind after N items == renumber would assign to index N', () => {
+    // After renumbering N items with baseOffset=1, indices 0…N-1 get +2…+(N+1).
+    // A new push at index N should get +(N+2) = nextThumbnailKind(N, 1).
+    for (const n of [0, 1, 2, 5]) {
+      const items = Array.from({ length: n }, (_, i) => ({ kind: `+${i + 2}` }));
+      renumberThumbnailKinds(items, 1);
+      const expected = `+${n + 2}`;
+      assert.strictEqual(
+        nextThumbnailKind(n, 1),
+        expected,
+        `element path n=${n}: expected ${expected}`,
+      );
+    }
+  });
+});

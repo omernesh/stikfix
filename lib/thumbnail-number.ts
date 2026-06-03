@@ -35,3 +35,23 @@ export function renumberThumbnailKinds(
     item.kind = `+${i + 1 + baseOffset}`;
   });
 }
+
+// ---------------------------------------------------------------------------
+// nextThumbnailKind — pure companion for push sites
+// ---------------------------------------------------------------------------
+
+/**
+ * Return the kind string for a thumbnail that is about to be pushed onto the
+ * end of an array that currently has `count` items.
+ *
+ * This mirrors the per-item formula in renumberThumbnailKinds:
+ *   item at index i → "+" + (i + 1 + baseOffset)
+ * A new push lands at index = count, so the next kind is:
+ *   "+" + (count + 1 + baseOffset)
+ *
+ * @param count      — current number of thumbnails (thumbnails.length before push)
+ * @param baseOffset — 0 for free path (→ +1, +2, …), 1 for element path (→ +2, +3, …)
+ */
+export function nextThumbnailKind(count: number, baseOffset = 0): string {
+  return `+${count + 1 + baseOffset}`;
+}
