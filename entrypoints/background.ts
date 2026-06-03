@@ -16,7 +16,7 @@
  *  - The relay is the only localhost path; content-script fetch is forbidden.
  */
 
-import { SFX_MSG, SFX_SET_ROUTE, SFX_GET_TAB_ID, SFX_CAPTURE_TAB } from '../lib/types.js';
+import { SFX_MSG, SFX_SET_ROUTE, SFX_GET_TAB_ID, SFX_CAPTURE_TAB, SFX_LIST_ANNOTATIONS, SFX_EDIT_ANNOTATION, SFX_DELETE_ANNOTATION } from '../lib/types.js';
 import type {
   SfxMessage,
   SfxResponse,
@@ -25,6 +25,9 @@ import type {
   MsgCaptureTab,
   MsgAddHost,
   MsgRemoveHost,
+  MsgListAnnotations,
+  MsgEditAnnotation,
+  MsgDeleteAnnotation,
 } from '../lib/types.js';
 import {
   sfxRegistry,
@@ -357,6 +360,176 @@ async function handleSendAnnotation(
 }
 
 // ---------------------------------------------------------------------------
+// Pin CRUD relay handlers — SW relay for SFX_LIST/EDIT/DELETE_ANNOTATION
+// Security (T-06-01, T-06-06): URL derived from chrome.tabs.get(tabId) — NEVER
+// from the message body. IDOR guard applied on edit/delete in onMessage switch.
+// ---------------------------------------------------------------------------
+
+/** Shape returned by GET /annotations for each pin descriptor */
+interface PinDescriptor {
+  serial: string;
+  mode: 'free' | 'element';
+  status: string;
+  url: string;
+  text: string;
+  selector?: string;
+  rect?: { x: number; y: number; width: number; height: number };
+  note_position?: { x: number; y: number };
+  screenshots: string[];
+}
+
+async function handleListAnnotations(
+  tabId: number
+): Promise<{ ok: true; pins: PinDescriptor[] } | { ok: false; error: string }> {
+  // 1. Re-read storage (MV3 SW may have been recycled — Pitfall 1)
+  const state = await loadStorageState();
+
+  // 2. Derive URL from the tab (anti-spoof — T-06-01 / T-03-01)
+  const tab = await chrome.tabs.get(tabId);
+  if (!tab.url) {
+    return { ok: false, error: 'Cannot determine tab URL' };
+  }
+  const origin = new URL(tab.url).origin;
+
+  // 3. Resolve host
+  const host = resolveRoute(origin, state);
+  if (!host) {
+    return { ok: false, error: `No host mapped for origin: ${origin}` };
+  }
+  if (!host.token) {
+    return { ok: false, error: `No token set for host "${host.name}" — enter it in the popup` };
+  }
+
+  // 4. Relay fetch to host (SW has host_permissions — INVARIANT B)
+  let resp: Response;
+  try {
+    resp = await fetch(
+      `http://127.0.0.1:${host.port}/annotations?url=${encodeURIComponent(tab.url)}`,
+      { headers: { 'X-Stickyfix-Token': host.token } }
+    );
+  } catch (e: unknown) {
+    return { ok: false, error: `Host unreachable: ${String(e)}` };
+  }
+
+  if (resp.ok) {
+    let body: { pins: PinDescriptor[] };
+    try {
+      body = (await resp.json()) as { pins: PinDescriptor[] };
+    } catch {
+      return { ok: false, error: 'Host returned non-JSON on 200' };
+    }
+    return { ok: true, pins: Array.isArray(body.pins) ? body.pins : [] };
+  }
+
+  let errBody: { error?: string } = {};
+  try {
+    errBody = (await resp.json()) as { error?: string };
+  } catch { /* not JSON */ }
+  return { ok: false, error: errBody.error ?? `HTTP ${resp.status}` };
+}
+
+async function handleEditAnnotation(
+  tabId: number,
+  serial: string,
+  comment: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  // 1. Re-read storage (Pitfall 1)
+  const state = await loadStorageState();
+
+  // 2. Derive URL from tab (anti-spoof — T-06-01)
+  const tab = await chrome.tabs.get(tabId);
+  if (!tab.url) {
+    return { ok: false, error: 'Cannot determine tab URL' };
+  }
+  const origin = new URL(tab.url).origin;
+
+  // 3. Resolve host
+  const host = resolveRoute(origin, state);
+  if (!host) {
+    return { ok: false, error: `No host mapped for origin: ${origin}` };
+  }
+  if (!host.token) {
+    return { ok: false, error: `No token set for host "${host.name}" — enter it in the popup` };
+  }
+
+  // 4. Relay PUT to host
+  let resp: Response;
+  try {
+    resp = await fetch(
+      `http://127.0.0.1:${host.port}/annotation/${encodeURIComponent(serial)}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Stickyfix-Token': host.token,
+        },
+        body: JSON.stringify({ comment }),
+      }
+    );
+  } catch (e: unknown) {
+    return { ok: false, error: `Host unreachable: ${String(e)}` };
+  }
+
+  if (resp.ok) {
+    return { ok: true };
+  }
+
+  let errBody: { error?: string } = {};
+  try {
+    errBody = (await resp.json()) as { error?: string };
+  } catch { /* not JSON */ }
+  return { ok: false, error: errBody.error ?? `HTTP ${resp.status}` };
+}
+
+async function handleDeleteAnnotation(
+  tabId: number,
+  serial: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  // 1. Re-read storage (Pitfall 1)
+  const state = await loadStorageState();
+
+  // 2. Derive URL from tab (anti-spoof — T-06-01)
+  const tab = await chrome.tabs.get(tabId);
+  if (!tab.url) {
+    return { ok: false, error: 'Cannot determine tab URL' };
+  }
+  const origin = new URL(tab.url).origin;
+
+  // 3. Resolve host
+  const host = resolveRoute(origin, state);
+  if (!host) {
+    return { ok: false, error: `No host mapped for origin: ${origin}` };
+  }
+  if (!host.token) {
+    return { ok: false, error: `No token set for host "${host.name}" — enter it in the popup` };
+  }
+
+  // 4. Relay DELETE to host
+  let resp: Response;
+  try {
+    resp = await fetch(
+      `http://127.0.0.1:${host.port}/annotation/${encodeURIComponent(serial)}`,
+      {
+        method: 'DELETE',
+        headers: { 'X-Stickyfix-Token': host.token },
+      }
+    );
+  } catch (e: unknown) {
+    return { ok: false, error: `Host unreachable: ${String(e)}` };
+  }
+
+  if (resp.ok) {
+    return { ok: true };
+  }
+
+  let errBody: { error?: string } = {};
+  try {
+    errBody = (await resp.json()) as { error?: string };
+  } catch { /* not JSON */ }
+  return { ok: false, error: errBody.error ?? `HTTP ${resp.status}` };
+}
+
+// ---------------------------------------------------------------------------
 // handleAddHost — probe a specific port and add it to the registry
 // ---------------------------------------------------------------------------
 
@@ -570,6 +743,45 @@ chrome.runtime.onMessage.addListener(
             sendResponse({ ok: false, error: String(err) })
           );
         return true;
+
+      case SFX_LIST_ANNOTATIONS:
+        // No IDOR guard needed for list — it only reads, and URL is derived from tab
+        handleListAnnotations((msg as MsgListAnnotations).tabId)
+          .then(sendResponse)
+          .catch((err: unknown) =>
+            sendResponse({ ok: false, error: String(err) })
+          );
+        return true;
+
+      case SFX_EDIT_ANNOTATION: {
+        // T-06-06 IDOR guard: only the tab that owns the note may edit it
+        const editMsg = msg as MsgEditAnnotation;
+        if (sender.tab?.id == null || sender.tab.id !== editMsg.tabId) {
+          sendResponse({ ok: false, error: 'forbidden' });
+          return true;
+        }
+        handleEditAnnotation(editMsg.tabId, editMsg.serial, editMsg.comment)
+          .then(sendResponse)
+          .catch((err: unknown) =>
+            sendResponse({ ok: false, error: String(err) })
+          );
+        return true;
+      }
+
+      case SFX_DELETE_ANNOTATION: {
+        // T-06-06 IDOR guard: only the tab that owns the note may delete it
+        const delMsg = msg as MsgDeleteAnnotation;
+        if (sender.tab?.id == null || sender.tab.id !== delMsg.tabId) {
+          sendResponse({ ok: false, error: 'forbidden' });
+          return true;
+        }
+        handleDeleteAnnotation(delMsg.tabId, delMsg.serial)
+          .then(sendResponse)
+          .catch((err: unknown) =>
+            sendResponse({ ok: false, error: String(err) })
+          );
+        return true;
+      }
 
       default:
         // Unknown message type — do not return true (no async response)
