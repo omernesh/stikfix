@@ -126,11 +126,15 @@ directory:
 
 > "Read my notes in /tmp/sfx-uat-notes"
 
-Expected response: **"no unread notes"** (or equivalent wording). The agent should
-process zero notes and make zero file changes.
+Expected response: the agent processes **zero** notes and makes **zero** file
+changes. Because the ambiguous note `0004` is flagged (not renamed to `.read.md`),
+it still appears in the discovery listing — so the correct response is "only the
+previously-flagged note 0004 remains (awaiting clarification); skipped" rather than
+a literal "no unread notes". The agent must NOT re-flag `0004` or append a second
+`> flagged:` blockquote.
 
-This proves the skill is idempotent — re-running on a fully-processed directory is
-a safe no-op.
+This proves the skill is idempotent — re-running re-applies no fix and never
+duplicates a flag line.
 
 ---
 
@@ -173,7 +177,34 @@ instead of flagged") so the skill prose can be corrected.
 
 ## Checkpoint Resolution
 
-**Status:** `pending (auto-approved checkpoint; manual run available)`
+**Status:** `PASSED (live run 2026-06-03)`
+
+### UAT Run Result — 2026-06-03 (live, via review-notes skill against /tmp/sfx-uat-notes)
+
+Initial run processed the 4 unread notes in serial order:
+
+| Check | Result |
+|-------|--------|
+| 0001 → `.read.md`, `status: read` | ✅ |
+| 0002 → `.read.md`, `status: read` | ✅ |
+| 0003 → `.read.md`, `status: read`; `WARN: …+1.png not found — proceeding text-only` emitted once | ✅ |
+| 0004 NOT renamed; `status: flagged` + single `> flagged:` blockquote | ✅ |
+| 0099 untouched (excluded at discovery) | ✅ |
+| Idempotency (flagged note skipped, no duplicate blockquote) | ✅ (after fix below) |
+
+**Defect found + fixed during this run:** The skill prose relied solely on the
+`*.read.md` rename to skip done notes, so a flagged note (which is intentionally
+NOT renamed) would be re-evaluated on every re-run and accrue duplicate
+`> flagged:` blockquotes. The proven helper `classifyNote` already short-circuits
+`status: flagged` → skip, but the prose did not mirror it. Fixed `skill/SKILL.md`
+Step 2a to skip notes whose `status` is already `read`/`flagged`, and corrected the
+idempotency expectation above. Re-run confirmed `0004` is skipped with its
+blockquote count unchanged (1).
+
+**Note:** The fixture notes reference a hypothetical `example.com` admin app, so no
+real source edits occurred — this run validated the skill's processing contract
+(ordering, screenshot fallback, flag path, rename+status, idempotency), which is
+the purpose of the UAT.
 
 **Note (2026-06-03):** This checkpoint was auto-approved in GSD chain mode. No live
 agent run was performed against the fixture set during execution. The runbook above

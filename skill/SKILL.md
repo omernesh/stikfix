@@ -56,6 +56,22 @@ each note done, idempotently, without any manual copy-paste.
 
    a. **Read the file and parse frontmatter**
 
+      First, short-circuit on already-handled notes. After parsing the frontmatter,
+      check the `status` field BEFORE doing any work:
+
+      - `status: read` → skip this note (it is done; normally it is also renamed to
+        `*.read.md` and excluded in Step 1, but skip defensively if you encounter it).
+      - `status: flagged` → skip this note. A flagged note was already judged ambiguous
+        on a prior run and is awaiting human clarification. Do NOT re-process it and do
+        NOT append another `> flagged:` blockquote — re-flagging duplicates the reason
+        line on every run. A flagged note is intentionally NOT renamed (it stays a `.md`
+        file so it remains visible), so it WILL reappear in the Step 1 listing; the
+        `status: flagged` check here is what makes the re-run idempotent for it.
+
+      Only continue to the remaining sub-steps (b–e) when `status` is `unread`. This
+      mirrors the `classifyNote` helper (`lib/review-notes.ts`), which returns `'read'`
+      or `'flagged'` as skip outcomes and only `'fixable'`/`'text-only'` as actionable.
+
       The file begins with a YAML frontmatter block delimited by `---` lines:
 
       ```
@@ -220,9 +236,13 @@ each note done, idempotently, without any manual copy-paste.
 
 ## After the pass
 
-On the next run the skill will find no unread notes (the glob in Step 1 excludes
-`*.read.md`). This is the idempotency guarantee — re-running on a fully-processed
-directory is a no-op that safely reports "no unread notes".
+On the next run, every successfully-fixed note is excluded by the Step 1 glob (it was
+renamed to `*.read.md`), and any flagged note is skipped by the `status: flagged`
+check in Step 2a (it stays a visible `.md` file but is not re-processed). So a re-run
+on a fully-processed directory does no fixing work and reports either "no unread
+notes" (all notes were fixed) or that only previously-flagged notes remain (still
+awaiting human clarification). This is the idempotency guarantee — re-running never
+re-applies a fix and never appends a duplicate `> flagged:` line.
 
 ## Forbidden patterns (do not do these)
 
