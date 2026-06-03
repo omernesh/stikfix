@@ -75,3 +75,57 @@ describe('markReadName', () => {
     assert.strictEqual(markReadName('0042-note.md'), '0042-note.read.md');
   });
 });
+
+// ---------------------------------------------------------------------------
+// classifyNote (SKILL-05: empty/ambiguous/missing-screenshot classification)
+// ---------------------------------------------------------------------------
+
+describe('classifyNote', () => {
+  test("status='read' → 'read' (already-processed; skill skips)", () => {
+    assert.strictEqual(
+      classifyNote({ status: 'read' }, ['0001-t+1.png']),
+      'read'
+    );
+  });
+
+  test("status='flagged' → 'flagged' (previously flagged; stays visible per D-08)", () => {
+    assert.strictEqual(
+      classifyNote({ status: 'flagged' }, ['0001-t+1.png']),
+      'flagged'
+    );
+  });
+
+  test('unread + screenshot present → fixable', () => {
+    assert.strictEqual(
+      classifyNote(
+        { status: 'unread', screenshots: ['0001-t+1.png'] },
+        ['0001-t+1.png']
+      ),
+      'fixable'
+    );
+  });
+
+  test('unread + screenshot missing → text-only (D-09: missing image is NOT flagged)', () => {
+    assert.strictEqual(
+      classifyNote(
+        { status: 'unread', screenshots: ['0001-t+1.png'] },
+        []
+      ),
+      'text-only'
+    );
+  });
+
+  test('unread + empty screenshots array → fixable (no screenshots referenced is normal)', () => {
+    assert.strictEqual(
+      classifyNote({ status: 'unread', screenshots: [] }, []),
+      'fixable'
+    );
+  });
+
+  test('absent/undefined screenshots field treated as [] → fixable (RESEARCH A1)', () => {
+    assert.strictEqual(
+      classifyNote({ status: 'unread' }, []),
+      'fixable'
+    );
+  });
+});
