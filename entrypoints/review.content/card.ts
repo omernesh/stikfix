@@ -22,10 +22,11 @@ import interact from 'interactjs';
 import { SFX_MSG } from '../../lib/types.js';
 import type { AnnotationPayload } from '../../lib/types.js';
 import { tryOpenCard, closeCardState } from './card-state.js';
-import { captureTab, waitTwoRafs } from '../../lib/capture.js';
+import { captureTab, waitTwoRafs, cropToRect } from '../../lib/capture.js';
 import { drawHighlightBox } from '../../lib/highlight-draw.js';
 import { buildContextSummary } from '../../lib/element-context.js';
 import type { ElementContext } from '../../lib/types.js';
+import { enterMarqueeMode } from './marquee.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -43,6 +44,49 @@ interface AnnotationErrResponse {
 }
 
 type AnnotationResponse = AnnotationOkResponse | AnnotationErrResponse;
+
+/** Per-card thumbnail entry (CAM-05) */
+interface ThumbnailEntry {
+  kind: string;   // '+1', '+2', …
+  dataUrl: string;
+}
+
+// ---------------------------------------------------------------------------
+// renderThumbnails — rebuild thumbnail strip via createElement/textContent
+// INVARIANT C: no innerHTML; img.src is a data: URI (no XSS risk)
+// CAM-05: × button splices entry, renumbers remaining, re-renders
+// ---------------------------------------------------------------------------
+
+function renderThumbnails(container: HTMLElement, items: ThumbnailEntry[]): void {
+  container.replaceChildren();
+  items.forEach((t, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'sfx-thumb-wrap';
+
+    const img = document.createElement('img');
+    img.className = 'sfx-thumb-img';
+    img.src = t.dataUrl;  // data: URI — no XSS risk; no textContent for src
+    img.alt = t.kind;     // textContent equivalent for alt
+
+    const del = document.createElement('button');
+    del.className = 'sfx-thumb-del';
+    del.textContent = '×';  // × MULTIPLICATION SIGN
+    del.setAttribute('aria-label', `Remove screenshot ${i + 1}`);
+    del.addEventListener('click', () => {
+      items.splice(i, 1);
+      // Renumber remaining entries (preserves +1 slot for element auto-highlight)
+      items.forEach((item, j) => { item.kind = `+${j + 1}`; });
+      renderThumbnails(container, items);
+    });
+
+    wrap.appendChild(img);
+    wrap.appendChild(del);
+    container.appendChild(wrap);
+  });
+
+  // Hide strip when empty (CAM-05: strip is absent when no thumbnails)
+  container.style.display = items.length === 0 ? 'none' : 'flex';
+}
 
 // ---------------------------------------------------------------------------
 // Module-level active card DOM reference (FREE-02 DOM half)
@@ -92,6 +136,9 @@ export function openCard(
     }
   }
 
+  // Card-scoped thumbnails state (CAM-05) — one per open card, not module-level
+  const thumbnails: ThumbnailEntry[] = [];
+
   // Build card via createElement/textContent — INVARIANT C
   const card = document.createElement('div');
   card.id = 'sfx-card';
@@ -108,6 +155,13 @@ export function openCard(
   headerLabel.textContent = 'Free note';
   header.appendChild(headerLabel);
 
+  // Camera button — CAM-01 (last child; margin-left:auto pushes it right)
+  const camBtn = document.createElement('button');
+  camBtn.className = 'sfx-cam-btn';
+  camBtn.setAttribute('aria-label', 'Capture region');
+  camBtn.textContent = '📷';
+  header.appendChild(camBtn);
+
   card.appendChild(header);
 
   // --- Body ---
@@ -118,6 +172,12 @@ export function openCard(
   textarea.id = 'sfx-card-textarea';
   textarea.setAttribute('placeholder', 'Type your note…');
   body.appendChild(textarea);
+
+  // Thumbnail strip (CAM-05) — hidden until first capture
+  const thumbStrip = document.createElement('div');
+  thumbStrip.className = 'sfx-thumb-strip';
+  thumbStrip.style.display = 'none';
+  body.appendChild(thumbStrip);
 
   card.appendChild(body);
 
@@ -147,6 +207,51 @@ export function openCard(
   Promise.resolve().then(() => textarea.focus());
 
   // -------------------------------------------------------------------------
+  // Camera button click — CAM-01/02/03/04 (free-note path)
+  // T-06-07 ordering: enterMarqueeMode cleanup() removes scrim FIRST, then
+  // the onCapture callback calls setSfxVisibility(false) → waitTwoRafs → captureTab
+  // -------------------------------------------------------------------------
+  camBtn.addEventListener('click', () => {
+    camBtn.disabled = true;  // prevent double-activation while scrim is shown
+
+    enterMarqueeMode(
+      container,
+      // onCapture — scrim already removed by marquee cleanup() at this point (T-06-07)
+      async (rect) => {
+        // Build a local setSfxVisibility for the free-note card context
+        function setSfxVisibilityFree(visible: boolean): void {
+          const display = visible ? '' : 'none';
+          if (activeCard) activeCard.style.display = display;
+          const chip = container.querySelector<HTMLElement>('#sfx-chip');
+          if (chip) chip.style.display = display;
+          const fab = container.querySelector<HTMLElement>('#sfx-fab');
+          if (fab) fab.style.display = display;
+          const hoverOverlay = container.querySelector<HTMLElement>('.sfx-hover-highlight');
+          if (hoverOverlay) hoverOverlay.style.display = display;
+        }
+
+        setSfxVisibilityFree(false);
+        try {
+          await waitTwoRafs();
+          const dataUrl = await captureTab(tabId);
+          const cropped = await cropToRect(dataUrl, rect, window.devicePixelRatio);
+          setSfxVisibilityFree(true);
+          thumbnails.push({ kind: `+${thumbnails.length + 1}`, dataUrl: cropped });
+          renderThumbnails(thumbStrip, thumbnails);
+        } catch (_capErr) {
+          setSfxVisibilityFree(true);
+          showToastFn('Screenshot capture failed', true);
+        }
+        camBtn.disabled = false;
+      },
+      // onCancel — no capture; just re-enable button
+      () => {
+        camBtn.disabled = false;
+      }
+    );
+  });
+
+  // -------------------------------------------------------------------------
   // Send disabled rule: disabled when textarea empty (after trim) or in-flight
   // -------------------------------------------------------------------------
   textarea.addEventListener('input', () => {
@@ -165,7 +270,7 @@ export function openCard(
     } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       if (!sendBtn.disabled) {
-        _doSend(textarea, sendBtn, cancelBtn, tabId, onDismiss, showToastFn);
+        _doSend(textarea, sendBtn, cancelBtn, tabId, thumbnails, onDismiss, showToastFn);
       }
     }
   });
@@ -181,7 +286,7 @@ export function openCard(
   // Send button — relay pattern copied from chip.ts wireSendButton (lines 336-373)
   // -------------------------------------------------------------------------
   sendBtn.addEventListener('click', () => {
-    _doSend(textarea, sendBtn, cancelBtn, tabId, onDismiss, showToastFn);
+    _doSend(textarea, sendBtn, cancelBtn, tabId, thumbnails, onDismiss, showToastFn);
   });
 
   // -------------------------------------------------------------------------
@@ -259,14 +364,15 @@ function _doClose(onDismiss: () => void): void {
  * Execute the Send relay — copied from chip.ts wireSendButton (lines 336-373),
  * replacing the stub comment with textarea.value.trim().
  *
- * screenshots: [] — D-06: ALWAYS empty for free notes.
- * card.ts MUST NOT import lib/capture.ts (T-04-04 / D-06).
+ * CAM-06: thumbnails (region captures) are mapped into screenshots[].
+ * Free notes with no captures: thumbnails = [] → screenshots = [].
  */
 function _doSend(
   textarea: HTMLTextAreaElement,
   sendBtn: HTMLButtonElement,
   cancelBtn: HTMLButtonElement,
   tabId: number,
+  thumbnails: ThumbnailEntry[],
   onDismiss: () => void,
   showToastFn: (msg: string, isError: boolean) => void
 ): void {
@@ -275,7 +381,7 @@ function _doSend(
   cancelBtn.disabled = true;
   textarea.readOnly = true;
 
-  // §9.1 free-note payload (D-06 enforced: screenshots ALWAYS [])
+  // §9.1 free-note payload — CAM-06: map thumbnails into screenshots
   const payload: AnnotationPayload = {
     mode: 'free',
     comment: textarea.value.trim(),
@@ -288,7 +394,7 @@ function _doSend(
       height: window.innerHeight,
       devicePixelRatio: window.devicePixelRatio,
     },
-    screenshots: [],  // D-06: ALWAYS empty for free notes — never add capture here
+    screenshots: thumbnails.map(t => ({ kind: t.kind, mime: 'image/png' as const, dataUrl: t.dataUrl })),
   };
 
   // SW relay — mirrors chip.ts wireSendButton exactly (INVARIANT B: no direct fetch)
@@ -372,6 +478,13 @@ export function openElementCard(
     }
   }
 
+  // Card-scoped thumbnails state (CAM-05) — element path
+  // Note: element auto-highlight (+1) is added AFTER send in _doElementSend;
+  // region thumbnails from the camera tool start at +2 if the element +1 exists.
+  // The thumbnails array here tracks ONLY region captures; element +1 is handled
+  // inline in _doElementSend and renumbered relative to the full screenshots array.
+  const thumbnails: ThumbnailEntry[] = [];
+
   // Build card via createElement/textContent — INVARIANT C
   const card = document.createElement('div');
   card.id = 'sfx-card';
@@ -388,6 +501,13 @@ export function openElementCard(
   headerLabel.className = 'sfx-card-header-label';
   headerLabel.textContent = 'Element note';   // differs from free-note card
   header.appendChild(headerLabel);
+
+  // Camera button — CAM-01 (last child; margin-left:auto pushes it right)
+  const camBtn = document.createElement('button');
+  camBtn.className = 'sfx-cam-btn';
+  camBtn.setAttribute('aria-label', 'Capture region');
+  camBtn.textContent = '📷';
+  header.appendChild(camBtn);
 
   card.appendChild(header);
 
@@ -413,6 +533,12 @@ export function openElementCard(
   textarea.id = 'sfx-card-textarea';
   textarea.setAttribute('placeholder', 'Type your note…');
   body.appendChild(textarea);
+
+  // Thumbnail strip (CAM-05) — hidden until first region capture
+  const thumbStrip = document.createElement('div');
+  thumbStrip.className = 'sfx-thumb-strip';
+  thumbStrip.style.display = 'none';
+  body.appendChild(thumbStrip);
 
   card.appendChild(body);
 
@@ -442,6 +568,53 @@ export function openElementCard(
   Promise.resolve().then(() => textarea.focus());
 
   // -------------------------------------------------------------------------
+  // Camera button click — CAM-01/02/03/04 (element-note path)
+  // T-06-07 ordering: enterMarqueeMode cleanup() removes scrim FIRST, then
+  // onCapture calls setSfxVisibility → waitTwoRafs → captureTab → cropToRect
+  // -------------------------------------------------------------------------
+  camBtn.addEventListener('click', () => {
+    camBtn.disabled = true;
+
+    enterMarqueeMode(
+      container,
+      // onCapture — scrim already removed by marquee cleanup() at this point (T-06-07)
+      async (rect) => {
+        // setSfxVisibility scoped to element card context
+        function setSfxVisibilityElem(visible: boolean): void {
+          const display = visible ? '' : 'none';
+          if (activeCard) activeCard.style.display = display;
+          const chip = container.querySelector<HTMLElement>('#sfx-chip');
+          if (chip) chip.style.display = display;
+          const fab = container.querySelector<HTMLElement>('#sfx-fab');
+          if (fab) fab.style.display = display;
+          const hoverOverlay = container.querySelector<HTMLElement>('.sfx-hover-highlight');
+          if (hoverOverlay) hoverOverlay.style.display = display;
+        }
+
+        setSfxVisibilityElem(false);
+        try {
+          await waitTwoRafs();
+          const dataUrl = await captureTab(tabId);
+          const cropped = await cropToRect(dataUrl, rect, window.devicePixelRatio);
+          setSfxVisibilityElem(true);
+          // For element notes: +1 is the element auto-highlight (added in _doElementSend).
+          // Region thumbnails from the camera are numbered starting after +1.
+          // We offset by 1 to reserve slot +1 for the element highlight.
+          thumbnails.push({ kind: `+${thumbnails.length + 2}`, dataUrl: cropped });
+          renderThumbnails(thumbStrip, thumbnails);
+        } catch (_capErr) {
+          setSfxVisibilityElem(true);
+          showToastFn('Screenshot capture failed', true);
+        }
+        camBtn.disabled = false;
+      },
+      () => {
+        camBtn.disabled = false;
+      }
+    );
+  });
+
+  // -------------------------------------------------------------------------
   // Send disabled rule: disabled when textarea empty (after trim) or in-flight
   // Context header does NOT affect Send enablement (D-03)
   // -------------------------------------------------------------------------
@@ -461,7 +634,7 @@ export function openElementCard(
     } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       if (!sendBtn.disabled) {
-        _doElementSend(textarea, sendBtn, discardBtn, tabId, elementCtx, container, onDismiss, showToastFn, onSent);
+        _doElementSend(textarea, sendBtn, discardBtn, tabId, elementCtx, container, thumbnails, onDismiss, showToastFn, onSent);
       }
     }
   });
@@ -477,7 +650,7 @@ export function openElementCard(
   // Send button
   // -------------------------------------------------------------------------
   sendBtn.addEventListener('click', () => {
-    _doElementSend(textarea, sendBtn, discardBtn, tabId, elementCtx, container, onDismiss, showToastFn, onSent);
+    _doElementSend(textarea, sendBtn, discardBtn, tabId, elementCtx, container, thumbnails, onDismiss, showToastFn, onSent);
   });
 
   // -------------------------------------------------------------------------
@@ -546,6 +719,7 @@ function _doElementSend(
   tabId: number,
   elementCtx: ElementContext,
   container: HTMLElement,
+  thumbnails: ThumbnailEntry[],
   onDismiss: () => void,
   showToastFn: (msg: string, isError: boolean) => void,
   onSent?: () => void
@@ -639,10 +813,12 @@ function _doElementSend(
         devicePixelRatio: window.devicePixelRatio,
       },
       element: elementCtx,
+      // CAM-06: +1 is the element auto-highlight; region thumbnails follow as +2, +3, …
+      // thumbnails[].kind is already set as '+2', '+3', … (offset by 1 in camera handler)
       screenshots: [
         {
           kind: '+1',
-          mime: 'image/png',
+          mime: 'image/png' as const,
           dataUrl: plus1DataUrl,
           rect: {
             x: frozenRect.x,
@@ -651,6 +827,7 @@ function _doElementSend(
             height: frozenRect.height,
           },
         },
+        ...thumbnails.map(t => ({ kind: t.kind, mime: 'image/png' as const, dataUrl: t.dataUrl })),
       ],
     };
 
