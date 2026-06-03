@@ -19,6 +19,10 @@ node_modules/
 notes/
 !notes/.gitkeep
 
+# Allow test fixture notes (not runtime content)
+!test/fixtures/notes/
+!test/fixtures/notes/**
+
 # Logs / runtime
 *.log
 .stickyfix-token
