@@ -13,6 +13,7 @@ import { VERSION } from './config.js';
 import { checkToken, readBody } from './security.js';
 import { withSerialLock, getNextSerial } from './serial.js';
 import { writeNote } from './write-note.js';
+import { listAnnotations, editNote, deleteNote } from './read-note.js';
 import type { Config, AnnotationPayload } from './types.js';
 
 // ---------------------------------------------------------------------------
@@ -34,7 +35,7 @@ function setCorsHeaders(req: http.IncomingMessage, res: http.ServerResponse): vo
  */
 function setPreflightHeaders(req: http.IncomingMessage, res: http.ServerResponse): void {
   setCorsHeaders(req, res);
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Stickyfix-Token');
   res.setHeader('Access-Control-Max-Age', '86400');
 }
@@ -137,6 +138,131 @@ async function handleAnnotation(
 }
 
 // ---------------------------------------------------------------------------
+// Phase 6 handlers: GET /annotations, PUT /annotation/<serial>, DELETE /annotation/<serial>
+// HOST-14/15/16
+// ---------------------------------------------------------------------------
+
+/**
+ * GET /annotations?url=<page-url>
+ * Returns all notes whose URL path matches the given page URL (D-02).
+ * Token-gated (T-06-04). CORS headers first (Pitfall 6).
+ */
+async function handleListAnnotations(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  cfg: Config,
+): Promise<void> {
+  setCorsHeaders(req, res);
+
+  if (!checkToken(req, cfg.token)) {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: 'unauthorized' }));
+    return;
+  }
+
+  try {
+    // Parse ?url= query parameter (path already stripped of query by route table)
+    const pageUrl = new URL(req.url ?? '/', 'http://x').searchParams.get('url') ?? '';
+    const pins = listAnnotations(cfg.notesDir, pageUrl);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, pins }));
+  } catch (e: unknown) {
+    const err = e as { statusCode?: number; message?: string };
+    const status = (typeof err.statusCode === 'number' && err.statusCode >= 400 && err.statusCode < 600)
+      ? err.statusCode : 500;
+    res.writeHead(status, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: err.message ?? 'internal error' }));
+  }
+}
+
+/**
+ * PUT /annotation/<serial>
+ * Overwrites the note body in place; preserves frontmatter + screenshots; re-marks status:unread.
+ * Reads body via existing readBody (12 MB cap → 413, HOST-11 reuse).
+ * Token-gated (T-06-01). path-confined via editNote (T-06-02).
+ */
+async function handleEditAnnotation(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  cfg: Config,
+  serial: string,
+): Promise<void> {
+  setCorsHeaders(req, res);
+
+  if (!checkToken(req, cfg.token)) {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: 'unauthorized' }));
+    return;
+  }
+
+  // Read body with 12 MB cap (HOST-11 invariant reuse, T-06-03)
+  let raw: string;
+  try {
+    raw = await readBody(req);
+  } catch (e: unknown) {
+    const err = e as { statusCode?: number; message?: string };
+    const status = err.statusCode === 413 ? 413 : 400;
+    res.writeHead(status, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: err.message ?? 'read error' }));
+    return;
+  }
+
+  try {
+    let parsed: { comment?: string };
+    try {
+      parsed = JSON.parse(raw) as { comment?: string };
+    } catch {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: 'invalid JSON' }));
+      return;
+    }
+
+    const comment = parsed.comment ?? '';
+    await editNote(cfg.notesDir, serial, comment);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true }));
+  } catch (e: unknown) {
+    const err = e as { statusCode?: number; message?: string };
+    const status = (typeof err.statusCode === 'number' && err.statusCode >= 400 && err.statusCode < 600)
+      ? err.statusCode : 500;
+    res.writeHead(status, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: err.message ?? 'internal error' }));
+  }
+}
+
+/**
+ * DELETE /annotation/<serial>
+ * Removes the .md file and its +N.png screenshots (D-05/D-06).
+ * Token-gated (T-06-01). path-confined via deleteNote (T-06-02).
+ */
+async function handleDeleteAnnotation(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  cfg: Config,
+  serial: string,
+): Promise<void> {
+  setCorsHeaders(req, res);
+
+  if (!checkToken(req, cfg.token)) {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: 'unauthorized' }));
+    return;
+  }
+
+  try {
+    await deleteNote(cfg.notesDir, serial);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true }));
+  } catch (e: unknown) {
+    const err = e as { statusCode?: number; message?: string };
+    const status = (typeof err.statusCode === 'number' && err.statusCode >= 400 && err.statusCode < 600)
+      ? err.statusCode : 500;
+    res.writeHead(status, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: err.message ?? 'internal error' }));
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Server factory (D-01: createHostServer — does NOT call listen)
 // ---------------------------------------------------------------------------
 
@@ -163,6 +289,42 @@ export function createHostServer(cfg: Config): http.Server {
     if (method === 'POST' && path === '/annotation') {
       handleAnnotation(req, res, cfg).catch((e: unknown) => {
         // Last-resort: if handler itself threw unexpectedly and response not started
+        if (!res.headersSent) {
+          setCorsHeaders(req, res);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, error: String(e) }));
+        }
+      });
+      return;
+    }
+
+    // Phase 6 routes: GET /annotations, PUT/DELETE /annotation/<serial>
+    if (method === 'GET' && path === '/annotations') {
+      handleListAnnotations(req, res, cfg).catch((e: unknown) => {
+        if (!res.headersSent) {
+          setCorsHeaders(req, res);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, error: String(e) }));
+        }
+      });
+      return;
+    }
+
+    if (method === 'PUT' && path.startsWith('/annotation/')) {
+      const serial = path.slice('/annotation/'.length);
+      handleEditAnnotation(req, res, cfg, serial).catch((e: unknown) => {
+        if (!res.headersSent) {
+          setCorsHeaders(req, res);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, error: String(e) }));
+        }
+      });
+      return;
+    }
+
+    if (method === 'DELETE' && path.startsWith('/annotation/')) {
+      const serial = path.slice('/annotation/'.length);
+      handleDeleteAnnotation(req, res, cfg, serial).catch((e: unknown) => {
         if (!res.headersSent) {
           setCorsHeaders(req, res);
           res.writeHead(500, { 'Content-Type': 'application/json' });
