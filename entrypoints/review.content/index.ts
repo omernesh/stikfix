@@ -18,6 +18,7 @@ import { showToast } from './toast.js';
 import { SFX_MSG } from '../../lib/types.js';
 import { captureElementContext } from '../../lib/element-context.js';
 import { exitPickMode } from './picker.js';
+import { mountPins, teardownPins } from './pin.js';
 
 export default defineContentScript({
   matches: ['<all_urls>'],
@@ -58,9 +59,16 @@ export default defineContentScript({
             container, resolvedTabId, captureElementContext(el),
             () => { /* element card has no FAB to collapse */ },
             toast,
-            // onSent: re-arm pick mode after a successful Send so the user can
-            // immediately pick the next element (sticky-picker UX).
-            reArm
+            // onSent: re-arm pick mode AND re-fetch pins after a successful Send
+            () => {
+              reArm();
+              if (resolvedTabId !== null) {
+                teardownPins();
+                mountPins(container, resolvedTabId, toast).catch(
+                  (err: unknown) => toast(`Could not load pins — ${String(err)}`, true)
+                );
+              }
+            }
           );
         });
 
@@ -76,11 +84,31 @@ export default defineContentScript({
             // card opens, back to 'false' when it dismisses.
             const fab = mountFab(container, () => {
               fab.setAttribute('aria-expanded', 'true');
-              openCard(container, tabId, () => {
-                // onDismiss: card closed (Cancel or Send success) → collapse FAB
-                fab.setAttribute('aria-expanded', 'false');
-              }, toast);
+              openCard(
+                container,
+                tabId,
+                () => {
+                  // onDismiss: card closed (Cancel or Send success) → collapse FAB
+                  fab.setAttribute('aria-expanded', 'false');
+                },
+                toast,
+                // onSent (Phase 6): re-fetch pins after a successful free-note Send
+                // Guard: resolvedTabId captured by closure (may be null on race)
+                () => {
+                  if (resolvedTabId !== null) {
+                    teardownPins();
+                    mountPins(container, resolvedTabId, toast).catch(
+                      (err: unknown) => toast(`Could not load pins — ${String(err)}`, true)
+                    );
+                  }
+                }
+              );
             });
+
+            // Phase 6: mount pins after tabId resolves (PIN-01)
+            mountPins(container, tabId, toast).catch(
+              (err: unknown) => toast(`Could not load pins — ${String(err)}`, true)
+            );
           })
           .catch(() => {
             // If tabId resolution fails, FAB is not mounted — the chip already
@@ -99,6 +127,8 @@ export default defineContentScript({
           closeCard();
           // Exit pick mode so it never outlives the UI (picker.ts idempotent)
           exitPickMode();
+          // Phase 6: tear down pins + remove scroll/resize listeners (T-06-09)
+          teardownPins();
         }
       },
     });

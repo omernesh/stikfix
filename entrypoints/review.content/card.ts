@@ -108,12 +108,15 @@ let activeCard: HTMLElement | null = null;
  * @param tabId        Current tab ID (resolved once in index.ts)
  * @param onDismiss    Called on Cancel or after Send success
  * @param showToastFn  Adapter: (msg, isError) => void (from index.ts)
+ * @param onSent       Optional — called ONLY after a successful Send (not on Cancel/error).
+ *                     Used by index.ts to re-fetch pins after a note is written.
  */
 export function openCard(
   container: HTMLElement,
   tabId: number,
   onDismiss: () => void,
-  showToastFn: (msg: string, isError: boolean) => void
+  showToastFn: (msg: string, isError: boolean) => void,
+  onSent?: () => void
 ): void {
   // FREE-02: single-card guard (DOM-free decision delegated to card-state.ts)
   // WR-04: if card-state says active but activeCard is null (stale flag after
@@ -270,7 +273,7 @@ export function openCard(
     } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       if (!sendBtn.disabled) {
-        _doSend(textarea, sendBtn, cancelBtn, tabId, thumbnails, onDismiss, showToastFn);
+        _doSend(textarea, sendBtn, cancelBtn, tabId, thumbnails, onDismiss, showToastFn, onSent);
       }
     }
   });
@@ -286,7 +289,7 @@ export function openCard(
   // Send button — relay pattern copied from chip.ts wireSendButton (lines 336-373)
   // -------------------------------------------------------------------------
   sendBtn.addEventListener('click', () => {
-    _doSend(textarea, sendBtn, cancelBtn, tabId, thumbnails, onDismiss, showToastFn);
+    _doSend(textarea, sendBtn, cancelBtn, tabId, thumbnails, onDismiss, showToastFn, onSent);
   });
 
   // -------------------------------------------------------------------------
@@ -366,6 +369,9 @@ function _doClose(onDismiss: () => void): void {
  *
  * CAM-06: thumbnails (region captures) are mapped into screenshots[].
  * Free notes with no captures: thumbnails = [] → screenshots = [].
+ *
+ * @param onSent  Optional — called ONLY on successful Send (not cancel/error).
+ *                Used by index.ts to re-fetch pins after a note is written (Phase 6).
  */
 function _doSend(
   textarea: HTMLTextAreaElement,
@@ -374,7 +380,8 @@ function _doSend(
   tabId: number,
   thumbnails: ThumbnailEntry[],
   onDismiss: () => void,
-  showToastFn: (msg: string, isError: boolean) => void
+  showToastFn: (msg: string, isError: boolean) => void,
+  onSent?: () => void
 ): void {
   sendBtn.disabled = true;
   sendBtn.textContent = 'Sending…';
@@ -419,6 +426,8 @@ function _doSend(
         // resp.file is the exact host-returned filename — never client-reconstructed
         showToastFn(`wrote notes\\${resp.file}`, false);
         _doClose(onDismiss);
+        // Phase 6: notify after-Send hook (pin re-fetch) — called AFTER dismiss
+        onSent?.();
       } else {
         // Error: card stays open; restore controls (user can retry)
         showToastFn(resp.error, true);
