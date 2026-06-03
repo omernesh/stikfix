@@ -218,7 +218,17 @@ Plans:
   3. Edge cases handled: empty queue reports cleanly; ambiguous note is left unread and flagged; missing screenshot causes the skill to proceed with text only
   4. The root README documents install + usage and includes a demo GIF; a CLEAN-ROOM.md confirms no GPL code present with a grep audit result
 
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+
+**Wave 0**
+
+- [ ] 07-01-PLAN.md — Testable core: lib/review-notes.ts pure helpers (selectUnread/markReadName/classifyNote) + node:test (SKILL-02/04/05)
+
+**Wave 1** *(blocked on Wave 0)*
+
+- [ ] 07-02-PLAN.md — Skill slice: portable skill/SKILL.md + .claude/skills wrapper + fixtures + human-UAT runbook (SKILL-01/02/03/04/05)
+- [ ] 07-03-PLAN.md — Docs slice: quickstart-first README + CLEAN-ROOM.md + clean-room skip-list + demo placeholder (DOC-01/02)
 
 ### Phase 8: Hardening + Pre-Release Audit
 
@@ -272,6 +282,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 4. Free-Note Mode + Capture Utilities | 3/3 | Complete    | 2026-06-01 |
 | 5. Element-Note Mode + Rich Context Capture | 3/3 | Complete   | 2026-06-02 |
 | 6. Region Capture + Visual Design + Persistent Pins | 4/4 | Complete   | 2026-06-03 |
-| 7. review-notes Skill + Docs | 0/TBD | Not started | - |
+| 7. review-notes Skill + Docs | 0/3 | Not started | - |
 | 8. Hardening + Pre-Release Audit | 0/TBD | Not started | - |
 | 9. Turnkey Onboarding & Cross-Browser Distribution | 0/TBD | Not started | - |
