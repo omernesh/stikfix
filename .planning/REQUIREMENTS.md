@@ -78,10 +78,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Visual Design (UI)
 
-- [ ] **UI-01**: Injected UI mounts inside a Shadow DOM (`createShadowRootUi`) so post-it CSS cannot collide with the host page; uses `px` units to resist host font inheritance
-- [ ] **UI-02**: Post-it has a genuine sticky-note aesthetic — warm paper color, subtle shadow, legible type, smooth drag
-- [ ] **UI-03**: A colored header strip encodes mode (free vs element distinct colors)
-- [ ] **UI-04**: Success and error states surface as styled toasts
+- [x] **UI-01**: Injected UI mounts inside a Shadow DOM (`createShadowRootUi`) so post-it CSS cannot collide with the host page; uses `px` units to resist host font inheritance
+- [x] **UI-02**: Post-it has a genuine sticky-note aesthetic — warm paper color, subtle shadow, legible type, smooth drag
+- [x] **UI-03**: A colored header strip encodes mode (free vs element distinct colors)
+- [x] **UI-04**: Success and error states surface as styled toasts
 
 ### Persistent Pins (PIN)
 
@@ -203,10 +203,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CAM-04 | Phase 6 | Complete |
 | CAM-05 | Phase 6 | Complete |
 | CAM-06 | Phase 6 | Complete |
-| UI-01 | Phase 6 | Pending |
-| UI-02 | Phase 6 | Pending |
-| UI-03 | Phase 6 | Pending |
-| UI-04 | Phase 6 | Pending |
+| UI-01 | Phase 6 | Complete |
+| UI-02 | Phase 6 | Complete |
+| UI-03 | Phase 6 | Complete |
+| UI-04 | Phase 6 | Complete |
 | PIN-01 | Phase 6 | Complete |
 | PIN-02 | Phase 6 | Complete |
 | PIN-03 | Phase 6 | Complete |
