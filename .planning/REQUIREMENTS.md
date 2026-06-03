@@ -88,8 +88,8 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **PIN-01**: On entering Review Mode, the extension fetches notes for the current page (exact URL path match, query ignored) via `GET /annotations` and renders one persistent on-page pin per note
 - [x] **PIN-02**: Element-note pins anchor to the stored `@medv/finder` selector (re-queried on load), repositioning on scroll/resize; free-note pins float at the stored viewport coords (page-level, no anchor)
 - [x] **PIN-03**: An orphaned pin (selector matches nothing) renders greyed/dashed at its last-known page-absolute rect with a tooltip; it is never hidden (a note is never silently lost)
-- [ ] **PIN-04**: Pins encode mode (element vs free — same header colors as the cards, UI-03) and unread/read state (read = `*.read.md`); hover shows a note-text preview
-- [ ] **PIN-05**: Clicking a pin opens a card to view, edit, or delete the note
+- [x] **PIN-04**: Pins encode mode (element vs free — same header colors as the cards, UI-03) and unread/read state (read = `*.read.md`); hover shows a note-text preview
+- [x] **PIN-05**: Clicking a pin opens a card to view, edit, or delete the note
 - [x] **PIN-06**: Editing saves via `PUT /annotation/<serial>` (overwrite in place); deleting via `DELETE /annotation/<serial>` (file + screenshots) behind a confirm guard; the on-page pin updates/disappears accordingly
 
 ### Reliability (REL)
@@ -210,8 +210,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PIN-01 | Phase 6 | Complete |
 | PIN-02 | Phase 6 | Complete |
 | PIN-03 | Phase 6 | Complete |
-| PIN-04 | Phase 6 | Pending |
-| PIN-05 | Phase 6 | Pending |
+| PIN-04 | Phase 6 | Complete |
+| PIN-05 | Phase 6 | Complete |
 | PIN-06 | Phase 6 | Complete |
 | REL-01 | Phase 8 | Pending |
 | REL-02 | Phase 8 | Pending |

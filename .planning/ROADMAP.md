@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Extension Skeleton + SW Relay Proof** - Popup, host discovery, chrome.storage.local state, on-demand injection, dummy POST relay proven end-to-end (completed 2026-05-31)
 - [x] **Phase 4: Free-Note Mode + Capture Utilities** - Draggable FAB → post-it → Send → .md on disk; DPR crop, double-rAF flush, captureVisibleTab relay established as reusable utilities (completed 2026-05-31)
 - [x] **Phase 5: Element-Note Mode + Rich Context Capture** - Element picker with @medv/finder selector, React fiber, computed styles, outerHTML, auto-highlight screenshot (completed 2026-06-02)
-- [ ] **Phase 6: Region Capture + Visual Design + Persistent Pins** - Camera tool drag-marquee crop; full paper-aesthetic sticky-note UI inside shadow DOM; clickable on-page note pins (rehydrated from disk) with view/edit/delete via host CRUD
+- [x] **Phase 6: Region Capture + Visual Design + Persistent Pins** - Camera tool drag-marquee crop; full paper-aesthetic sticky-note UI inside shadow DOM; clickable on-page note pins (rehydrated from disk) with view/edit/delete via host CRUD (completed 2026-06-03)
 - [ ] **Phase 7: review-notes Skill + Docs** - Portable AI skill ships; README with demo GIF; clean-room provenance documented
 - [ ] **Phase 8: Hardening + Pre-Release Audit** - All error paths surface toasts; concurrent-Send stress test; GPL grep audit; idle-eviction regression pass
 - [ ] **Phase 9: Turnkey Onboarding & Cross-Browser Distribution** - One-step installer (host + extension), automatic/one-click token pairing (no manual copy-paste), host auto-start, clean uninstall; documented Edge/Firefox/Safari packaging path
@@ -201,7 +201,7 @@ Plans:
 
 **Wave 3** *(blocked on Waves 0+2)*
 
-- [ ] 06-04-PLAN.md — Persistent Pins slice: rehydrate via GET /annotations → render/anchor/orphan pins + hover preview + view/edit (PUT)/delete (DELETE) card (PIN-01..06)
+- [x] 06-04-PLAN.md — Persistent Pins slice: rehydrate via GET /annotations → render/anchor/orphan pins + hover preview + view/edit (PUT)/delete (DELETE) card (PIN-01..06)
 
 **UI hint**: yes
 
@@ -271,7 +271,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 3. Extension Skeleton + SW Relay Proof | 4/4 | Complete    | 2026-05-31 |
 | 4. Free-Note Mode + Capture Utilities | 3/3 | Complete    | 2026-06-01 |
 | 5. Element-Note Mode + Rich Context Capture | 3/3 | Complete   | 2026-06-02 |
-| 6. Region Capture + Visual Design + Persistent Pins | 3/4 | In Progress|  |
+| 6. Region Capture + Visual Design + Persistent Pins | 4/4 | Complete   | 2026-06-03 |
 | 7. review-notes Skill + Docs | 0/TBD | Not started | - |
 | 8. Hardening + Pre-Release Audit | 0/TBD | Not started | - |
 | 9. Turnkey Onboarding & Cross-Browser Distribution | 0/TBD | Not started | - |
