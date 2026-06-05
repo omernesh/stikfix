@@ -8,6 +8,8 @@
  * Pitfall 2: server runs indefinitely (smoke test uses spawn+readline, not spawnSync)
  */
 
+import { writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import type { AddressInfo } from 'node:net';
 import { resolveConfig, resolveConfigValues, ensureNotesDir, writeTokenFile } from './config.js';
@@ -60,6 +62,10 @@ const addr = server.address() as AddressInfo;
 if (addr.address !== BIND_HOST) {
   throw new Error(`FATAL: server bound to ${addr.address} instead of ${BIND_HOST}`);
 }
+
+// Publish bound port to disk so the native host can read it without a port scan
+// (RESEARCH Open Question 2 / A5). Mode 0o600 alongside existing token file.
+writeFileSync(join(cfg.root, '.stickyfix-port'), String(boundPort), { encoding: 'utf8', mode: 0o600 });
 
 // Startup JSON line — read by smoke test via readline (Pattern 12)
 console.log(JSON.stringify({
