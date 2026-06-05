@@ -2,7 +2,7 @@
 phase: 09-turnkey-onboarding-cross-browser-distribution
 plan: "02"
 subsystem: extension+host
-tags: [native-messaging, bootstrapper, pairing, popup-ui, security, stable-id, desktop-launcher]
+tags: [native-messaging, bootstrapper, pairing, popup-ui, security, stable-id, desktop-launcher, single-instance-guard, token-persistence]
 dependency_graph:
   requires:
     - host/src/native-msg.ts (09-01: sendNativeMessage, readNativeMessages)
@@ -39,9 +39,12 @@ key_files:
     - bin/stickyfix.ts
     - host/src/native-host.ts
     - host/src/extension-id.ts
+    - host/src/probe.ts (FIX-SI: probeExistingHost — single-instance guard)
+    - host/test/robustness.test.ts (FIX-SI + FIX-TP: 8 new unit tests)
     - .keys/manifest-key.txt
     - .keys/extension-id.txt
   modified:
+    - host/src/index.ts (FIX-SI: single-instance guard; FIX-TP: token persistence)
     - package.json
     - tsconfig.host.json
     - wxt.config.ts
@@ -54,6 +57,10 @@ key_files:
     - host/test/bootstrapper.test.ts
     - .gitignore
 decisions:
+  - "FIX-SI: probeExistingHost extracted to host/src/probe.ts (not inline in index.ts) so tests can import it without triggering the top-level CLI parse/exit code"
+  - "FIX-SI: probe timeout is 700 ms (bounded); resolves null on ECONNREFUSED, timeout, non-200, app mismatch, or root mismatch — only a 200 with matching app+root is a live instance"
+  - "FIX-TP: token persistence implemented at index.ts level (not inside resolveConfig) so existing config.ts unit tests remain green without modification"
+  - "FIX-TP: rawToken check uses the values object AFTER resolveConfigValues (flag > STICKYFIX_TOKEN > npm_config_token); if none of those are set, existing .stickyfix-token is reused"
   - "bin/stickyfix.ts uses __dirname (available in esbuild CJS output) for absolute stickyfix-native.cjs path — avoids fragile relative paths (Pitfall 4)"
   - "handlePairNative returns {ok:true,name} to let popup show host name in state 3 text"
   - "Popup state machine is button-driven (no auto-fire on open) per UI-SPEC rationale: auto-fire creates flash of 'Pairing…' → 'Failed' on machines without native host registered"
@@ -64,15 +71,15 @@ decisions:
   - "Enhancement 2: .lnk shortcut creation is async + non-fatal (batch file is the accepted fallback if PowerShell fails); written[] list records the shortcut path optimistically"
   - "Enhancement 2: createLauncherFiles mirrors folder-picker.ts safety: execFile only, static arg array, no user-controlled values in PowerShell script body"
 metrics:
-  duration: "approximately 60 minutes total (30 original + 30 enhancements)"
+  duration: "approximately 75 minutes total (30 original + 30 enhancements + 15 robustness fixes)"
   completed: "2026-06-05"
-  tasks_completed: 5
-  files_changed: 14
+  tasks_completed: 7
+  files_changed: 16
 ---
 
 # Phase 09 Plan 02: Turnkey Pairing Slice Summary
 
-**One-liner:** Bootstrapper CLI (`npx stickyfix init`, no `--extension-id` required) + stable manifest key (deterministic ID `ccdfmbhdcafhmnnnfjpbhgebfkfgjgca`) + double-click desktop launcher (bat+lnk/command/sh+desktop) + native-messaging host (GET_TOKEN one-shot) + SW pairing handler + popup state machine — full token-delivery path with zero manual terminal steps post-init.
+**One-liner:** Bootstrapper CLI (`npx stickyfix init`, no `--extension-id` required) + stable manifest key (deterministic ID `ccdfmbhdcafhmnnnfjpbhgebfkfgjgca`) + double-click desktop launcher (bat+lnk/command/sh+desktop) + native-messaging host (GET_TOKEN one-shot) + SW pairing handler + popup state machine — full token-delivery path with zero manual terminal steps post-init. Robustness follow-up: double-click relaunch is a safe no-op (single-instance guard probes /status before any file mutation); token persists across restarts so the extension stays paired.
 
 ## Tasks Completed
 
@@ -84,12 +91,13 @@ metrics:
 | 4 | Live pairing UAT | — | CHECKPOINT — awaiting human |
 | E1 | Stable extension ID: RSA keypair + manifest key + deriveExtensionId + init default | bf09283 | Done |
 | E2 | Desktop launcher + no-ID-required init (SC-1/SC-4 gap close) | aa3910b | Done |
+| R1 | Single-instance guard (FIX-SI) + token persistence (FIX-TP) + 8 new unit tests | a4ccaae | Done |
 
 ## Verification Results
 
 - `tsc --noEmit`: **0 errors** (both extension and host tsconfigs)
 - `npm run build`: **green** (wxt build + tsc + esbuild — 0 errors)
-- `npm test` (host): **160/160 pass** (18 new tests, no regressions)
+- `npm test` (host): **168/168 pass** (26 new tests total: 18 original + 8 robustness, no regressions)
 - `manifest.json` nativeMessaging permission: **present**
 - `manifest.json` key field: **present** (prefix `MIIBIjANBgkqhkiG9w0B`)
 - `connectNative`/`sendNativeMessage` in content scripts: **0 hits** (ONB-03 grep clean)
@@ -161,6 +169,19 @@ metrics:
 - **Files modified:** package.json
 - **Commit:** 00b0fa1
 
+### Robustness Follow-up (wave-3 — double-click / relaunch)
+
+**R1: [FIX-SI] Single-instance guard**
+- **Problem:** Double-clicking the desktop launcher started a second host instance on the next free port and overwrote `.stickyfix-port` and `.stickyfix-token`, breaking the extension's pairing.
+- **Fix:** In `index.ts`, before any file mutation, read `.stickyfix-port` (if present) and probe `GET /status` on that port via `node:http` with a 700 ms bounded timeout. If the response is HTTP 200 with `app === 'stickyfix'` and a matching `root`, print a human-readable message and `process.exit(0)` — no clobber. Stale/closed ports fall through to normal startup.
+- **Extracted to:** `host/src/probe.ts` (separate module so tests can import without triggering CLI parse/exit).
+- **Commit:** a4ccaae
+
+**R2: [FIX-TP] Token persistence**
+- **Problem:** `resolveConfig` called `randomUUID()` on every launch, so restarting the host regenerated `.stickyfix-token` and the extension lost its pairing.
+- **Fix:** After `resolveConfig`, check whether a `rawToken` was explicitly supplied (via `--token` / `STICKYFIX_TOKEN` / `npm_config_token`). If not, read the existing `.stickyfix-token` and reuse it as `finalToken`. Fresh roots still get a new UUID; explicit flags always win.
+- **Commit:** a4ccaae
+
 ### Post-UAT Enhancements (wave-2 gap closure)
 
 **E1: [SC-1/SC-4 Gap] --extension-id was required, now optional**
@@ -200,6 +221,8 @@ No new threat surface beyond plan's `<threat_model>`. Launcher creation mitigati
 | bin/stickyfix.ts exists | FOUND |
 | host/src/native-host.ts exists | FOUND |
 | host/src/extension-id.ts exists | FOUND |
+| host/src/probe.ts exists (FIX-SI) | FOUND |
+| host/test/robustness.test.ts exists (FIX-SI + FIX-TP) | FOUND |
 | .keys/manifest-key.txt exists | FOUND |
 | .keys/extension-id.txt contains ccdfmbhdcafhmnnnfjpbhgebfkfgjgca | FOUND |
 | .keys/stickyfix-extension.pem NOT staged | CONFIRMED (untracked, gitignored) |
@@ -212,7 +235,8 @@ No new threat surface beyond plan's `<threat_model>`. Launcher creation mitigati
 | commit be90044 (Task 3) | FOUND |
 | commit bf09283 (Enhancement 1) | FOUND |
 | commit aa3910b (Enhancement 2) | FOUND |
-| npm test 160/160 | PASS |
+| commit a4ccaae (FIX-SI + FIX-TP robustness) | FOUND |
+| npm test 168/168 | PASS |
 | tsc --noEmit: 0 errors | PASS |
 | npm run build: green | PASS |
 | ONB-03 grep (no native API in content scripts) | PASS |
