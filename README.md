@@ -133,6 +133,10 @@ Confirm the `--root` path is the project directory where you expect the `notes/`
 4. Save the output as `docs/demo.gif`.
 5. Replace the `docs/demo-placeholder.png` image reference in this README with `docs/demo.gif`.
 
+## Browser support
+
+Chrome and Microsoft Edge are fully supported. For Firefox and Safari packaging paths (FUT-01, v2 scope) see [docs/cross-browser.md](docs/cross-browser.md).
+
 ## Architecture (one-liner)
 
 ```
