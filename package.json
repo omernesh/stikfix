@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "wxt",
-    "build:host-bin": "npx esbuild bin/stickyfix.ts --platform=node --format=cjs --bundle \"--external:node:*\" \"--banner:js=#!/usr/bin/env node\" --outfile=dist/host/stickyfix-init.cjs && npx esbuild host/src/native-host.ts --platform=node --format=cjs --bundle \"--external:node:*\" --outfile=dist/host/stickyfix-native.cjs",
+    "build:host-bin": "npx esbuild bin/stickyfix.ts --platform=node --format=cjs --bundle \"--external:node:*\" --outfile=dist/host/stickyfix-init.cjs && npx esbuild host/src/native-host.ts --platform=node --format=cjs --bundle \"--external:node:*\" --outfile=dist/host/stickyfix-native.cjs",
     "build": "wxt build && tsc -p tsconfig.host.json && npm run build:host-bin",
     "host": "node dist/host/src/index.js",
     "test:lib": "tsc -p tsconfig.lib.json && node --test \"dist/lib/lib/test/**/*.test.js\"",

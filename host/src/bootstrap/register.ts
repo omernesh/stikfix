@@ -16,7 +16,7 @@
 import { mkdirSync, writeFileSync, existsSync, rmSync, chmodSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
 import { homedir } from 'node:os';
-import { execFileSync, execFile } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { isInsideDir } from '../security.js';
 
 // The native host name — must match the manifest JSON `name` field and the
@@ -291,24 +291,24 @@ export function createLauncherFiles(opts: LauncherOptions): LauncherResult {
         (safeIconPath ? `$s.IconLocation = '${safeIconPath},0';` : '') +
         `$s.Save()`;
 
-      // execFile — NEVER exec; arg array is static with respect to user input
-      execFile(
-        'powershell.exe',
-        ['-NoProfile', '-NonInteractive', '-Command', psScript],
-        { timeout: 15_000 },
-        (err) => {
-          if (err) {
-            // Non-fatal: batch file is the acceptable fallback
-            warnings.push(
-              `Desktop shortcut creation failed (non-fatal): ${String(err.message)}. ` +
-              `The batch file at ${batchPath} can be used directly.`
-            );
-          }
-          // If success: .lnk written — no further action needed (async, fire-and-forget)
-        },
-      );
-      // Optimistically record the shortcut path — it may not exist yet (async)
-      written.push(lnkPath);
+      // execFileSync — NEVER exec; arg array is static with respect to user input.
+      // Synchronous so init reports the shortcut accurately (the async variant
+      // raced existsSync in the CLI and printed a false "skipped" message).
+      try {
+        execFileSync(
+          'powershell.exe',
+          ['-NoProfile', '-NonInteractive', '-Command', psScript],
+          { timeout: 15_000, stdio: 'ignore' },
+        );
+        // Only record the shortcut once it actually exists on disk.
+        written.push(lnkPath);
+      } catch (err) {
+        // Non-fatal: batch file is the acceptable fallback
+        warnings.push(
+          `Desktop shortcut creation failed (non-fatal): ${String((err as Error).message)}. ` +
+          `The batch file at ${batchPath} can be used directly.`
+        );
+      }
     }
 
   } else if (plat === 'darwin') {
