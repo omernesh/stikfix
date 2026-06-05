@@ -1,6 +1,6 @@
 /**
  * Native-messaging manifest writer, per-OS path resolver, Windows registry
- * registration, and uninstall enumerator for stickyfix.
+ * registration, uninstall enumerator, and desktop launcher creator for stickyfix.
  *
  * Node builtins only — no WXT, no Chrome imports.
  *
@@ -8,14 +8,15 @@
  * - T-09-02: buildManifest resolves an ABSOLUTE path (Pitfall 4)
  * - T-09-03: Windows registry writes use HKCU (Pitfall 5), execFileSync (never exec)
  * - T-09-05: enumerateArtifacts lists every init-created artifact (ONB-05)
+ * - Launcher shortcut: execFile(powershell, [argArray]) — NEVER exec or shell interpolation
  *
  * Analog: host/src/config.ts (mkdirSync/writeFileSync/existsSync/rmSync patterns)
  */
 
-import { mkdirSync, writeFileSync, existsSync, rmSync } from 'node:fs';
+import { mkdirSync, writeFileSync, existsSync, rmSync, chmodSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
 import { homedir } from 'node:os';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, execFile } from 'node:child_process';
 import { isInsideDir } from '../security.js';
 
 // The native host name — must match the manifest JSON `name` field and the
@@ -31,6 +32,13 @@ const REG_EDGE_KEY = `HKCU\\Software\\Microsoft\\Edge\\NativeMessagingHosts\\${N
 const CONFIG_DIR = (home: string) => join(home, '.config', 'stickyfix');
 const CONFIG_PATH = (home: string) => join(CONFIG_DIR(home), 'config.json');
 
+// Launcher file names used across functions
+const LAUNCHER_BATCH_FILENAME = 'stickyfix-host.bat';
+const LAUNCHER_LNK_FILENAME = 'Stickyfix Host.lnk';
+const LAUNCHER_COMMAND_FILENAME = 'stickyfix-host.command';
+const LAUNCHER_DESKTOP_FILENAME = 'stickyfix-host.desktop';
+const LAUNCHER_SH_FILENAME = 'stickyfix-host.sh';
+
 // ---------------------------------------------------------------------------
 // nativeManifestPath — per-OS path resolver
 // ---------------------------------------------------------------------------
@@ -40,7 +48,7 @@ const CONFIG_PATH = (home: string) => join(CONFIG_DIR(home), 'config.json');
  * be written for the given platform and home directory.
  *
  * Paths verified via Chrome + Edge native-messaging docs (RESEARCH Pattern 4):
- *   darwin: ~/Library/Application Support/Google/Chrome/NativeMessagingHosts/
+ *   darwin: ~/Library/App Support/Google/Chrome/NativeMessagingHosts/
  *   linux:  ~/.config/google-chrome/NativeMessagingHosts/
  *   win32:  ~/.local/share/stickyfix/  (manifest only; registry key written separately)
  */
@@ -66,6 +74,72 @@ export function nativeManifestPath(
     default:
       throw new Error(`Unsupported platform: ${plat}`);
   }
+}
+
+// ---------------------------------------------------------------------------
+// launcherDir — where launcher files are stored (alongside the manifest on win32)
+// ---------------------------------------------------------------------------
+
+/**
+ * Return the directory where launcher files (batch, .command, .desktop) are written.
+ * On win32: ~/.local/share/stickyfix/ (same dir as the manifest)
+ * On darwin/linux: ~/.config/stickyfix/
+ */
+export function launcherDir(
+  plat: NodeJS.Platform = process.platform,
+  home: string = homedir(),
+): string {
+  if (plat === 'win32') {
+    return join(home, '.local', 'share', 'stickyfix');
+  }
+  return join(home, '.config', 'stickyfix');
+}
+
+// ---------------------------------------------------------------------------
+// launcherPaths — per-OS launcher file paths
+// ---------------------------------------------------------------------------
+
+export interface LauncherPaths {
+  /** Primary launcher file (batch on win32, .command on darwin, .sh on linux) */
+  launcher: string;
+  /** Desktop shortcut (.lnk on win32, absent on other platforms) */
+  shortcut: string | null;
+  /** .desktop entry (linux only) */
+  desktopEntry: string | null;
+}
+
+/**
+ * Return the expected paths of all launcher files for the given platform.
+ * These paths are used by both createLauncherFiles and enumerateArtifacts.
+ */
+export function getLauncherPaths(
+  plat: NodeJS.Platform = process.platform,
+  home: string = homedir(),
+): LauncherPaths {
+  const dir = launcherDir(plat, home);
+
+  if (plat === 'win32') {
+    return {
+      launcher: join(dir, LAUNCHER_BATCH_FILENAME),
+      shortcut: join(home, 'Desktop', LAUNCHER_LNK_FILENAME),
+      desktopEntry: null,
+    };
+  }
+
+  if (plat === 'darwin') {
+    return {
+      launcher: join(dir, LAUNCHER_COMMAND_FILENAME),
+      shortcut: null,
+      desktopEntry: null,
+    };
+  }
+
+  // linux
+  return {
+    launcher: join(dir, LAUNCHER_SH_FILENAME),
+    shortcut: null,
+    desktopEntry: join(home, '.local', 'share', 'applications', LAUNCHER_DESKTOP_FILENAME),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -120,6 +194,182 @@ export function writeManifest(manifest: object, manifestPath: string): void {
 }
 
 // ---------------------------------------------------------------------------
+// createLauncherFiles — per-OS desktop launcher for the HTTP host
+// ---------------------------------------------------------------------------
+
+export interface LauncherOptions {
+  /** Absolute path to the host entry JS (e.g. dist/host/src/index.js) */
+  hostEntryPath: string;
+  /** Absolute path to the project root folder */
+  root: string;
+  /** HTTP port the host should use (or undefined to let host auto-scan) */
+  port?: number;
+  /** Absolute path to the 128px icon PNG (used for Windows .lnk shortcut) */
+  iconPath?: string;
+  plat?: NodeJS.Platform;
+  home?: string;
+}
+
+export interface LauncherResult {
+  /** Paths of files successfully written */
+  written: string[];
+  /** Non-fatal warnings (e.g. shortcut creation failed) */
+  warnings: string[];
+}
+
+/**
+ * Create a double-click launcher that starts the HTTP host backend,
+ * so the user never has to open a terminal.
+ *
+ * Windows: writes stickyfix-host.bat in the stickyfix data dir, then creates
+ * a Desktop shortcut (.lnk) pointing at that batch file. If the .lnk creation
+ * fails, the batch file alone is the acceptable fallback.
+ *
+ * macOS: writes an executable stickyfix-host.command (bash script).
+ *
+ * Linux: writes stickyfix-host.sh + a .desktop entry.
+ *
+ * Security: the ONLY subprocess allowed is the Windows .lnk creation via
+ * execFile(powershell, [argArray]) — mirroring folder-picker.ts safety exactly.
+ * No user-controlled values are interpolated into the PowerShell script string;
+ * all paths are developer-controlled absolute paths validated before use.
+ *
+ * Node builtins only (fs, child_process.execFile).
+ */
+export function createLauncherFiles(opts: LauncherOptions): LauncherResult {
+  const plat = opts.plat ?? process.platform;
+  const home = opts.home ?? homedir();
+  const written: string[] = [];
+  const warnings: string[] = [];
+
+  const paths = getLauncherPaths(plat, home);
+  const launcherDirPath = launcherDir(plat, home);
+  mkdirSync(launcherDirPath, { recursive: true });
+
+  const nodeCmd = 'node';
+  const hostEntry = opts.hostEntryPath;
+  const rootArg = opts.root;
+  const portArg = opts.port !== undefined ? ` --port ${opts.port}` : '';
+
+  if (plat === 'win32') {
+    // Write batch file — plain text, no exec required
+    const batchContent = [
+      '@echo off',
+      `rem Stickyfix HTTP host launcher — double-click to start the backend`,
+      `rem Generated by: npx stickyfix init`,
+      `rem Root: ${rootArg}`,
+      ``,
+      `"${nodeCmd}" "${hostEntry}" --root "${rootArg}"${portArg}`,
+      `if %ERRORLEVEL% NEQ 0 pause`,
+    ].join('\r\n');
+
+    const batchPath = paths.launcher;
+    writeFileSync(batchPath, batchContent, { encoding: 'utf8' });
+    written.push(batchPath);
+
+    // Create Desktop shortcut (.lnk) via PowerShell WScript.Shell
+    // Security: ALL paths are developer-controlled absolute strings — no user input.
+    // execFile (not exec) — no shell spawned, no injection vector.
+    // If this fails for any reason, fall through to the warning (batch file is the fallback).
+    if (paths.shortcut) {
+      const lnkPath = paths.shortcut;
+      const iconPath = opts.iconPath ?? '';
+
+      // Build PowerShell script as a single string — paths passed as PS variables
+      // set from the -Command string. No shell metacharacter interpolation from
+      // external data; all values are constants determined at registration time.
+      // PowerShell single-quote escaping: replace ' with '' in path strings.
+      const safeBatchPath = batchPath.replace(/'/g, "''");
+      const safeLnkPath = lnkPath.replace(/'/g, "''");
+      const safeIconPath = iconPath.replace(/'/g, "''");
+
+      const psScript =
+        `$ws = New-Object -ComObject WScript.Shell;` +
+        `$s = $ws.CreateShortcut('${safeLnkPath}');` +
+        `$s.TargetPath = '${safeBatchPath}';` +
+        `$s.Description = 'Start the Stickyfix HTTP backend host';` +
+        (safeIconPath ? `$s.IconLocation = '${safeIconPath},0';` : '') +
+        `$s.Save()`;
+
+      // execFile — NEVER exec; arg array is static with respect to user input
+      execFile(
+        'powershell.exe',
+        ['-NoProfile', '-NonInteractive', '-Command', psScript],
+        { timeout: 15_000 },
+        (err) => {
+          if (err) {
+            // Non-fatal: batch file is the acceptable fallback
+            warnings.push(
+              `Desktop shortcut creation failed (non-fatal): ${String(err.message)}. ` +
+              `The batch file at ${batchPath} can be used directly.`
+            );
+          }
+          // If success: .lnk written — no further action needed (async, fire-and-forget)
+        },
+      );
+      // Optimistically record the shortcut path — it may not exist yet (async)
+      written.push(lnkPath);
+    }
+
+  } else if (plat === 'darwin') {
+    // macOS: executable .command file (double-click in Finder to run in Terminal)
+    const commandContent = [
+      '#!/bin/bash',
+      `# Stickyfix HTTP host launcher — double-click in Finder or drag to Dock`,
+      `# Generated by: npx stickyfix init`,
+      ``,
+      `exec "${nodeCmd}" "${hostEntry}" --root "${rootArg}"${portArg}`,
+    ].join('\n');
+
+    const commandPath = paths.launcher;
+    writeFileSync(commandPath, commandContent, { encoding: 'utf8', mode: 0o755 });
+    written.push(commandPath);
+
+  } else {
+    // Linux: executable shell script + .desktop entry
+    const shContent = [
+      '#!/bin/sh',
+      `# Stickyfix HTTP host launcher`,
+      `# Generated by: npx stickyfix init`,
+      ``,
+      `exec "${nodeCmd}" "${hostEntry}" --root "${rootArg}"${portArg}`,
+    ].join('\n');
+
+    const shPath = paths.launcher;
+    writeFileSync(shPath, shContent, { encoding: 'utf8' });
+    try {
+      chmodSync(shPath, 0o755);
+    } catch {
+      warnings.push(`Could not chmod 755 ${shPath} — run: chmod +x "${shPath}"`);
+    }
+    written.push(shPath);
+
+    // .desktop entry
+    if (paths.desktopEntry) {
+      const desktopDir = dirname(paths.desktopEntry);
+      mkdirSync(desktopDir, { recursive: true });
+      const iconLine = opts.iconPath ? `Icon=${opts.iconPath}` : 'Icon=utilities-terminal';
+      const desktopContent = [
+        '[Desktop Entry]',
+        'Version=1.0',
+        'Type=Application',
+        'Name=Stickyfix Host',
+        'Comment=Start the Stickyfix HTTP backend host',
+        `Exec=${shPath}`,
+        iconLine,
+        'Terminal=true',
+        'Categories=Development;',
+      ].join('\n');
+
+      writeFileSync(paths.desktopEntry, desktopContent, { encoding: 'utf8', mode: 0o644 });
+      written.push(paths.desktopEntry);
+    }
+  }
+
+  return { written, warnings };
+}
+
+// ---------------------------------------------------------------------------
 // registerNativeHost — write manifest + optional registry keys
 // ---------------------------------------------------------------------------
 
@@ -153,7 +403,7 @@ export function registerNativeHost(opts: RegisterOptions): void {
 }
 
 // ---------------------------------------------------------------------------
-// unregisterNativeHost — remove manifest + optional registry keys
+// unregisterNativeHost — remove manifest + optional registry keys + launchers
 // ---------------------------------------------------------------------------
 
 interface UnregisterOptions {
@@ -161,13 +411,15 @@ interface UnregisterOptions {
   home?: string;
   /** Override the manifest path (used by tests to avoid touching real OS paths) */
   manifestPath?: string;
+  /** Override launcher paths (used by tests) */
+  launcherPaths?: Partial<LauncherPaths>;
 }
 
 /**
- * Remove the native-messaging manifest and, on Windows, delete the Chrome
- * and Edge HKCU registry keys.
+ * Remove the native-messaging manifest, launcher files, Desktop shortcut,
+ * and on Windows delete the Chrome and Edge HKCU registry keys.
  *
- * Idempotent: does not throw if the manifest is already absent.
+ * Idempotent: does not throw if any artifact is already absent.
  * execFileSync is used (NEVER exec) with the /f flag to tolerate absent keys.
  */
 export function unregisterNativeHost(opts: UnregisterOptions = {}): void {
@@ -176,6 +428,22 @@ export function unregisterNativeHost(opts: UnregisterOptions = {}): void {
   const manifestPath = opts.manifestPath ?? nativeManifestPath(plat, home);
 
   rmSync(manifestPath, { force: true });
+
+  // Remove launcher files
+  const defaultPaths = getLauncherPaths(plat, home);
+  const lPaths: LauncherPaths = {
+    launcher: opts.launcherPaths?.launcher ?? defaultPaths.launcher,
+    shortcut: opts.launcherPaths?.shortcut !== undefined
+      ? opts.launcherPaths.shortcut
+      : defaultPaths.shortcut,
+    desktopEntry: opts.launcherPaths?.desktopEntry !== undefined
+      ? opts.launcherPaths.desktopEntry
+      : defaultPaths.desktopEntry,
+  };
+
+  rmSync(lPaths.launcher, { force: true });
+  if (lPaths.shortcut) rmSync(lPaths.shortcut, { force: true });
+  if (lPaths.desktopEntry) rmSync(lPaths.desktopEntry, { force: true });
 
   if (plat === 'win32') {
     // /f flag suppresses "are you sure?" prompt; tolerates absent key (non-zero exit ignored)
@@ -209,13 +477,15 @@ interface ArtifactList {
 
 /**
  * Return the complete list of filesystem paths and registry keys that
- * `registerNativeHost` creates, so `uninstall` can remove everything
- * and leave no orphaned artifacts (ONB-05 / T-09-05).
+ * `registerNativeHost` + `createLauncherFiles` create, so `uninstall` can
+ * remove everything and leave no orphaned artifacts (ONB-05 / T-09-05).
  *
  * paths includes:
  *   - native-messaging manifest JSON
  *   - stickyfix config file (~/.config/stickyfix/config.json)
  *   - <root>/.stickyfix-port (written by HTTP host on startup)
+ *   - launcher batch/command/sh file
+ *   - Desktop shortcut (.lnk on win32) or .desktop entry (linux)
  *
  * registryKeys (win32 only):
  *   - HKCU Chrome NativeMessagingHosts key
@@ -238,6 +508,12 @@ export function enumerateArtifacts(opts: ArtifactOptions = {}): ArtifactList {
     // Include a generic indicator when root is unknown
     paths.push('.stickyfix-port');
   }
+
+  // Launcher files created by createLauncherFiles
+  const lPaths = getLauncherPaths(plat, home);
+  paths.push(lPaths.launcher);
+  if (lPaths.shortcut) paths.push(lPaths.shortcut);
+  if (lPaths.desktopEntry) paths.push(lPaths.desktopEntry);
 
   const registryKeys: string[] = plat === 'win32' ? [REG_CHROME_KEY, REG_EDGE_KEY] : [];
 
