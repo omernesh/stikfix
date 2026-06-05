@@ -795,22 +795,25 @@ The token is stored in `<root>/.stickyfix-token` (a file on disk, not on any HTT
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Stable extension ID mechanism**
    - What we know: The `key` field in `manifest.json` pins the extension ID; it requires uploading to Chrome Developer Dashboard to obtain the key
    - What's unclear: Whether the bootstrapper can auto-detect the extension ID from the loaded extension without user action, or whether the user must paste the ID during `npx stickyfix init`
    - Recommendation: For v1.0, prompt the user to copy the extension ID from `chrome://extensions` during `init`. Document the `key` field approach for post-publish stabilization. The `init` command stores the ID in the config file.
+   - **RESOLVED:** Plan 09-02 Task 1 + user_setup require the dev ID to be passed via the `--extension-id` flag prompted during `npx stickyfix init` (copied from `chrome://extensions`); the `key` field is left as a commented placeholder in `wxt.config.ts` for post-CWS-publish ID stabilization.
 
 2. **Port file for native host pairing (A5)**
    - What we know: The HTTP host prints its port on stdout as a JSON line; it does not currently write the port to a file
    - What's unclear: The cleanest way for the native host to learn the HTTP port without running a full port scan
    - Recommendation: Extend the HTTP host (`host/src/index.ts`) to write `.stickyfix-port` alongside `.stickyfix-token` on startup. One new line in `index.ts`. The native host reads it. If absent, falls back to port scan.
+   - **RESOLVED:** The HTTP host writes `<root>/.stickyfix-port` alongside `.stickyfix-token` on startup (Plan 01 Task 3); the native host reads it in Plan 09-02 Task 1, leaving port undefined (SW re-probes) when the file is absent (A5 fallback).
 
 3. **Multiple roots / projects**
    - What we know: D-04 maps origin→folder; the config file stores `{ root, name }` per project
    - What's unclear: How the bootstrapper handles a developer with multiple projects (multiple `npx stickyfix init` calls)
    - Recommendation: The config file stores an array of project roots. The native host dispatches based on the origin (received in the GET_TOKEN message). Alternatively: one native host per project, using different names (`com.stickyfix.host.myproject`). Simplest: single config file, array of projects, native host selects by origin or returns all known tokens.
+   - **RESOLVED:** Single native-host config (`~/.config/stickyfix/config.json`) holds the project token/root data; the exact multi-project protocol (single config with a token/root array vs. per-project named hosts) is Claude's-Discretion per CONTEXT.md — the v1.0 plans implement the single-config path and the array shape can extend it without a manifest change.
 
 ---
 
@@ -843,3 +846,4 @@ The token is stored in `<root>/.stickyfix-token` (a file on disk, not on any HTT
 
 **Research date:** 2026-06-05
 **Valid until:** 2026-09-05 (stable APIs, 90 days; Chrome extensions APIs change slowly)
+</content>
