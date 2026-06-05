@@ -61,6 +61,8 @@ export const SFX_MSG = {
   REFRESH_HOSTS: 'SFX_REFRESH_HOSTS',
   ADD_HOST: 'SFX_ADD_HOST',
   REMOVE_HOST: 'SFX_REMOVE_HOST',
+  // Phase 9 — ONB-02: popup triggers pairing via native messaging (SW-only API)
+  PAIR_NATIVE: 'SFX_PAIR_NATIVE',
 } as const;
 
 export type SfxMsgType = (typeof SFX_MSG)[keyof typeof SFX_MSG];
@@ -160,6 +162,10 @@ export interface MsgRemoveHost {
   name: string;
 }
 
+export interface MsgPairNative {
+  type: typeof SFX_MSG.PAIR_NATIVE;
+}
+
 /** Discriminated union of all messages the SW handles */
 export type SfxMessage =
   | MsgEnterReview
@@ -172,7 +178,8 @@ export type SfxMessage =
   | MsgListAnnotations
   | MsgEditAnnotation
   | MsgDeleteAnnotation
-  | MsgGetScreenshot;
+  | MsgGetScreenshot
+  | MsgPairNative;
 
 // ---------------------------------------------------------------------------
 // Response shapes

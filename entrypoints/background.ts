@@ -594,6 +594,71 @@ async function handleGetScreenshot(
 }
 
 // ---------------------------------------------------------------------------
+// handlePairNative — obtain token from native host and persist like handleAddHost
+// ---------------------------------------------------------------------------
+
+/**
+ * ONB-02: Call chrome.runtime.sendNativeMessage to obtain the token from the
+ * native host over the OS-level native-messaging channel, then persist it into
+ * sfxTokens + sfxRegistry exactly as handleAddHost does.
+ *
+ * Security (T-09-06): sendNativeMessage is only available to extension service
+ * workers and extension pages — web origins and content scripts cannot call it.
+ * The pairing channel is structurally inaccessible to arbitrary web origins.
+ *
+ * Returns { ok: true, name } on success or { ok: false, error } on failure.
+ */
+
+const NATIVE_HOST_NAME = 'com.stickyfix.host';
+
+async function handlePairNative(): Promise<{ ok: true; name: string } | { ok: false; error: string }> {
+  return new Promise((resolve) => {
+    chrome.runtime.sendNativeMessage(
+      NATIVE_HOST_NAME,
+      { type: 'GET_TOKEN' },
+      async (response: unknown) => {
+        if (chrome.runtime.lastError) {
+          resolve({ ok: false, error: chrome.runtime.lastError.message ?? 'native messaging error' });
+          return;
+        }
+
+        const r = response as { type?: string; token?: string; port?: number; name?: string; notesDir?: string } | null;
+
+        if (!r || r.type !== 'TOKEN' || typeof r.token !== 'string' || typeof r.name !== 'string') {
+          resolve({ ok: false, error: 'Unexpected native host response' });
+          return;
+        }
+
+        const { token, port, name, notesDir } = r;
+
+        // Re-read storage at handler top (Pitfall 1 — MV3 SW globals zeroed after idle)
+        const [registry, tokens] = await Promise.all([
+          sfxRegistry.getValue(),
+          sfxTokens.getValue(),
+        ]);
+
+        // Persist — same shape as handleAddHost (ONB-02 / PATTERNS sfxTokens pattern)
+        tokens[name] = token;
+        registry[name] = {
+          name,
+          port: typeof port === 'number' ? port : 0,
+          notesDir: typeof notesDir === 'string' ? notesDir : '',
+          origins: [],
+          token,
+        };
+
+        await Promise.all([
+          sfxTokens.setValue(tokens),
+          sfxRegistry.setValue(registry),
+        ]);
+
+        resolve({ ok: true, name });
+      }
+    );
+  });
+}
+
+// ---------------------------------------------------------------------------
 // handleAddHost — probe a specific port and add it to the registry
 // ---------------------------------------------------------------------------
 
@@ -807,6 +872,16 @@ chrome.runtime.onMessage.addListener(
             sendResponse({ ok: false, error: String(err) })
           );
         return true;
+
+      case SFX_MSG.PAIR_NATIVE:
+        // ONB-02: SW pairs with native host and persists token+registry.
+        // Security (T-09-06): sendNativeMessage is SW-only — web origins cannot trigger this.
+        handlePairNative()
+          .then(sendResponse)
+          .catch((err: unknown) =>
+            sendResponse({ ok: false, error: String(err) })
+          );
+        return true; // MANDATORY — keep channel open for async response (Pitfall 2)
 
       case SFX_LIST_ANNOTATIONS: {
         // T-06-06 IDOR guard: bind requested tabId to sender.tab.id — a page in

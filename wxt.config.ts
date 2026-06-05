@@ -12,7 +12,9 @@ export default defineConfig({
       128: '/icon/128.png',
     },
     // Phase 3 additions — D-04 / EXT-01
-    permissions: ['activeTab', 'scripting', 'storage', 'tabs'],
+    // Phase 9 addition — ONB-02/03: native messaging for auto-pairing (extension-only API)
+    permissions: ['activeTab', 'scripting', 'storage', 'tabs', 'nativeMessaging'],
+    // key: '<CWS public key>'  // Add after Chrome Web Store upload for stable extension ID (RESEARCH Pattern 3)
     host_permissions: ['http://127.0.0.1/*', 'http://localhost/*'],
     optional_host_permissions: ['<all_urls>'],
     // Note: no static content_scripts — review UI is injected on-demand via
