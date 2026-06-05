@@ -118,7 +118,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **ONB-03**: Auto-pairing preserves the security model — an arbitrary web origin can NEVER obtain the token or write notes; pairing happens over a loopback-only, time-boxed window or a native-messaging channel, with the `127.0.0.1`-bind and origin-trust invariants intact
 - [x] **ONB-04**: The host is auto-started / discoverable without the user running a manual terminal command (launcher, tray app, or native-messaging-spawned process)
 - [x] **ONB-05**: Uninstall / teardown is clean — removes host artifacts and native-messaging manifests, leaves no orphan processes or stray registry/config entries
-- [ ] **ONB-06**: (cross-browser, stretch) A documented packaging path covers Edge (Chromium drop-in), Firefox, and Safari — promotes FUT-01 into scope
+- [x] **ONB-06**: (cross-browser, stretch) A documented packaging path covers Edge (Chromium drop-in), Firefox, and Safari — promotes FUT-01 into scope
 
 ## v2 Requirements
 
@@ -228,7 +228,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ONB-03 | Phase 9 | Pending |
 | ONB-04 | Phase 9 | Complete |
 | ONB-05 | Phase 9 | Complete |
-| ONB-06 | Phase 9 | Pending |
+| ONB-06 | Phase 9 | Complete |
 
 **Coverage:**
 
