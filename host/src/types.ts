@@ -56,6 +56,14 @@ export interface AnnotationPayload {
    * as 'note_position' (canonical key). Undefined for element notes.
    */
   notePosition?: { x: number; y: number };
+  /**
+   * D-04 (09-05): ROUTING-ONLY. When the SW resolves this origin to a chosen
+   * folder (origin→folder mapping), it injects the validated absolute folder
+   * here so the host writes to <targetDir>/notes. The host RE-VALIDATES it and
+   * does NOT persist it into the note frontmatter. Absent for the --root /
+   * origin→host default path.
+   */
+  targetDir?: string;
 }
 
 export interface Config {

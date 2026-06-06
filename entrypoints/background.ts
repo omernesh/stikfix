@@ -21,6 +21,7 @@ import type {
   SfxMessage,
   SfxResponse,
   HostEntry,
+  StorageState,
   AnnotationPayload,
   MsgCaptureTab,
   MsgAddHost,
@@ -48,12 +49,11 @@ type RouteResponse =
   | ({ ok: true; host: HostEntry; mapped?: boolean })
   | ({ ok: false; error: string; reason?: 'unmapped'; origin?: string });
 
-type AnnotationResponse = SfxResponse<{
-  file: string;
-  // The host returns the zero-padded serial as a STRING (e.g. "0001") — this is
-  // its documented contract (server.test.ts asserts typeof serial === 'string').
-  serial: string;
-}>;
+type AnnotationResponse =
+  | ({ ok: true; file: string; serial: string })
+  // D-04: structured discriminator so the content script can open the folder
+  // dialog (PICK_FOLDER) and retry once when an origin has no mapping at all.
+  | ({ ok: false; error?: string; reason?: 'needs-folder'; origin?: string });
 
 type EnterReviewResponse = SfxResponse<{ route: HostEntry | null }>;
 type ExitReviewResponse = { ok: true } | { ok: false; error: string };
@@ -96,6 +96,78 @@ function readPageSelfId(): string | null {
   const meta = document.querySelector('meta[name="stickyfix-project"]');
   if (meta) return meta.getAttribute('content');
   return (window as unknown as Record<string, unknown>).__stickyfix_project as string ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// origin→folder routing helpers (D-04 / 09-05)
+// ---------------------------------------------------------------------------
+
+/**
+ * Disambiguate an sfxOriginMap value (D-04).
+ *
+ * sfxOriginMap stores BOTH origin→host-name (Phase 3) and origin→folder (09-04).
+ * A FOLDER is an absolute path; a host name is a bare registry key. We detect a
+ * folder by absolute-path shape:
+ *   - POSIX: starts with '/'
+ *   - Windows: drive-letter prefix like `C:\` (also tolerate `C:/`)
+ * Host names never look like absolute paths, so this never misclassifies an
+ * existing origin→host entry.
+ */
+function isFolderValue(v: string | undefined | null): v is string {
+  if (typeof v !== 'string' || v.length === 0) return false;
+  if (v.startsWith('/')) return true;            // POSIX absolute
+  if (/^[A-Za-z]:[\\/]/.test(v)) return true;    // Windows drive-letter absolute
+  return false;
+}
+
+/**
+ * Return a paired host (one whose token is set). For v1 there is a single paired
+ * host (one native-paired project), so the first token-bearing entry is used.
+ * The returned HostEntry carries the authoritative token from sfxTokens.
+ */
+function getActivePairedHost(
+  registry: Record<string, HostEntry>,
+  tokens: Record<string, string>
+): HostEntry | null {
+  for (const name of Object.keys(registry)) {
+    const token = tokens[name] ?? registry[name].token ?? null;
+    if (token) {
+      return { ...registry[name], token };
+    }
+  }
+  return null;
+}
+
+/**
+ * Shared route resolution for the read/edit/delete/screenshot relays (D-04).
+ *
+ * Mirrors handleSendAnnotation precedence: origin→folder (paired host +
+ * targetDir) ▸ origin→host (no targetDir) ▸ error. Unlike SEND, the CRUD relays
+ * always operate on an already-mapped origin (the chip wouldn't have rendered
+ * otherwise), so the no-mapping case is a plain error here rather than
+ * needs-folder. Returns the resolved host plus the optional targetDir, or an
+ * error string to forward to the caller.
+ */
+function resolveFolderAwareRoute(
+  origin: string,
+  state: StorageState
+): { ok: true; host: HostEntry; targetDir?: string } | { ok: false; error: string } {
+  const mappedValue = state.originMap[origin];
+  if (isFolderValue(mappedValue)) {
+    const paired = getActivePairedHost(state.registry, state.tokens);
+    if (!paired) return { ok: false, error: 'Pair with the host first' };
+    return { ok: true, host: paired, targetDir: mappedValue };
+  }
+  const routed = resolveRoute(origin, state);
+  if (!routed) return { ok: false, error: `No host mapped for origin: ${origin}` };
+  return { ok: true, host: routed };
+}
+
+/** Append ?targetDir= to a relay URL when the origin maps to a folder (D-04). */
+function withTargetDir(url: string, targetDir?: string): string {
+  if (targetDir === undefined) return url;
+  const sep = url.includes('?') ? '&' : '?';
+  return `${url}${sep}targetDir=${encodeURIComponent(targetDir)}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -298,10 +370,31 @@ async function handleSendAnnotation(
   }
   const origin = new URL(tab.url).origin;
 
-  // 3. Resolve host (pure fn — lib/routing.ts)
-  const host = resolveRoute(origin, state);
-  if (!host) {
-    return { ok: false, error: `No host mapped for origin: ${origin}` };
+  // 3. Resolve route with D-04 precedence:
+  //    (1) origin→folder (09-04 entries) → paired host + targetDir
+  //    (2) origin→host (Phase 3) → host default notesDir, NO targetDir (back-compat)
+  //    (3) neither → {ok:false, reason:'needs-folder'} so the CS opens the dialog
+  let host: HostEntry;
+  let targetDir: string | undefined;
+
+  const mappedValue = state.originMap[origin];
+  if (isFolderValue(mappedValue)) {
+    // (1) Folder-mapped origin — send to the paired host with the chosen folder.
+    const paired = getActivePairedHost(state.registry, state.tokens);
+    if (!paired) {
+      return { ok: false, error: 'Pair with the host first' };
+    }
+    host = paired;
+    targetDir = mappedValue;
+  } else {
+    // (2) Existing origin→host routing (UNCHANGED). resolveRoute also handles
+    //     advertised-origin + single-host auto-select. No targetDir is attached.
+    const routed = resolveRoute(origin, state);
+    if (!routed) {
+      // (3) No mapping at all — signal the content script to pick a folder.
+      return { ok: false, reason: 'needs-folder', origin };
+    }
+    host = routed;
   }
 
   if (!host.token) {
@@ -313,6 +406,9 @@ async function handleSendAnnotation(
 
   // 4. Relay fetch — SW has host_permissions, exempt from LNA and CORS (EXT-05)
   //    This is the ONLY fetch to 127.0.0.1 in the extension (T-03-04).
+  //    For folder-mapped origins, targetDir rides in the POST body; the host
+  //    re-validates it and confines the write to <targetDir>/notes (D-04).
+  const sendBody = targetDir !== undefined ? { ...payload, targetDir } : payload;
   let resp: Response;
   try {
     resp = await fetch(`http://127.0.0.1:${host.port}/annotation`, {
@@ -321,7 +417,7 @@ async function handleSendAnnotation(
         'Content-Type': 'application/json',
         'X-Stickyfix-Token': host.token,
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(sendBody),
     });
   } catch (e: unknown) {
     // Host down or network error — never throw to content script (REL-01)
@@ -392,20 +488,23 @@ async function handleListAnnotations(
   }
   const origin = new URL(tab.url).origin;
 
-  // 3. Resolve host
-  const host = resolveRoute(origin, state);
-  if (!host) {
-    return { ok: false, error: `No host mapped for origin: ${origin}` };
-  }
+  // 3. Resolve route (D-04: origin→folder ▸ origin→host)
+  const route = resolveFolderAwareRoute(origin, state);
+  if (!route.ok) return route;
+  const { host, targetDir } = route;
   if (!host.token) {
     return { ok: false, error: `No token set for host "${host.name}" — enter it in the popup` };
   }
 
   // 4. Relay fetch to host (SW has host_permissions — INVARIANT B)
+  //    Folder-mapped origins pass ?targetDir= so the host reads from that folder.
   let resp: Response;
   try {
     resp = await fetch(
-      `http://127.0.0.1:${host.port}/annotations?url=${encodeURIComponent(tab.url)}`,
+      withTargetDir(
+        `http://127.0.0.1:${host.port}/annotations?url=${encodeURIComponent(tab.url)}`,
+        targetDir
+      ),
       { headers: { 'X-Stickyfix-Token': host.token } }
     );
   } catch (e: unknown) {
@@ -444,20 +543,22 @@ async function handleEditAnnotation(
   }
   const origin = new URL(tab.url).origin;
 
-  // 3. Resolve host
-  const host = resolveRoute(origin, state);
-  if (!host) {
-    return { ok: false, error: `No host mapped for origin: ${origin}` };
-  }
+  // 3. Resolve route (D-04: origin→folder ▸ origin→host)
+  const route = resolveFolderAwareRoute(origin, state);
+  if (!route.ok) return route;
+  const { host, targetDir } = route;
   if (!host.token) {
     return { ok: false, error: `No token set for host "${host.name}" — enter it in the popup` };
   }
 
-  // 4. Relay PUT to host
+  // 4. Relay PUT to host (folder-mapped origins pass ?targetDir=)
   let resp: Response;
   try {
     resp = await fetch(
-      `http://127.0.0.1:${host.port}/annotation/${encodeURIComponent(serial)}`,
+      withTargetDir(
+        `http://127.0.0.1:${host.port}/annotation/${encodeURIComponent(serial)}`,
+        targetDir
+      ),
       {
         method: 'PUT',
         headers: {
@@ -496,20 +597,22 @@ async function handleDeleteAnnotation(
   }
   const origin = new URL(tab.url).origin;
 
-  // 3. Resolve host
-  const host = resolveRoute(origin, state);
-  if (!host) {
-    return { ok: false, error: `No host mapped for origin: ${origin}` };
-  }
+  // 3. Resolve route (D-04: origin→folder ▸ origin→host)
+  const route = resolveFolderAwareRoute(origin, state);
+  if (!route.ok) return route;
+  const { host, targetDir } = route;
   if (!host.token) {
     return { ok: false, error: `No token set for host "${host.name}" — enter it in the popup` };
   }
 
-  // 4. Relay DELETE to host
+  // 4. Relay DELETE to host (folder-mapped origins pass ?targetDir=)
   let resp: Response;
   try {
     resp = await fetch(
-      `http://127.0.0.1:${host.port}/annotation/${encodeURIComponent(serial)}`,
+      withTargetDir(
+        `http://127.0.0.1:${host.port}/annotation/${encodeURIComponent(serial)}`,
+        targetDir
+      ),
       {
         method: 'DELETE',
         headers: { 'X-Stickyfix-Token': host.token },
@@ -554,20 +657,23 @@ async function handleGetScreenshot(
   }
   const origin = new URL(tab.url).origin;
 
-  // 3. Resolve host
-  const host = resolveRoute(origin, state);
-  if (!host) {
-    return { ok: false, error: `No host mapped for origin: ${origin}` };
-  }
+  // 3. Resolve route (D-04: origin→folder ▸ origin→host)
+  const route = resolveFolderAwareRoute(origin, state);
+  if (!route.ok) return route;
+  const { host, targetDir } = route;
   if (!host.token) {
     return { ok: false, error: `No token set for host "${host.name}" — enter it in the popup` };
   }
 
   // 4. Relay GET to host /screenshot — SW has host_permissions (INVARIANT B)
+  //    Folder-mapped origins pass ?targetDir= so the host serves from that folder.
   let resp: Response;
   try {
     resp = await fetch(
-      `http://127.0.0.1:${host.port}/screenshot?serial=${encodeURIComponent(serial)}&file=${encodeURIComponent(file)}`,
+      withTargetDir(
+        `http://127.0.0.1:${host.port}/screenshot?serial=${encodeURIComponent(serial)}&file=${encodeURIComponent(file)}`,
+        targetDir
+      ),
       { headers: { 'X-Stickyfix-Token': host.token } }
     );
   } catch (e: unknown) {
