@@ -49,10 +49,18 @@ interface AnnotationOkResponse {
 
 interface AnnotationErrResponse {
   ok: false;
-  error: string;
+  error?: string;
+  /** D-04: origin has no folder/host mapping — open the OS folder dialog */
+  reason?: 'needs-folder';
+  origin?: string;
 }
 
 type AnnotationResponse = AnnotationOkResponse | AnnotationErrResponse;
+
+/** SW response for SFX_PICK_FOLDER (background.handlePickFolder). */
+type PickFolderResponse =
+  | { ok: true; folder: string }
+  | { ok: false; error: string };
 
 interface SetRouteOkResponse {
   ok: true;
@@ -358,8 +366,10 @@ function renderDropdown(
   origin: string,
   showFeedbackFn: (el: HTMLSpanElement, msg: string, isError: boolean) => void
 ): void {
-  // Update label to explain what's needed
-  label.textContent = 'Pick project for this site:';
+  // Update label to explain what's needed. D-04: Send is ALSO live here — the
+  // first Send on an unmapped origin opens the OS folder dialog (needs-folder),
+  // while the dropdown remains the alternative (route to an existing host).
+  label.textContent = 'Pick project / Send to choose a folder:';
 
   // Create the select dropdown
   const select = document.createElement('select');
@@ -437,9 +447,19 @@ function renderDropdown(
     );
   });
 
-  // Suppress the send button while unmapped (no host to send to)
-  sendBtn.disabled = true;
-  sendBtn.setAttribute('title', 'Pick a project first');
+  // D-04: keep Send LIVE while unmapped. wireSendButton ignores the host arg
+  // (the SW resolves routing from the origin), so a click drives SEND_ANNOTATION
+  // → needs-folder → OS folder dialog → auto-retry. A cancelled dialog surfaces
+  // a visible toast (REL-01). The dropdown above stays available for the
+  // existing origin→host path.
+  wireSendButton(
+    sendBtn,
+    feedback,
+    tabId,
+    { name: '', port: 0, origins: [], notesDir: '', token: null },
+    showFeedbackFn
+  );
+  sendBtn.setAttribute('title', 'Send to choose a folder for this site');
 
   void origin; // consumed via closure (tabId/origin used in SET_ROUTE above)
 }
@@ -463,10 +483,76 @@ function wireSendButton(
   sendBtn.disabled = false;
   sendBtn.removeAttribute('title');
 
-  // .onclick = assignment (idempotent — prevents listener stacking on D-09 re-map; CR-01)
-  sendBtn.onclick = () => {
+  /**
+   * Send the annotation once. `allowRetry` gates the single D-04 auto-retry:
+   * the FIRST send passes true; the retry (after a folder pick) passes false so
+   * a still-unmapped origin cannot loop the dialog forever.
+   *
+   * REL-01: every terminal path surfaces a visible toast — a note is NEVER
+   * silently dropped (the cancel path included).
+   */
+  function sendOnce(payload: AnnotationPayload, allowRetry: boolean): void {
     sendBtn.disabled = true;
 
+    // REL-01: sendMessage can throw synchronously if the extension is disabled mid-flight — never silent
+    try {
+      chrome.runtime.sendMessage(
+        { type: SFX_MSG.SEND_ANNOTATION, tabId, payload },
+        (resp: AnnotationResponse | undefined) => {
+          // WR-02: guard resp against undefined
+          if (chrome.runtime.lastError || !resp) {
+            sendBtn.disabled = false;
+            showFeedbackFn(feedback, 'SW error: ' + (chrome.runtime.lastError?.message ?? 'no response'), true);
+            return;
+          }
+          if (resp.ok) {
+            sendBtn.disabled = false;
+            showFeedbackFn(feedback, `sent ✓ ${resp.file}`, false);
+            return;
+          }
+          // D-04: origin has no mapping — open the OS folder dialog, then retry once.
+          if (resp.reason === 'needs-folder' && allowRetry) {
+            showFeedbackFn(feedback, 'Choose a folder for this site…', false);
+            try {
+              chrome.runtime.sendMessage(
+                { type: SFX_MSG.PICK_FOLDER, tabId },
+                (pick: PickFolderResponse | undefined) => {
+                  if (chrome.runtime.lastError || !pick) {
+                    sendBtn.disabled = false;
+                    // REL-01: never silent — surface the dialog/SW failure
+                    showFeedbackFn(feedback, 'No folder chosen — note not saved. Drop again to pick one.', true);
+                    return;
+                  }
+                  if (pick.ok) {
+                    // Brief confirmation, then auto-retry the SAME payload ONCE.
+                    showFeedbackFn(feedback, `Saving notes to ${pick.folder}`, false);
+                    sendOnce(payload, false);
+                  } else {
+                    // User cancelled / invalid pick — visible toast, no silent drop (REL-01).
+                    sendBtn.disabled = false;
+                    showFeedbackFn(feedback, 'No folder chosen — note not saved. Drop again to pick one.', true);
+                  }
+                }
+              );
+            } catch (e) {
+              sendBtn.disabled = false;
+              showFeedbackFn(feedback, 'Extension error: ' + (e instanceof Error ? e.message : String(e)), true);
+            }
+            return;
+          }
+          // Any other error (or retry exhausted) — show it inline (REL-01).
+          sendBtn.disabled = false;
+          showFeedbackFn(feedback, resp.error ?? 'Send failed', true);
+        }
+      );
+    } catch (e) {
+      sendBtn.disabled = false;
+      showFeedbackFn(feedback, 'Extension error: ' + (e instanceof Error ? e.message : String(e)), true);
+    }
+  }
+
+  // .onclick = assignment (idempotent — prevents listener stacking on D-09 re-map; CR-01)
+  sendBtn.onclick = () => {
     // §9.1 minimal valid free-note payload (D-09)
     const payload: AnnotationPayload = {
       mode: 'free',
@@ -483,29 +569,7 @@ function wireSendButton(
       screenshots: [],
     };
 
-    // REL-01: sendMessage can throw synchronously if the extension is disabled mid-flight — never silent
-    try {
-      chrome.runtime.sendMessage(
-        { type: SFX_MSG.SEND_ANNOTATION, tabId, payload },
-        (resp: AnnotationResponse | undefined) => {
-          sendBtn.disabled = false;
-          // WR-02: guard resp against undefined
-          if (chrome.runtime.lastError || !resp) {
-            showFeedbackFn(feedback, 'SW error: ' + (chrome.runtime.lastError?.message ?? 'no response'), true);
-            return;
-          }
-          if (resp.ok) {
-            showFeedbackFn(feedback, `sent ✓ ${resp.file}`, false);
-          } else {
-            // Never silent — show error inline (REL-01)
-            showFeedbackFn(feedback, resp.error, true);
-          }
-        }
-      );
-    } catch (e) {
-      sendBtn.disabled = false;
-      showFeedbackFn(feedback, 'Extension error: ' + (e instanceof Error ? e.message : String(e)), true);
-    }
+    sendOnce(payload, true);
   };
 }
 

@@ -267,7 +267,23 @@ async function handleGetRoute(
   }
   const origin = new URL(tab.url).origin;
 
-  // Step 1 + 2: advertised or persisted mapping
+  // D-04: a folder-mapped origin resolves SILENTLY to the paired host (no
+  // dropdown, no dialog on subsequent notes). The chip shows the chosen folder
+  // as the routed label and Send rides targetDir in SEND_ANNOTATION. This MUST
+  // precede resolveRoute so a folder mapping is never misread as "unmapped".
+  const mappedValue = state.originMap[origin];
+  if (isFolderValue(mappedValue)) {
+    const paired = getActivePairedHost(state.registry, state.tokens);
+    if (paired) {
+      // Surface the folder as the label's notesDir (display only — the host
+      // re-validates the real targetDir on every write).
+      return { ok: true, host: { ...paired, notesDir: mappedValue } };
+    }
+    // Folder mapped but no paired host yet — fall through to the dropdown so the
+    // user can pair, rather than dead-ending.
+  }
+
+  // Step 1 + 2: advertised or persisted (origin→host) mapping
   let route = resolveRoute(origin, state);
   if (route) {
     return { ok: true, host: route };
