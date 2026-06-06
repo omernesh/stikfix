@@ -63,6 +63,9 @@ export const SFX_MSG = {
   REMOVE_HOST: 'SFX_REMOVE_HOST',
   // Phase 9 — ONB-02: popup triggers pairing via native messaging (SW-only API)
   PAIR_NATIVE: 'SFX_PAIR_NATIVE',
+  // Phase 9 — ONB-04 / D-04: first note on an unmapped origin opens the OS folder
+  // dialog via the native host; the SW persists origin→folder for silent reuse.
+  PICK_FOLDER: 'SFX_PICK_FOLDER',
 } as const;
 
 export type SfxMsgType = (typeof SFX_MSG)[keyof typeof SFX_MSG];
@@ -166,6 +169,13 @@ export interface MsgPairNative {
   type: typeof SFX_MSG.PAIR_NATIVE;
 }
 
+export interface MsgPickFolder {
+  type: typeof SFX_MSG.PICK_FOLDER;
+  tabId: number;
+  // origin is derived from chrome.tabs.get(tabId) in the SW — NEVER from the
+  // message body (Phase 3/8 anti-spoof invariant).
+}
+
 /** Discriminated union of all messages the SW handles */
 export type SfxMessage =
   | MsgEnterReview
@@ -179,7 +189,8 @@ export type SfxMessage =
   | MsgEditAnnotation
   | MsgDeleteAnnotation
   | MsgGetScreenshot
-  | MsgPairNative;
+  | MsgPairNative
+  | MsgPickFolder;
 
 // ---------------------------------------------------------------------------
 // Response shapes

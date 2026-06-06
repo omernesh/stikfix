@@ -659,6 +659,65 @@ async function handlePairNative(): Promise<{ ok: true; name: string } | { ok: fa
 }
 
 // ---------------------------------------------------------------------------
+// handlePickFolder — open the OS folder dialog via native host, persist mapping
+// ---------------------------------------------------------------------------
+
+/**
+ * ONB-04 / D-04: On the first note from an unmapped origin, ask the native host
+ * to open an OS folder dialog over the native-messaging channel, then persist
+ * the chosen folder as the origin→folder mapping in sfxOriginMap for silent
+ * reuse — mirroring the Phase 3 origin→host one-time prompt.
+ *
+ * Security:
+ *  - Origin is derived from chrome.tabs.get(tabId).url (origin-from-tab) — NEVER
+ *    from the message body (Phase 3/8 anti-spoof invariant, T-09-15).
+ *  - sendNativeMessage is SW-only (T-09-06) — web origins/content scripts cannot
+ *    reach the native channel.
+ *
+ * Returns { ok:true, folder } on success or { ok:false, error } otherwise.
+ */
+async function handlePickFolder(
+  tabId: number
+): Promise<{ ok: true; folder: string } | { ok: false; error: string }> {
+  // Derive origin from the tab URL — page cannot spoof this (T-09-15 / T-03-01)
+  const tab = await chrome.tabs.get(tabId);
+  if (!tab.url) {
+    return { ok: false, error: 'Cannot determine tab origin (tab has no URL)' };
+  }
+  const origin = new URL(tab.url).origin;
+
+  return new Promise((resolve) => {
+    chrome.runtime.sendNativeMessage(
+      NATIVE_HOST_NAME,
+      { type: SFX_MSG.PICK_FOLDER, origin },
+      async (response: unknown) => {
+        if (chrome.runtime.lastError) {
+          resolve({ ok: false, error: chrome.runtime.lastError.message ?? 'native messaging error' });
+          return;
+        }
+
+        const r = response as { type?: string; origin?: string; folder?: string | null } | null;
+        if (!r || r.type !== 'FOLDER_PICKED' || typeof r.folder !== 'string' || r.folder.length === 0) {
+          resolve({ ok: false, error: 'No folder selected' });
+          return;
+        }
+
+        const folder = r.folder;
+
+        // Re-read sfxOriginMap at handler top (Pitfall 1 — MV3 SW globals zeroed)
+        // and persist origin→folder, mirroring the existing origin→host persist
+        // (handleSetRoute lines above). Silent reuse thereafter (D-04).
+        const originMap = await sfxOriginMap.getValue();
+        originMap[origin] = folder;
+        await sfxOriginMap.setValue(originMap);
+
+        resolve({ ok: true, folder });
+      }
+    );
+  });
+}
+
+// ---------------------------------------------------------------------------
 // handleAddHost — probe a specific port and add it to the registry
 // ---------------------------------------------------------------------------
 
@@ -877,6 +936,18 @@ chrome.runtime.onMessage.addListener(
         // ONB-02: SW pairs with native host and persists token+registry.
         // Security (T-09-06): sendNativeMessage is SW-only — web origins cannot trigger this.
         handlePairNative()
+          .then(sendResponse)
+          .catch((err: unknown) =>
+            sendResponse({ ok: false, error: String(err) })
+          );
+        return true; // MANDATORY — keep channel open for async response (Pitfall 2)
+
+      case SFX_MSG.PICK_FOLDER:
+        // ONB-04 / D-04: open the OS folder dialog via the native host and
+        // persist origin→folder. Origin is derived from chrome.tabs.get(tabId)
+        // INSIDE handlePickFolder — never from the message body (T-09-15 anti-spoof).
+        // Security (T-09-06): sendNativeMessage is SW-only — web origins cannot trigger this.
+        handlePickFolder((msg as import('../lib/types.js').MsgPickFolder).tabId)
           .then(sendResponse)
           .catch((err: unknown) =>
             sendResponse({ ok: false, error: String(err) })
