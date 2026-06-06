@@ -11,12 +11,56 @@
 import * as http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { join, basename } from 'node:path';
-import { VERSION } from './config.js';
+import { VERSION, ensureNotesDir } from './config.js';
 import { checkToken, readBody, isInsideDir } from './security.js';
 import { withSerialLock, getNextSerial } from './serial.js';
 import { writeNote } from './write-note.js';
 import { listAnnotations, editNote, deleteNote } from './read-note.js';
+import { validateChosenFolder } from './validate-folder.js';
 import type { Config, AnnotationPayload } from './types.js';
+
+// ---------------------------------------------------------------------------
+// Per-request notes-dir resolution (D-04 — targetDir support)
+// ---------------------------------------------------------------------------
+
+/**
+ * Marker error mapped to HTTP 400 by every handler. Thrown by resolveNotesDir
+ * when a supplied targetDir fails validation — so an invalid/system targetDir
+ * NEVER results in a write outside the validated folder (T-09-14b).
+ */
+class InvalidTargetDirError extends Error {
+  statusCode = 400;
+  constructor() {
+    super('Invalid target folder');
+    this.name = 'InvalidTargetDirError';
+  }
+}
+
+/**
+ * Resolve the notes directory for a single request (D-04).
+ *
+ * Security (T-09-14b): every targetDir is RE-VALIDATED here, server-side, on
+ * EVERY request via the shared validateChosenFolder (absolute + exists +
+ * isDirectory + system-dir deny-list). A valid targetDir confines the write to
+ * <validated>/notes (created on demand). This extends the Phase 8 "confined
+ * writes" invariant from a single --root to any user-chosen, validated folder.
+ *
+ * Back-compat: when targetDir is absent/empty, returns cfg.notesDir UNCHANGED —
+ * the existing --root flow is byte-for-byte identical to today (no regression).
+ *
+ * @throws InvalidTargetDirError (→ HTTP 400) when a non-empty targetDir is invalid.
+ */
+function resolveNotesDir(cfg: Config, targetDir?: string): string {
+  if (typeof targetDir === 'string' && targetDir.length > 0) {
+    const valid = validateChosenFolder(targetDir);
+    if (!valid) throw new InvalidTargetDirError();
+    const dir = join(valid, 'notes');
+    ensureNotesDir(dir);
+    return dir;
+  }
+  // No targetDir → identical behavior to today (back-compat / --root default).
+  return cfg.notesDir;
+}
 
 // ---------------------------------------------------------------------------
 // CORS helpers (Pattern 4)
@@ -120,11 +164,27 @@ async function handleAnnotation(
     return;
   }
 
-  // 5. Write under serial lock (D-03 / Pitfall 3)
+  // 5. Resolve the per-request notes dir (D-04). An invalid/system targetDir
+  //    throws InvalidTargetDirError → 400 BEFORE any serial is burned or file
+  //    is written. Absent targetDir → cfg.notesDir (back-compat, no regression).
+  let notesDir: string;
+  try {
+    notesDir = resolveNotesDir(cfg, (payload as { targetDir?: string }).targetDir);
+  } catch (e: unknown) {
+    const err = e as { statusCode?: number; message?: string };
+    const status = err.statusCode === 400 ? 400 : 500;
+    res.writeHead(status, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: err.message ?? 'invalid target folder' }));
+    return;
+  }
+
+  // 6. Write under serial lock (D-03 / Pitfall 3).
+  //    Writes are confined to <notesDir> (= cfg.notesDir OR <validated targetDir>/notes).
+  //    targetDir is NOT persisted into the note frontmatter (routing-only field).
   try {
     const { file, serial } = await withSerialLock(async () => {
-      const serialNum = getNextSerial(cfg.notesDir);
-      return writeNote(cfg.notesDir, payload, serialNum);
+      const serialNum = getNextSerial(notesDir);
+      return writeNote(notesDir, payload, serialNum);
     });
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true, file, serial }));
@@ -163,9 +223,12 @@ async function handleListAnnotations(
   }
 
   try {
-    // Parse ?url= query parameter (path already stripped of query by route table)
-    const pageUrl = new URL(req.url ?? '/', 'http://x').searchParams.get('url') ?? '';
-    const pins = listAnnotations(cfg.notesDir, pageUrl);
+    // Parse ?url= and ?targetDir= query parameters (path already stripped of query)
+    const params = new URL(req.url ?? '/', 'http://x').searchParams;
+    const pageUrl = params.get('url') ?? '';
+    // D-04: re-validate targetDir per request; absent → cfg.notesDir (back-compat)
+    const notesDir = resolveNotesDir(cfg, params.get('targetDir') ?? undefined);
+    const pins = listAnnotations(notesDir, pageUrl);
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true, pins }));
   } catch (e: unknown) {
@@ -220,7 +283,10 @@ async function handleEditAnnotation(
     }
 
     const comment = parsed.comment ?? '';
-    await editNote(cfg.notesDir, serial, comment);
+    // D-04: re-validate targetDir per request; absent → cfg.notesDir (back-compat)
+    const targetDir = new URL(req.url ?? '/', 'http://x').searchParams.get('targetDir') ?? undefined;
+    const notesDir = resolveNotesDir(cfg, targetDir);
+    await editNote(notesDir, serial, comment);
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true }));
   } catch (e: unknown) {
@@ -252,7 +318,10 @@ async function handleDeleteAnnotation(
   }
 
   try {
-    await deleteNote(cfg.notesDir, serial);
+    // D-04: re-validate targetDir per request; absent → cfg.notesDir (back-compat)
+    const targetDir = new URL(req.url ?? '/', 'http://x').searchParams.get('targetDir') ?? undefined;
+    const notesDir = resolveNotesDir(cfg, targetDir);
+    await deleteNote(notesDir, serial);
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true }));
   } catch (e: unknown) {
@@ -312,9 +381,22 @@ async function handleGetScreenshot(
     return;
   }
 
-  // Reconstruct absolute path and verify confinement (T-06-02)
-  const resolved = join(cfg.notesDir, basename(file));
-  if (!isInsideDir(cfg.notesDir, resolved)) {
+  // D-04: re-validate targetDir per request; absent → cfg.notesDir (back-compat).
+  // An invalid/system targetDir → 400 (no file served outside the validated dir).
+  let notesDir: string;
+  try {
+    notesDir = resolveNotesDir(cfg, params.get('targetDir') ?? undefined);
+  } catch (e: unknown) {
+    const err = e as { statusCode?: number; message?: string };
+    const status = err.statusCode === 400 ? 400 : 500;
+    res.writeHead(status, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: err.message ?? 'invalid target folder' }));
+    return;
+  }
+
+  // Reconstruct absolute path and verify confinement against the RESOLVED dir (T-06-02)
+  const resolved = join(notesDir, basename(file));
+  if (!isInsideDir(notesDir, resolved)) {
     res.writeHead(403, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: false, error: 'forbidden' }));
     return;

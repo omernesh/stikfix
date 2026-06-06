@@ -811,3 +811,137 @@ describe('FIX-1: GET /screenshot route', () => {
     assert.ok(res.headers.get('access-control-allow-origin'), 'should have CORS header');
   });
 });
+
+// ---------------------------------------------------------------------------
+// D-04 / 09-05: optional per-request targetDir on annotation endpoints
+// Proves the host writes/reads/lists for any VALIDATED per-request folder and
+// confines writes to <targetDir>/notes; an invalid/system targetDir → 400; an
+// absent targetDir → cfg.notesDir (back-compat / no regression).
+// ---------------------------------------------------------------------------
+
+describe('D-04: optional targetDir on annotation endpoints (09-05)', () => {
+  let fixture: TestFixture;
+  let targetRoot: string;
+
+  before(async () => {
+    fixture = buildFixture();
+    await listenFixture(fixture);
+    // A fresh, real directory OUTSIDE cfg.notesDir to act as a chosen folder.
+    targetRoot = mkdtempSync(join(tmpdir(), 'sfx-targetdir-test-'));
+  });
+
+  after(async () => {
+    rmSync(targetRoot, { recursive: true, force: true });
+    await closeFixture(fixture);
+  });
+
+  const freePayload = (comment: string, targetDir?: string) => ({
+    mode: 'free',
+    comment,
+    page: { url: 'http://localhost:5173/td', title: 'TargetDir Test' },
+    viewport: { width: 1280, height: 800, devicePixelRatio: 1 },
+    ...(targetDir !== undefined ? { targetDir } : {}),
+  });
+
+  it('(a) POST with valid targetDir writes under <targetDir>/notes and NOT under cfg.notesDir', async () => {
+    const { readdirSync } = await import('node:fs');
+    const cfgBefore = readdirSync(fixture.cfg.notesDir);
+
+    const res = await fetch(`${fixture.baseUrl}/annotation`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Stickyfix-Token': TEST_TOKEN },
+      body: JSON.stringify(freePayload('targetDir note', targetRoot)),
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json() as { ok: boolean; file: string; serial: string };
+    assert.equal(body.ok, true);
+
+    // The .md file lives under <targetRoot>/notes
+    const targetNotesDir = join(targetRoot, 'notes');
+    assert.ok(
+      body.file.startsWith(targetNotesDir),
+      `Expected file under ${targetNotesDir}, got ${body.file}`
+    );
+    assert.ok(existsSync(body.file), 'the .md file should exist under <targetDir>/notes');
+    const targetMd = readdirSync(targetNotesDir).filter(f => /\.md$/.test(f));
+    assert.equal(targetMd.length, 1, 'exactly one .md under <targetDir>/notes');
+
+    // cfg.notesDir must be unchanged — nothing leaked to the --root default
+    const cfgAfter = readdirSync(fixture.cfg.notesDir);
+    assert.deepEqual(cfgAfter.sort(), cfgBefore.sort(), 'cfg.notesDir must NOT receive the note');
+  });
+
+  it('(b) POST with a system-dir targetDir → 400 and writes nothing', async () => {
+    const { readdirSync } = await import('node:fs');
+    const cfgBefore = readdirSync(fixture.cfg.notesDir);
+    const sysDir = process.platform === 'win32' ? 'C:\\Windows' : '/etc';
+
+    const res = await fetch(`${fixture.baseUrl}/annotation`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Stickyfix-Token': TEST_TOKEN },
+      body: JSON.stringify(freePayload('evil note', sysDir)),
+    });
+    assert.equal(res.status, 400, 'system-dir targetDir must be rejected with 400');
+    const body = await res.json() as { ok: boolean; error: string };
+    assert.equal(body.ok, false);
+
+    // No write to cfg.notesDir, and the system dir got nothing (no <sysDir>/notes attempt persisted)
+    const cfgAfter = readdirSync(fixture.cfg.notesDir);
+    assert.deepEqual(cfgAfter.sort(), cfgBefore.sort(), 'no file may be written on a rejected targetDir');
+  });
+
+  it('(b2) POST with a non-existent targetDir → 400 and writes nothing', async () => {
+    const ghost = join(targetRoot, 'nope-does-not-exist');
+    const res = await fetch(`${fixture.baseUrl}/annotation`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Stickyfix-Token': TEST_TOKEN },
+      body: JSON.stringify(freePayload('ghost note', ghost)),
+    });
+    assert.equal(res.status, 400, 'non-existent targetDir must be rejected with 400');
+    const body = await res.json() as { ok: boolean };
+    assert.equal(body.ok, false);
+  });
+
+  it('(c) POST with NO targetDir writes under cfg.notesDir (regression guard)', async () => {
+    const { readdirSync } = await import('node:fs');
+    const cfgBefore = readdirSync(fixture.cfg.notesDir).filter(f => /\.md$/.test(f)).length;
+
+    const res = await fetch(`${fixture.baseUrl}/annotation`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Stickyfix-Token': TEST_TOKEN },
+      body: JSON.stringify(freePayload('default note')),
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json() as { ok: boolean; file: string };
+    assert.equal(body.ok, true);
+    assert.ok(
+      body.file.startsWith(fixture.cfg.notesDir),
+      `Expected file under cfg.notesDir, got ${body.file}`
+    );
+    const cfgAfter = readdirSync(fixture.cfg.notesDir).filter(f => /\.md$/.test(f)).length;
+    assert.equal(cfgAfter, cfgBefore + 1, 'exactly one new .md under cfg.notesDir');
+  });
+
+  it('(d) GET /annotations?targetDir=<tmpdir> lists notes from <targetDir>/notes', async () => {
+    // The (a) test already wrote one note under <targetRoot>/notes for this URL.
+    const pageUrl = 'http://localhost:5173/td';
+    const res = await fetch(
+      `${fixture.baseUrl}/annotations?url=${encodeURIComponent(pageUrl)}&targetDir=${encodeURIComponent(targetRoot)}`,
+      { headers: { 'X-Stickyfix-Token': TEST_TOKEN } }
+    );
+    assert.equal(res.status, 200);
+    const body = await res.json() as { ok: boolean; pins: unknown[] };
+    assert.equal(body.ok, true);
+    assert.ok(Array.isArray(body.pins));
+    assert.ok(body.pins.length >= 1, 'should list the note written under <targetDir>/notes');
+  });
+
+  it('GET /annotations with system-dir targetDir → 400 (re-validated read path)', async () => {
+    const sysDir = process.platform === 'win32' ? 'C:\\Windows' : '/etc';
+    const res = await fetch(
+      `${fixture.baseUrl}/annotations?url=${encodeURIComponent('http://x/')}&targetDir=${encodeURIComponent(sysDir)}`,
+      { headers: { 'X-Stickyfix-Token': TEST_TOKEN } }
+    );
+    assert.equal(res.status, 400);
+  });
+});
