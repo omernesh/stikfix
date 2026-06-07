@@ -23,7 +23,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 6: Region Capture + Visual Design + Persistent Pins** - Camera tool drag-marquee crop; full paper-aesthetic sticky-note UI inside shadow DOM; clickable on-page note pins (rehydrated from disk) with view/edit/delete via host CRUD (completed 2026-06-03)
 - [x] **Phase 7: review-notes Skill + Docs** - Portable AI skill ships; README with demo GIF; clean-room provenance documented (completed 2026-06-03)
 - [x] **Phase 8: Hardening + Pre-Release Audit** - All error paths surface toasts; concurrent-Send stress test; GPL grep audit; idle-eviction regression pass (completed 2026-06-03)
-- [ ] **Phase 9: Turnkey Onboarding & Cross-Browser Distribution** - One-step installer (host + extension), automatic/one-click token pairing (no manual copy-paste), host auto-start, clean uninstall; documented Edge/Firefox/Safari packaging path
+- [x] **Phase 9: Turnkey Onboarding & Cross-Browser Distribution** - One-step installer (host + extension), automatic/one-click token pairing (no manual copy-paste), host auto-start, clean uninstall; documented Edge/Firefox/Safari packaging path (completed 2026-06-07; verification PASS 5/5)
 
 ## Phase Details
 
@@ -304,4 +304,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 6. Region Capture + Visual Design + Persistent Pins | 4/4 | Complete   | 2026-06-03 |
 | 7. review-notes Skill + Docs | 3/3 | Complete    | 2026-06-03 |
 | 8. Hardening + Pre-Release Audit | 4/4 | Complete   | 2026-06-03 |
-| 9. Turnkey Onboarding & Cross-Browser Distribution | 3/4 | In Progress|  |
+| 9. Turnkey Onboarding & Cross-Browser Distribution | 5/5 | Complete   | 2026-06-07 |

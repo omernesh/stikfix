@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: "Phase 09 human-verify checkpoints PASSED (09-04 Task 4 hostile-origin probe + 09-05 Task 5 first-note dialog E2E); awaiting formal phase verify/transition"
+status: milestone-complete
+stopped_at: "Phase 09 VERIFIED PASS (5/5 criteria). All 9 phases complete — v1.0 milestone deliverable code-complete and verified."
 last_updated: "2026-06-07T00:00:00.000Z"
 last_activity: 2026-06-07
 progress:
   total_phases: 9
-  completed_phases: 8
-  total_plans: 31
-  completed_plans: 30
-  percent: 89
+  completed_phases: 9
+  total_plans: 32
+  completed_plans: 32
+  percent: 100
 ---
 
 # Project State
@@ -25,13 +25,13 @@ See: .planning/PROJECT.md (updated 2026-05-31)
 
 ## Current Position
 
-Phase: 09 (turnkey-onboarding-cross-browser-distribution) — EXECUTING (all plans implemented; both human-verify checkpoints PASSED 2026-06-07)
-Plan: 5 of 5 (09-05 gap-closure for D-04 full wiring)
-Status: Functionally complete — ready for formal phase verify/transition
-Next: run phase verification/transition for Phase 09, then milestone v1.0 wrap-up
+Phase: 09 (turnkey-onboarding-cross-browser-distribution) — COMPLETE (verification PASS 5/5, 2026-06-07)
+Plan: 5 of 5 complete
+Status: v1.0 milestone code-complete and verified across all 9 phases
+Next: release/distribution — npm publish stickyfix-host + Chrome Web Store listing (outside code scope; see 09-VERIFICATION.md non-blocking notes), then tag v1.0
 Last activity: 2026-06-07
 
-Progress: [██░░░░░░░░] 22%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -138,5 +138,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-06-07
-Stopped at: Phase 09 human-verify checkpoints PASSED — 09-04 Task 4 (folder dialog + silent reuse + hostile-origin probe: native API undefined, /token+/pair 404, /annotation 401, /status omits token) and 09-05 Task 5 (first-note dialog E2E, silent reuse, cancel toast, origin→host→--root regression). Post-UAT fixes committed: f6355ef (D-04 wire-type + routing + chip), 8cbae0c (unmapped origin → empty pins, no error toast). Awaiting formal phase verify/transition.
+Stopped at: Phase 09 VERIFIED PASS (5/5) — see 09-VERIFICATION.md. All 9 phases complete; v1.0 milestone code-complete and verified. Post-UAT fixes committed: f6355ef (D-04 wire-type + routing + chip), 8cbae0c (unmapped origin → empty pins), ff83c44 (checkpoint docs). Remaining is release/distribution only (npm publish + CWS listing), outside the code deliverable.
 Resume file: None
