@@ -151,7 +151,9 @@ function getActivePairedHost(
 function resolveFolderAwareRoute(
   origin: string,
   state: StorageState
-): { ok: true; host: HostEntry; targetDir?: string } | { ok: false; error: string } {
+):
+  | { ok: true; host: HostEntry; targetDir?: string }
+  | { ok: false; error: string; reason?: 'unmapped' } {
   const mappedValue = state.originMap[origin];
   if (isFolderValue(mappedValue)) {
     const paired = getActivePairedHost(state.registry, state.tokens);
@@ -159,7 +161,9 @@ function resolveFolderAwareRoute(
     return { ok: true, host: paired, targetDir: mappedValue };
   }
   const routed = resolveRoute(origin, state, { singleHostFallback: false });
-  if (!routed) return { ok: false, error: `No host mapped for origin: ${origin}` };
+  // reason:'unmapped' lets callers (pin-loader) treat a fresh origin as "no pins
+  // yet" rather than a hard error — there is simply no folder/host chosen.
+  if (!routed) return { ok: false, error: `No host mapped for origin: ${origin}`, reason: 'unmapped' };
   return { ok: true, host: routed };
 }
 
@@ -508,7 +512,15 @@ async function handleListAnnotations(
 
   // 3. Resolve route (D-04: origin→folder ▸ origin→host)
   const route = resolveFolderAwareRoute(origin, state);
-  if (!route.ok) return route;
+  if (!route.ok) {
+    // A fresh, unmapped origin simply has no pins to show yet — return an empty
+    // list instead of surfacing a "Could not load pins — No host mapped" toast
+    // on every new site (REL-01: no scary error for a benign state). Pins load
+    // once the origin is mapped (the chip dropdown / first-note dialog), via the
+    // onSent re-fetch. Real errors (e.g. "Pair with the host first") still flow.
+    if (route.reason === 'unmapped') return { ok: true, pins: [] };
+    return route;
+  }
   const { host, targetDir } = route;
   if (!host.token) {
     return { ok: false, error: `No token set for host "${host.name}" — enter it in the popup` };
