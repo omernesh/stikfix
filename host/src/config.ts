@@ -1,0 +1,182 @@
+/**
+ * Config resolution for stickyfix-host.
+ * D-07: token resolution order --token -> STICKYFIX_TOKEN -> crypto.randomUUID()
+ * D-09: ensureNotesDir creates notesDir + .gitkeep (HOST-12)
+ * D-10: resolveConfig rejects notesDir outside root (HOST-09)
+ * Pattern 11: VERSION read from package.json at runtime via import.meta.url
+ * Windows-PowerShell compat: npm 11.x on Windows strips unknown flags and exposes
+ *   them as process.env.npm_config_<key>. resolveConfig accepts all three sources
+ *   with precedence: parsed flag > STICKYFIX_* env > npm_config_* env.
+ */
+
+import { readFileSync, mkdirSync, writeFileSync, existsSync, rmSync } from 'node:fs';
+import { resolve, join, basename, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { randomUUID } from 'node:crypto';
+import { isInsideDir } from './security.js';
+import type { Config } from './types.js';
+
+// ---------------------------------------------------------------------------
+// VERSION — read from package.json at runtime (Pattern 11)
+// dist/host/src/config.js → ../../../package.json
+// ---------------------------------------------------------------------------
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const _pkg = JSON.parse(readFileSync(join(__dirname, '../../../package.json'), 'utf8')) as { version: string };
+export const VERSION: string = _pkg.version;
+
+// ---------------------------------------------------------------------------
+// resolveConfigValues — three-tier env resolution (exported for testing)
+// ---------------------------------------------------------------------------
+
+/**
+ * Merge parsed CLI flags with env-variable fallbacks.
+ *
+ * Precedence (first defined wins) per key:
+ *   1. Real parsed flag  (values.root, values.origin, …)         — git bash / macOS / Linux
+ *   2. STICKYFIX_* env   (STICKYFIX_ROOT, STICKYFIX_ORIGINS, …) — explicit env override
+ *   3. npm_config_* env  (npm_config_root, npm_config_origin, …) — npm-on-Windows PowerShell
+ *
+ * Callers must not assume root is present — resolveConfig validates below.
+ */
+export function resolveConfigValues(
+  values: Record<string, unknown>,
+  env: Record<string, string | undefined> = process.env as Record<string, string | undefined>,
+): Record<string, unknown> {
+  // root
+  const root =
+    (values['root'] as string | undefined) ??
+    env['STICKYFIX_ROOT'] ??
+    env['npm_config_root'];
+
+  // origin / origins — flag: string[] (multiple:true); env: comma-separated string
+  const originFlag = values['origin'] as string[] | undefined;
+  let origins: string[] | undefined;
+  if (originFlag !== undefined && originFlag.length > 0) {
+    origins = originFlag;
+  } else {
+    const originsEnv =
+      env['STICKYFIX_ORIGINS'] ??
+      env['npm_config_origin'];
+    if (originsEnv !== undefined && originsEnv !== '') {
+      origins = originsEnv.split(',').map((s) => s.trim()).filter(Boolean);
+    }
+  }
+
+  // name
+  const name =
+    (values['name'] as string | undefined) ??
+    env['STICKYFIX_NAME'] ??
+    env['npm_config_name'];
+
+  // notes-dir
+  const notesDir =
+    (values['notes-dir'] as string | undefined) ??
+    env['STICKYFIX_NOTES_DIR'] ??
+    env['npm_config_notes_dir'];
+
+  // port
+  const port =
+    (values['port'] as string | undefined) ??
+    env['STICKYFIX_PORT'] ??
+    env['npm_config_port'];
+
+  // token — D-07 (STICKYFIX_TOKEN already documented in PRD §8.1)
+  const token =
+    (values['token'] as string | undefined) ??
+    env['STICKYFIX_TOKEN'] ??
+    env['npm_config_token'];
+
+  return {
+    root,
+    origin: origins,
+    name,
+    'notes-dir': notesDir,
+    port,
+    token,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// resolveConfig
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolve CLI parseArgs values into a validated Config.
+ * Applies three-tier env resolution via resolveConfigValues before validation.
+ * Throws if notesDir resolves outside root (D-10).
+ */
+export function resolveConfig(values: Record<string, unknown>): Config {
+  const v = resolveConfigValues(values);
+
+  if (typeof v['root'] !== 'string' || !v['root']) {
+    throw new Error('--root is required');
+  }
+
+  const root = resolve(v['root'] as string);
+  const name = (v['name'] as string | undefined) ?? basename(root);
+
+  // origins: resolved by resolveConfigValues, fallback to []
+  const origins = (v['origin'] as string[] | undefined) ?? [];
+
+  const notesDirRaw = v['notes-dir'] as string | undefined;
+  const notesDir = resolve(notesDirRaw ?? join(root, 'notes'));
+
+  // D-10: notesDir must be inside root
+  if (!isInsideDir(root, notesDir)) {
+    throw new Error(
+      `--notes-dir must be inside --root.\n  root:     ${root}\n  notesDir: ${notesDir}`
+    );
+  }
+
+  const portStr = v['port'] as string | undefined;
+  let port: number | undefined;
+  if (portStr !== undefined) {
+    // WR-05: validate port — Number('abc') → NaN, Number('0x10') → 16, etc.
+    port = Number(portStr);
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+      throw new Error(`--port must be an integer 1-65535, got: ${portStr}`);
+    }
+  }
+
+  // D-07 token resolution order (npm_config_token handled in resolveConfigValues)
+  const token = (v['token'] as string | undefined) ?? randomUUID();
+
+  return { root, notesDir, name, origins, port, token };
+}
+
+// ---------------------------------------------------------------------------
+// ensureNotesDir (HOST-12)
+// ---------------------------------------------------------------------------
+
+/**
+ * Create notesDir (recursively) if it does not exist.
+ * Write a .gitkeep file if absent so the empty dir is tracked by git.
+ */
+export function ensureNotesDir(notesDir: string): void {
+  mkdirSync(notesDir, { recursive: true });
+  const gitkeep = join(notesDir, '.gitkeep');
+  if (!existsSync(gitkeep)) {
+    writeFileSync(gitkeep, '');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// writeTokenFile (HOST-12)
+// ---------------------------------------------------------------------------
+
+/**
+ * Write the resolved token to <root>/.stickyfix-token for developer convenience.
+ * The file is already gitignored (verified in Phase 1).
+ *
+ * The token is a credential, so the file is created owner-only (mode 0o600).
+ * Any pre-existing file is removed first so a prior, looser-permissioned inode
+ * (e.g. 0o644) is not reused. POSIX mode bits are honored on macOS/Linux; on
+ * Windows they are largely ignored by the filesystem, which is acceptable.
+ */
+export function writeTokenFile(root: string, token: string): void {
+  const tokenPath = join(root, '.stickyfix-token');
+  if (existsSync(tokenPath)) {
+    rmSync(tokenPath, { force: true });
+  }
+  writeFileSync(tokenPath, token, { encoding: 'utf8', mode: 0o600 });
+}

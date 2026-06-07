@@ -1,0 +1,909 @@
+/*
+ * stickyfix connection chip — shadow-root scoped CSS
+ *
+ * Rules:
+ *  - :host all:initial ensures zero inheritance from the host page (Pattern 9)
+ *  - px units ONLY — rem refers to host page <html> font-size which may be
+ *    anything (Pitfall 5 / WXT FAQ)
+ *  - z-index 2147483647 (INT32_MAX) so chip renders above any host page element
+ *  - pointer-events:none on :host so page interaction is not blocked except at
+ *    the chip's own footprint
+ *  - Neutral functional palette (NOT post-it aesthetics — deferred to Phase 6)
+ */
+
+:host {
+  all: initial;
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2147483647;
+  box-sizing: border-box;
+}
+
+/*
+ * TOP-LAYER OVERRIDE: When the host carries the [popover] attribute the
+ * browser UA stylesheet injects defaults that would shrink/box our full-screen
+ * transparent pass-through overlay.  The UA applies:
+ *   position:fixed; inset:0; width:fit-content; height:fit-content;
+ *   margin:auto; border:solid; padding; background:Canvas; overflow:hidden; color:CanvasText
+ *
+ * :host([popover]) / :host(:popover-open) selectors inside the shadow root
+ * have author-level specificity and beat UA styles.  We explicitly restore
+ * every overridden property to match our overlay intent.
+ *
+ * pointer-events:none is kept — chip/FAB/card/toast each set pointer-events:auto
+ * on their own elements so clicks still reach them in the top layer.
+ *
+ * z-index is kept as the fallback value when Popover API is unavailable.
+ */
+:host([popover]),
+:host(:popover-open) {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  overflow: visible;
+  pointer-events: none;
+}
+
+#sfx-chip {
+  pointer-events: auto;
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  /* Above the FAB (4) so the chip's exit/send controls always win pointer
+     events when the draggable FAB is parked over the chip (UAT overlap fix). */
+  z-index: 5;
+  background: #ffffff;
+  border: 1px solid #cccccc;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  line-height: 1;
+  color: #111111;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  cursor: default;
+  user-select: none;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 400px;
+  white-space: nowrap;
+}
+
+/* Status dot */
+.sfx-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  flex-shrink: 0;
+}
+
+.sfx-status-dot.sfx-dot-error {
+  background: #ef4444;
+}
+
+/* Route label */
+.sfx-chip-label {
+  font-size: 13px;
+  color: #111111;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+/* Inline confirmation / error message.
+ * FIX 3: a long toast (e.g. "No folder chosen — note not saved. Drop again to
+ * pick one.") must NOT push the dropdown/Send/icon/× out of alignment. Let the
+ * feedback take remaining space and truncate with an ellipsis (min-width:0 is
+ * required for a flex child to shrink below its content width). The control row
+ * keeps a stable baseline because every control is flex-shrink:0. */
+.sfx-chip-feedback {
+  font-size: 12px;
+  color: #16a34a;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sfx-chip-feedback.sfx-feedback-error {
+  color: #dc2626;
+}
+
+/* One-time project dropdown */
+.sfx-chip-dropdown {
+  font-size: 12px;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  padding: 2px 4px;
+  background: #f9f9f9;
+  color: #111111;
+  cursor: pointer;
+  max-width: 180px;
+}
+
+/* Buttons */
+.sfx-chip-btn {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  padding: 3px 8px;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  background: #f0f0f0;
+  color: #111111;
+  cursor: pointer;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.sfx-chip-btn:hover {
+  background: #e0e0e0;
+}
+
+.sfx-chip-btn.sfx-btn-exit {
+  padding: 3px 6px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #666666;
+}
+
+.sfx-chip-btn.sfx-btn-exit:hover {
+  color: #111111;
+  background: #e0e0e0;
+}
+
+/* ============================================================
+ * FAB — floating action button (FREE-01 / UI-SPEC §1)
+ * ============================================================ */
+
+#sfx-fab {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  /* Below the chip (5) but above page-anchored pins (2)/preview (3) so the FAB
+     floats over content yet never occludes the chip's controls when overlapped. */
+  z-index: 4;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #cccccc;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  pointer-events: auto;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+#sfx-fab:hover {
+  background: #f0f0f0;
+}
+
+#sfx-fab:active {
+  background: #e0e0e0;
+}
+
+.sfx-fab-icon {
+  font-size: 20px;
+  color: #111111;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* ============================================================
+ * Post-it card (FREE-01, FREE-02 / UI-SPEC §2)
+ * ============================================================ */
+
+#sfx-card {
+  position: fixed;
+  bottom: 88px;
+  right: 32px;
+  width: 300px;
+  min-height: 160px;
+  background: #ffffff;
+  border: 1px solid #cccccc;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  color: #111111;
+}
+
+.sfx-card-header {
+  padding: 8px 12px;
+  background: #f0f0f0;
+  border-bottom: 1px solid #cccccc;
+  border-radius: 6px 6px 0 0;
+  cursor: grab;
+  user-select: none;
+  display: flex;
+  align-items: center;
+}
+
+.sfx-card-header:active {
+  cursor: grabbing;
+}
+
+.sfx-card-header-label {
+  font-size: 13px;
+  color: #111111;
+  font-weight: 400;
+}
+
+.sfx-card-body {
+  padding: 8px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+#sfx-card-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 100px;
+  resize: vertical;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #111111;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  padding: 6px 8px;
+  background: #ffffff;
+}
+
+#sfx-card-textarea::placeholder {
+  color: #666666;
+}
+
+#sfx-card-textarea:focus {
+  outline: 2px solid #1d6ed8;
+  outline-offset: 1px;
+}
+
+.sfx-card-footer {
+  padding: 8px;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  justify-content: flex-end;
+  border-top: 1px solid #f0f0f0;
+}
+
+#sfx-card-send {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  background: #1d6ed8;
+  color: #ffffff;
+}
+
+#sfx-card-send:hover:not(:disabled) {
+  background: #1558b0;
+}
+
+#sfx-card-send:disabled {
+  background: #f0f0f0;
+  color: #999999;
+  border: 1px solid #cccccc;
+  cursor: not-allowed;
+}
+
+#sfx-card-cancel {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  padding: 5px 12px;
+  border-radius: 4px;
+  border: 1px solid #cccccc;
+  background: #f0f0f0;
+  color: #666666;
+  cursor: pointer;
+}
+
+#sfx-card-cancel:hover {
+  background: #e0e0e0;
+}
+
+/* ============================================================
+ * Toast surface (FREE-04, REL-01 / UI-SPEC §3)
+ * ============================================================ */
+
+.sfx-toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  border-radius: 6px;
+  border: 1px solid #cccccc;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  color: #111111;
+  pointer-events: auto;
+  opacity: 1;
+  transition: opacity 200ms ease;
+}
+
+.sfx-toast-stripe {
+  width: 4px;
+  flex-shrink: 0;
+  background: #16a34a; /* success — overridden for error via .sfx-toast-error */
+}
+
+.sfx-toast.sfx-toast-error .sfx-toast-stripe {
+  background: #dc2626;
+}
+
+.sfx-toast-body {
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.sfx-toast-icon {
+  font-size: 14px;
+  color: #16a34a; /* success */
+  flex-shrink: 0;
+}
+
+.sfx-toast.sfx-toast-error .sfx-toast-icon {
+  color: #dc2626;
+}
+
+.sfx-toast-msg {
+  font-size: 13px;
+  color: #111111;
+  word-break: break-word;
+}
+
+.sfx-toast-dismiss {
+  padding: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #666666;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.sfx-toast-dismiss:hover {
+  color: #111111;
+}
+
+/* ============================================================
+ * Picker button (ELEM-01 / UI-SPEC §1)
+ * ============================================================ */
+
+.sfx-picker-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f0f0f0;
+  border: 1px solid #cccccc;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.sfx-picker-btn:hover {
+  background: #e0e0e0;
+}
+
+.sfx-picker-btn.sfx-active {
+  background: #fff3e0;
+  border-color: #ff6b00;
+  box-shadow: 0 0 0 2px rgba(255, 107, 0, 0.25);
+}
+
+/* ============================================================
+ * Pick mode — cursor (ELEM-01 / UI-SPEC §2)
+ * ============================================================ */
+
+:host(.sfx-pick-mode) {
+  cursor: crosshair;
+}
+
+/* ============================================================
+ * Hover-highlight overlay (ELEM-01 / UI-SPEC §2)
+ * ============================================================ */
+
+.sfx-hover-highlight {
+  display: none;
+  position: fixed;
+  box-sizing: border-box;
+  pointer-events: none;
+  z-index: 1;
+  border: 2px solid rgba(255, 140, 0, 0.85);
+  background: rgba(255, 140, 0, 0.08);
+  border-radius: 2px;
+}
+
+/* Locked selection (after ↑/↓ traversal) — blue so it reads as "held; click or
+   Enter to confirm" vs the orange live-hover highlight. */
+.sfx-hover-highlight.sfx-pick-locked {
+  border-color: rgba(59, 130, 246, 0.95);
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.sfx-hover-label {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 4px);
+  background: rgba(0, 0, 0, 0.75);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 3px;
+  white-space: nowrap;
+  pointer-events: none;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ============================================================
+ * Pick-mode hints panel (optional — opts.showHints)
+ * Top-left so it never collides with the chip (top/right) or FAB (bottom/right).
+ * pointer-events:none so it never blocks picking.
+ * ============================================================ */
+
+.sfx-pick-hints {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  /* Above the chip (5)/FAB (4) and the free-note card so it is never covered;
+     draggable (pointer-events:auto + cursor:move) so the user can pull it off
+     anything they want to pick. Semi-transparent so it never fully hides
+     content beneath it. */
+  z-index: 6;
+  pointer-events: auto;
+  cursor: move;
+  user-select: none;
+  max-width: 360px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #ffffff;
+  border-radius: 6px;
+  padding: 12px 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.sfx-pick-hints-title {
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 8px;
+  /* leave room for the close (×) button at the top-right */
+  padding-right: 20px;
+}
+
+.sfx-pick-hints-close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.sfx-pick-hints-close:hover {
+  opacity: 1;
+}
+
+.sfx-pick-hints-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sfx-pick-hints-list li {
+  font-weight: 400;
+}
+
+/* ============================================================
+ * Element-note card — context header (ELEM-07 / D-03 / UI-SPEC §3)
+ * ============================================================ */
+
+/* Modifier class on #sfx-card root for element-mode cards */
+#sfx-card.sfx-card-element {
+  /* No visual override needed at root — modifier enables child selectors */
+}
+
+/* Read-only context strip between header and body */
+.sfx-ctx-header {
+  padding: 4px 12px;
+  min-height: 28px;
+  background: #f8f4f0;
+  border-bottom: 1px solid #e8e0d8;
+  font-size: 13px;
+  font-weight: 400;
+  color: #444444;
+  line-height: 1.4;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+}
+
+.sfx-ctx-header-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 400;
+  color: #444444;
+  line-height: 1.4;
+}
+
+/* ============================================================
+ * Re-map affordance on chip label (D-09 / UI-SPEC §4)
+ * ============================================================ */
+
+.sfx-chip-label.sfx-label-routed {
+  cursor: pointer;
+  text-decoration: underline dotted #666666;
+}
+
+.sfx-chip-label.sfx-label-routed:hover {
+  color: #1d6ed8;
+}
+
+/* ============================================================
+ * Phase 6: Visual design — paper aesthetic on card (UI-02, UI-03)
+ * ============================================================ */
+
+/* Free-note card — warm cream paper background */
+#sfx-card {
+  background: #fefce8;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.22);
+}
+
+/* Free-note header — amber strip */
+.sfx-card-header {
+  background: #fde68a;
+  border-bottom-color: #f59e0b;
+}
+
+/* Element-note card — very light blue paper tint */
+#sfx-card.sfx-card-element {
+  background: #eff6ff;
+}
+
+/* Element-note header — blue strip */
+#sfx-card.sfx-card-element .sfx-card-header {
+  background: #dbeafe;
+  border-bottom-color: #93c5fd;
+}
+
+/* Toast shadow upgrade (UI-04) */
+.sfx-toast {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.20);
+}
+
+/* ============================================================
+ * Phase 6: Camera button (.sfx-cam-btn) — CAM-01
+ * ============================================================ */
+
+.sfx-cam-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f0f0f0;
+  border: 1px solid #cccccc;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+  pointer-events: auto;
+  margin-left: auto;
+  font-family: system-ui, -apple-system, sans-serif;
+  line-height: 1;
+}
+
+.sfx-cam-btn:hover {
+  background: #e0e0e0;
+}
+
+.sfx-cam-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+ * Phase 6: Capture scrim + marquee rect — CAM-02, CAM-03
+ * ============================================================ */
+
+/* Full-viewport scrim — dims page during camera mode */
+.sfx-cam-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  pointer-events: auto;
+  cursor: crosshair;
+  z-index: 1;
+}
+
+/* Live rubber-band selection rect inside scrim */
+.sfx-cam-rect {
+  position: absolute;
+  border: 2px solid #1d6ed8;
+  background: rgba(29, 110, 216, 0.12);
+  display: none;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+/* ============================================================
+ * Phase 6: Thumbnail strip — CAM-05
+ * ============================================================ */
+
+/* Strip container — horizontal scroll row below textarea */
+.sfx-thumb-strip {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0;
+  min-height: 0;
+}
+
+/* Individual thumbnail wrapper */
+.sfx-thumb-wrap {
+  position: relative;
+  flex-shrink: 0;
+  width: 64px;
+  height: 48px;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* Thumbnail image */
+.sfx-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Delete button overlaid in top-right corner of thumbnail */
+.sfx-thumb-del {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+  pointer-events: auto;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* ============================================================
+ * Phase 6: Persistent pins — PIN-01..06
+ * ============================================================ */
+
+/* Base pin marker — folded-corner sticky-note shape */
+.sfx-pin {
+  position: fixed;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px 4px 4px 0;
+  border: 2px solid #9ca3af;
+  background: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  pointer-events: auto;
+  user-select: none;
+  z-index: 2;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.20);
+  font-size: 14px;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Free-note pin — amber (matches free-note card header) */
+.sfx-pin.sfx-pin-free {
+  background: #fde68a;
+  border-color: #f59e0b;
+}
+
+/* Element-note pin — blue (matches element-note card header) */
+.sfx-pin.sfx-pin-element {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+/* Orphaned pin — greyed/dashed (D-07: never hidden, still clickable) */
+.sfx-pin.sfx-pin-orphaned {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+  border-style: dashed;
+  opacity: 0.75;
+  cursor: pointer;
+}
+
+/* Unread/read dot (D-09) — absolute-positioned top-right, overlaps border */
+.sfx-pin-dot {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #dc2626;
+  border: 1.5px solid #ffffff;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+/* Read state: green dot */
+.sfx-pin.sfx-pin-read .sfx-pin-dot {
+  background: #16a34a;
+}
+
+/* Hover preview tooltip — FIX-2: auto-size to text content */
+.sfx-pin-preview {
+  /* left/top are set in JS on mouseenter (pin.ts) and clamped to the viewport
+   * so the box never sits behind the pin glyph or clips off the left/right edge. */
+  position: fixed;
+  /* FIX-2: width:max-content lets the box expand to fit text on one line,
+   * max-width:240px caps it so long notes wrap within a readable column.
+   * Without width:max-content the box defaults to min-content (~1 char wide)
+   * causing text to wrap on every character. */
+  width: max-content;
+  max-width: 240px;
+  box-sizing: border-box;
+  background: rgba(17, 17, 17, 0.90);
+  color: #ffffff;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+  padding: 8px 12px;
+  border-radius: 4px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  pointer-events: none;
+  display: none;
+  max-height: 120px;
+  overflow: hidden;
+  z-index: 3;
+}
+
+/* ============================================================
+ * Phase 6: Pin body text (view card) + delete button styles
+ * ============================================================ */
+
+/* Note body text in pin view card */
+.sfx-pin-body-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #111111;
+  max-height: 200px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Delete note button in pin view card footer */
+.sfx-btn-delete {
+  padding: 4px 10px;
+  border: 1px solid #dc2626;
+  color: #dc2626;
+  background: #ffffff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: system-ui, -apple-system, sans-serif;
+  pointer-events: auto;
+}
+
+.sfx-btn-delete:hover {
+  background: #fee2e2;
+}
+
+/* Confirm delete button (destructive CTA — red filled) */
+.sfx-btn-delete-confirm {
+  padding: 4px 10px;
+  border: none;
+  background: #dc2626;
+  color: #ffffff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: system-ui, -apple-system, sans-serif;
+  pointer-events: auto;
+}
+
+.sfx-btn-delete-confirm:hover {
+  background: #b91c1c;
+}
+
+.sfx-btn-delete-confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Delete confirm prompt text */
+.sfx-del-confirm-text {
+  font-size: 12px;
+  color: #444444;
+  font-family: system-ui, -apple-system, sans-serif;
+  flex: 1;
+}

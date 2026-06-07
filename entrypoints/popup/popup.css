@@ -1,0 +1,519 @@
+/* stickyfix popup — functional-minimal, ~320px, neutral palette (Phase 6 adds post-it aesthetics) */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* The HTML `hidden` attribute is only `display:none` at UA specificity (0,0,1,0);
+   ID rules like `#sfx-empty-state{display:flex}` silently defeat it. Force the
+   attribute to always win so JS toggling `.hidden` actually hides the element. */
+[hidden] {
+  display: none !important;
+}
+
+body {
+  width: 320px;
+  min-height: 80px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  color: #1a1a1a;
+  background: #f8f8f8;
+}
+
+#sfx-popup-root {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Header ───────────────────────────────────────────────────────────────── */
+
+#sfx-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid #e0e0e0;
+  background: #fff;
+}
+
+#sfx-wordmark {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #111;
+}
+
+#sfx-host-summary {
+  font-size: 11px;
+  color: #666;
+}
+
+/* ── Host list ────────────────────────────────────────────────────────────── */
+
+#sfx-host-list {
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.sfx-host-row {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  align-items: start;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.sfx-host-row:last-child {
+  border-bottom: none;
+}
+
+/* Connection dot */
+.sfx-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.sfx-dot--green {
+  background: #22c55e;
+}
+
+.sfx-dot--grey {
+  background: #9ca3af;
+}
+
+/* Host info block */
+.sfx-host-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sfx-host-name {
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sfx-host-port {
+  font-size: 11px;
+  color: #666;
+}
+
+/* Token input */
+.sfx-token-input {
+  font-family: ui-monospace, 'Cascadia Code', 'Courier New', monospace;
+  font-size: 11px;
+  width: 96px;
+  padding: 3px 6px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  background: #fafafa;
+  color: #333;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.sfx-token-input:focus {
+  border-color: #888;
+  background: #fff;
+}
+
+/* Token field wrapper + Apply/Clear actions */
+.sfx-token-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: stretch;
+}
+
+.sfx-token-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.sfx-token-btn {
+  font-size: 10px;
+  padding: 2px 8px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  background: #f5f5f5;
+  color: #333;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.sfx-token-btn:hover {
+  background: #ebebeb;
+}
+
+.sfx-token-btn:disabled {
+  cursor: default;
+  color: #16a34a;
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.sfx-token-apply {
+  font-weight: 600;
+}
+
+.sfx-token-clear:hover {
+  color: #b91c1c;
+  border-color: #f0b4b4;
+  background: #fef2f2;
+}
+
+/* Remove host button — quiet destructive affordance */
+.sfx-host-remove {
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 6px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  background: #f5f5f5;
+  color: #666;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.sfx-host-remove:hover {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #f0b4b4;
+}
+
+.sfx-host-remove:disabled {
+  cursor: not-allowed;
+  color: #aaa;
+}
+
+/* ── Empty state ──────────────────────────────────────────────────────────── */
+
+#sfx-empty-state {
+  padding: 14px 12px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#sfx-empty-msg {
+  font-size: 12px;
+  color: #444;
+}
+
+#sfx-empty-hint {
+  font-size: 11px;
+  color: #666;
+  line-height: 1.6;
+}
+
+#sfx-empty-hint code {
+  font-family: ui-monospace, 'Cascadia Code', 'Courier New', monospace;
+  font-size: 11px;
+  background: #f0f0f0;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+#sfx-refresh-btn {
+  align-self: flex-start;
+  padding: 5px 10px;
+  font-size: 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #f5f5f5;
+  cursor: pointer;
+  color: #333;
+}
+
+#sfx-refresh-btn:hover {
+  background: #eee;
+}
+
+/* + (add host) button — small square, header-height */
+#sfx-add-btn {
+  padding: 4px 8px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #f5f5f5;
+  color: #333;
+  cursor: pointer;
+}
+
+#sfx-add-btn:hover {
+  background: #eee;
+}
+
+/* Add-host inline form — compact row */
+#sfx-add-form {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: #f8f8f8;
+  border-bottom: 1px solid #e0e0e0;
+  flex-wrap: wrap;
+}
+
+#sfx-add-port {
+  width: 72px;
+  padding: 3px 6px;
+  font-size: 12px;
+  font-family: ui-monospace, 'Cascadia Code', 'Courier New', monospace;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  outline: none;
+}
+
+#sfx-add-port:focus {
+  border-color: #888;
+}
+
+#sfx-add-submit {
+  padding: 3px 10px;
+  font-size: 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #f5f5f5;
+  color: #333;
+  cursor: pointer;
+}
+
+#sfx-add-submit:hover {
+  background: #eee;
+}
+
+#sfx-add-submit:disabled {
+  cursor: not-allowed;
+  color: #999;
+}
+
+#sfx-add-error {
+  font-size: 12px;
+  color: #dc2626;
+  flex-basis: 100%;
+  margin-top: 2px;
+}
+
+/* ── Review Mode toggle ───────────────────────────────────────────────────── */
+
+#sfx-toggle-section {
+  padding: 10px 12px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+#sfx-review-btn {
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  border-radius: 5px;
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+  transition: background 0.15s;
+}
+
+#sfx-review-btn:hover {
+  background: #333;
+}
+
+#sfx-review-btn:disabled {
+  background: #999;
+  cursor: not-allowed;
+}
+
+#sfx-review-btn.sfx-exit-mode {
+  background: #dc2626;
+}
+
+#sfx-review-btn.sfx-exit-mode:hover {
+  background: #b91c1c;
+}
+
+#sfx-review-btn.sfx-grant-mode {
+  background: #d97706;
+}
+
+#sfx-review-btn.sfx-grant-mode:hover {
+  background: #b45309;
+}
+
+#sfx-toggle-error {
+  font-size: 11px;
+  color: #dc2626;
+}
+
+#sfx-hints-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #444;
+  cursor: pointer;
+  user-select: none;
+}
+
+#sfx-hints-checkbox {
+  margin: 0;
+  cursor: pointer;
+}
+
+/* ── Routing line ─────────────────────────────────────────────────────────── */
+
+#sfx-routing-section {
+  padding: 8px 12px;
+  background: #f8f8f8;
+}
+
+#sfx-routing-line {
+  font-size: 12px;
+  color: #555;
+  font-family: ui-monospace, 'Cascadia Code', 'Courier New', monospace;
+}
+
+/* ── Pairing banner ──────────────────────────────────────────────────────────── */
+
+#sfx-pairing-banner {
+  padding: 10px 12px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Live region — inline block; JS sets text content only */
+#sfx-pairing-status {
+  font-size: 12px;
+  color: #444;
+  line-height: 1.5;
+}
+
+/* Paired success state modifier */
+#sfx-pairing-status.sfx-pairing-status--paired {
+  font-size: 13px;
+  font-weight: 600;
+  color: #16a34a;
+}
+
+/* Failed state modifier */
+#sfx-pairing-status.sfx-pairing-status--failed {
+  color: #dc2626;
+}
+
+/* Pair / Retry button — same visual as #sfx-review-btn */
+#sfx-pair-btn {
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  border-radius: 5px;
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+#sfx-pair-btn:hover {
+  background: #333;
+}
+
+#sfx-pair-btn:disabled {
+  background: #999;
+  cursor: not-allowed;
+}
+
+#sfx-pair-btn:focus-visible {
+  outline: 2px solid #111;
+  outline-offset: 2px;
+}
+
+/* Spinner (shown when #sfx-pair-btn has .sfx-pairing class) */
+#sfx-pair-btn.sfx-pairing::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: sfx-spin 0.6s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes sfx-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error details disclosure */
+#sfx-pairing-details {
+  margin-top: 4px;
+}
+
+#sfx-pairing-details summary {
+  font-size: 11px;
+  color: #888;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+
+#sfx-pairing-details summary::-webkit-details-marker {
+  display: none;
+}
+
+#sfx-pairing-details summary::before {
+  content: '▸ ';
+  font-size: 9px;
+}
+
+details[open] #sfx-pairing-details summary::before {
+  content: '▾ ';
+}
+
+#sfx-pairing-error-detail {
+  font-family: ui-monospace, 'Cascadia Code', 'Courier New', monospace;
+  font-size: 10px;
+  color: #888;
+  word-break: break-all;
+  padding: 4px 0;
+  line-height: 1.5;
+}
+
+/* Accessibility: disable spinner animation for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  #sfx-pair-btn.sfx-pairing::before {
+    animation: none;
+  }
+}

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>stickyfix</title>
+    <link rel="stylesheet" href="./popup.css" />
+  </head>
+  <body>
+    <div id="sfx-popup-root">
+      <!-- Header: wordmark + host count summary + always-visible Refresh -->
+      <header id="sfx-header">
+        <span id="sfx-wordmark">stickyfix</span>
+        <span id="sfx-host-summary"></span>
+        <button id="sfx-refresh-btn" type="button">Refresh</button>
+        <button id="sfx-add-btn" type="button" title="Add host by port">+</button>
+      </header>
+
+      <!-- Pairing banner (hidden by default; shown by main.ts in states 1-4) -->
+      <section id="sfx-pairing-banner" hidden aria-label="Pairing status">
+        <div id="sfx-pairing-status" role="status" aria-live="polite" aria-atomic="true"></div>
+        <button id="sfx-pair-btn" type="button" hidden aria-label="Pair with host"></button>
+        <details id="sfx-pairing-details" hidden>
+          <summary>Details</summary>
+          <p id="sfx-pairing-error-detail"></p>
+        </details>
+      </section>
+
+      <!-- Add host form (hidden by default) -->
+      <div id="sfx-add-form" hidden>
+        <input id="sfx-add-port" type="number" value="39240" min="1" max="65535" aria-label="host port" />
+        <button id="sfx-add-submit" type="button">Probe &amp; add</button>
+        <span id="sfx-add-error" hidden role="alert"></span>
+      </div>
+
+      <!-- Host list container (one row per discovered host) -->
+      <section id="sfx-host-list" aria-label="Discovered hosts"></section>
+
+      <!-- Empty state (shown when registry is empty) -->
+      <section id="sfx-empty-state" hidden>
+        <p id="sfx-empty-msg">No hosts found on 39240&#x2013;39260.</p>
+        <p id="sfx-empty-hint">Start one with:<br><code>npx stickyfix init</code></p>
+      </section>
+
+      <!-- Review Mode toggle -->
+      <section id="sfx-toggle-section">
+        <button id="sfx-review-btn" type="button">Enter Review Mode</button>
+        <span id="sfx-toggle-error" hidden></span>
+        <label id="sfx-hints-label" for="sfx-hints-checkbox">
+          <input id="sfx-hints-checkbox" type="checkbox" />
+          <span>Show hints in Pick Mode</span>
+        </label>
+      </section>
+
+      <!-- Routing line for the active tab -->
+      <section id="sfx-routing-section">
+        <span id="sfx-routing-line">Checking route&#x2026;</span>
+      </section>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
