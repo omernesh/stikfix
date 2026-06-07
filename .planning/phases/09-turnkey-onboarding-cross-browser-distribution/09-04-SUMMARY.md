@@ -122,7 +122,14 @@ None. The prior PICK_FOLDER stub in `native-host.ts` (09-02) is now fully replac
 
 ## Checkpoint Remaining
 
-**Task 4 (`checkpoint:human-verify`, gate=blocking-human)** — Live UAT was intentionally NOT executed (out of scope for the autonomous executor). The user (Omer) will run it: first note → OS folder dialog → note on disk in the chosen folder; second note → silent reuse; hostile-origin probe (page-context `connectNative`/`sendNativeMessage` undefined, `/token`+`/pair` 404, `/annotation` 401).
+_None — Task 4 verified._
+
+**Task 4 (`checkpoint:human-verify`, gate=blocking-human) — VERIFIED 2026-06-07 (Omer):**
+- First note on unmapped origin → OS folder dialog → note on disk in chosen folder; second note → silent reuse. ✅ (see 09-05 Task 5)
+- Hostile-origin probe (ONB-03), run in page DevTools on `https://*.walla.co.il`:
+  - `typeof chrome.runtime.connectNative` === `"undefined"`, `typeof chrome.runtime.sendNativeMessage` === `"undefined"`. ✅
+  - `GET /token` → 404, `GET /pair` → 404, `POST /annotation` (no token) → 401 — token never obtainable from page context. ✅
+  - Host-side confirmed independently from localhost: same 404/404/401; `GET /status` 200 but body omits the token. ✅
 
 ## Self-Check: PASSED
 

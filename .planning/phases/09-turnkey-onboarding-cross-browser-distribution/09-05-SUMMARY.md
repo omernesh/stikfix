@@ -135,7 +135,17 @@ None. The Send payload remains the existing "stickyfix relay proof" free-note st
 
 ## Remaining
 
-**Task 5 (checkpoint:human-verify, blocking-human)** — Live UAT of the first-note folder dialog end-to-end (dialog appears, note lands in chosen folder, second note silent, cancel surfaces toast, origin→host regression). STATE.md / ROADMAP.md are intentionally NOT advanced pending Omer's UAT.
+_None — all tasks verified._
+
+**Task 5 (checkpoint:human-verify, blocking-human) — VERIFIED 2026-06-07 (Omer):**
+- First note on unmapped origin → OS folder dialog → note `.md` landed in chosen folder (`D:\docker\sfx-d04-test\notes`). ✅
+- Second note on same origin → no dialog, silent reuse. ✅
+- Cancel dialog → visible toast "No folder chosen — note not saved", nothing written. ✅ (Check A)
+- Regression: origin mapped to host via dropdown wrote to `--root` (`D:\docker\stickyfix-uat\notes`, note `0022`) with no dialog. ✅ (Check B)
+
+### Post-UAT fixes folded in (commits `f6355ef`, `8cbae0c`)
+- `f6355ef` — D-04 end-to-end fix-pass: PICK_FOLDER wire-type mismatch (dialog never opened), single-host auto-select swallowed unmapped origins, stale `<select>` left after pick (chip looked stuck on "select project"), card free/element needs-folder handling, win32 frontmost dialog, native `.bat`/`.sh` wrapper + VBS launcher, injectable `execReg` (no HKCU clobber in tests).
+- `8cbae0c` — unmapped origin now returns empty pin list (`reason:'unmapped'`) instead of a "Could not load pins — No host mapped" toast on every fresh site.
 
 ## Self-Check: PASSED
 
