@@ -370,6 +370,36 @@ async function handleSetRoute(
 }
 
 /**
+ * Relay a fetch to the host with one automatic token-rotation recovery: on HTTP
+ * 401, re-pair with the native host (refreshing sfxTokens) and retry the SAME
+ * request once with the fresh token. Returns the final Response. Only the
+ * X-Stickyfix-Token header value is swapped on retry; caller init is preserved.
+ * Bounded to a single retry — a persistent 401 falls through to the caller's
+ * existing error mapping (user still sees "unauthorized").
+ */
+async function relayFetchWithRepair(
+  host: HostEntry,
+  url: string,
+  init: RequestInit,
+  token: string,
+): Promise<Response> {
+  const withToken = (t: string): RequestInit => ({
+    ...init,
+    headers: { ...(init.headers as Record<string, string> | undefined), 'X-Stickyfix-Token': t },
+  });
+  let resp = await fetch(url, withToken(token));
+  if (resp.status === 401) {
+    const repaired = await handlePairNative();
+    if (repaired.ok) {
+      const freshTokens = await sfxTokens.getValue();
+      const freshToken = freshTokens[host.name];
+      if (freshToken) resp = await fetch(url, withToken(freshToken));
+    }
+  }
+  return resp;
+}
+
+/**
  * SEND_ANNOTATION — the single localhost relay fetch (EXT-05, T-03-01, T-03-04).
  *
  * Security:
@@ -433,46 +463,20 @@ async function handleSendAnnotation(
   const sendBody = targetDir !== undefined ? { ...payload, targetDir } : payload;
   const requestBody = JSON.stringify(sendBody);
 
-  // POST the SAME body with a given token. Factored out so we can retry once
-  // with a fresh token after auto re-pairing on a 401 (token rotation recovery).
-  const doPost = (token: string): Promise<Response> =>
-    fetch(`http://127.0.0.1:${host.port}/annotation`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Stickyfix-Token': token,
-      },
-      body: requestBody,
-    });
-
+  // Single shared relay with token-rotation recovery: on 401 (stale cached token
+  // after a host restart) it auto re-pairs and retries the SAME body once with
+  // the fresh token. A persistent 401 falls through to the mapping below.
   let resp: Response;
   try {
-    resp = await doPost(host.token);
+    resp = await relayFetchWithRepair(
+      host,
+      `http://127.0.0.1:${host.port}/annotation`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: requestBody },
+      host.token,
+    );
   } catch (e: unknown) {
     // Host down or network error — never throw to content script (REL-01)
     return { ok: false, error: `Host unreachable: ${String(e)}` };
-  }
-
-  // 4b. Token-rotation recovery: a restarted host mints a NEW token, so the
-  //     cached token in sfxTokens is stale and /annotation returns 401. Try ONE
-  //     automatic re-pair (GET_TOKEN via handlePairNative refreshes sfxTokens +
-  //     sfxRegistry), then retry the SAME body once with the fresh token. Bounded
-  //     to a single retry — a persistent 401 falls through to the error mapping
-  //     below so the user still sees "unauthorized".
-  if (resp.status === 401) {
-    const repaired = await handlePairNative();
-    if (repaired.ok) {
-      const freshTokens = await sfxTokens.getValue();
-      const freshToken = freshTokens[host.name];
-      if (freshToken) {
-        try {
-          resp = await doPost(freshToken);
-        } catch (e: unknown) {
-          // Host went down between re-pair and retry — never throw (REL-01)
-          return { ok: false, error: `Host unreachable: ${String(e)}` };
-        }
-      }
-    }
   }
 
   // 5. Map host response → SfxResponse (200 / 401 / 400 / 413)
@@ -559,12 +563,14 @@ async function handleListAnnotations(
   //    Folder-mapped origins pass ?targetDir= so the host reads from that folder.
   let resp: Response;
   try {
-    resp = await fetch(
+    resp = await relayFetchWithRepair(
+      host,
       withTargetDir(
         `http://127.0.0.1:${host.port}/annotations?url=${encodeURIComponent(tab.url)}`,
         targetDir
       ),
-      { headers: { 'X-Stickyfix-Token': host.token } }
+      { method: 'GET' },
+      host.token,
     );
   } catch (e: unknown) {
     return { ok: false, error: `Host unreachable: ${String(e)}` };
@@ -613,7 +619,8 @@ async function handleEditAnnotation(
   // 4. Relay PUT to host (folder-mapped origins pass ?targetDir=)
   let resp: Response;
   try {
-    resp = await fetch(
+    resp = await relayFetchWithRepair(
+      host,
       withTargetDir(
         `http://127.0.0.1:${host.port}/annotation/${encodeURIComponent(serial)}`,
         targetDir
@@ -622,10 +629,10 @@ async function handleEditAnnotation(
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'X-Stickyfix-Token': host.token,
         },
         body: JSON.stringify({ comment }),
-      }
+      },
+      host.token,
     );
   } catch (e: unknown) {
     return { ok: false, error: `Host unreachable: ${String(e)}` };
@@ -667,15 +674,16 @@ async function handleDeleteAnnotation(
   // 4. Relay DELETE to host (folder-mapped origins pass ?targetDir=)
   let resp: Response;
   try {
-    resp = await fetch(
+    resp = await relayFetchWithRepair(
+      host,
       withTargetDir(
         `http://127.0.0.1:${host.port}/annotation/${encodeURIComponent(serial)}`,
         targetDir
       ),
       {
         method: 'DELETE',
-        headers: { 'X-Stickyfix-Token': host.token },
-      }
+      },
+      host.token,
     );
   } catch (e: unknown) {
     return { ok: false, error: `Host unreachable: ${String(e)}` };
@@ -728,12 +736,14 @@ async function handleGetScreenshot(
   //    Folder-mapped origins pass ?targetDir= so the host serves from that folder.
   let resp: Response;
   try {
-    resp = await fetch(
+    resp = await relayFetchWithRepair(
+      host,
       withTargetDir(
         `http://127.0.0.1:${host.port}/screenshot?serial=${encodeURIComponent(serial)}&file=${encodeURIComponent(file)}`,
         targetDir
       ),
-      { headers: { 'X-Stickyfix-Token': host.token } }
+      { method: 'GET' },
+      host.token,
     );
   } catch (e: unknown) {
     return { ok: false, error: `Host unreachable: ${String(e)}` };
