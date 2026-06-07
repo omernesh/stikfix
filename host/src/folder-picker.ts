@@ -50,9 +50,13 @@ export function buildPickerArgs(
           'Text',
           '-Command',
           `Add-Type -AssemblyName System.Windows.Forms;` +
+            `$owner = New-Object System.Windows.Forms.Form;` +
+            `$owner.TopMost = $true; $owner.ShowInTaskbar = $false;` +
+            `$owner.Opacity = 0; $owner.Show(); $owner.Activate();` +
             `$d = New-Object System.Windows.Forms.FolderBrowserDialog;` +
             `$d.Description = '${safeTitle}';` +
-            `$null = $d.ShowDialog();` +
+            `$null = $d.ShowDialog($owner);` +
+            `$owner.Dispose();` +
             `$d.SelectedPath`,
         ],
       };

@@ -466,6 +466,14 @@ interface RegisterOptions {
   hostBinPath: string;
   plat?: NodeJS.Platform;
   home?: string;
+  /**
+   * Injectable registry writer (win32). Defaults to the real `reg ADD`.
+   * Tests MUST pass a no-op here: the registry key name is a hardcoded HKCU
+   * constant, so a real `reg ADD` from a test pollutes the developer's actual
+   * Chrome/Edge registration (and points it at a temp manifest that is deleted
+   * in afterEach — breaking native messaging until `init` is re-run).
+   */
+  execReg?: (args: readonly string[]) => void;
 }
 
 /**
@@ -486,10 +494,13 @@ export function registerNativeHost(opts: RegisterOptions): void {
   writeManifest(manifest, manifestPath);
 
   if (plat === 'win32') {
+    const execReg = opts.execReg ?? ((args: readonly string[]) => {
+      execFileSync('reg', args as string[]);
+    });
     // Register for Chrome (HKCU — Pitfall 5, never HKLM)
-    execFileSync('reg', ['ADD', REG_CHROME_KEY, '/ve', '/t', 'REG_SZ', '/d', manifestPath, '/f']);
+    execReg(['ADD', REG_CHROME_KEY, '/ve', '/t', 'REG_SZ', '/d', manifestPath, '/f']);
     // Register for Edge (drop-in, D-05)
-    execFileSync('reg', ['ADD', REG_EDGE_KEY, '/ve', '/t', 'REG_SZ', '/d', manifestPath, '/f']);
+    execReg(['ADD', REG_EDGE_KEY, '/ve', '/t', 'REG_SZ', '/d', manifestPath, '/f']);
   }
 }
 

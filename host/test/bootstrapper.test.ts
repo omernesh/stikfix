@@ -594,12 +594,24 @@ describe('registerNativeHost — native wrapper points manifest at launcher', ()
 
   test('win32: writes wrapper and points manifest path at it', () => {
     const hostBinPath = join(tmpDir, 'dist', 'host', 'stickyfix-native.cjs');
+    // CRITICAL: inject a no-op execReg. The HKCU key name is a hardcoded
+    // constant, so a real `reg ADD` here would clobber the developer's actual
+    // Chrome/Edge native-messaging registration (pointing it at this tmpDir
+    // manifest, which afterEach deletes — breaking the live extension until
+    // `init` is re-run). We capture the calls and assert the keys instead.
+    const regCalls: readonly string[][] = [];
     registerNativeHost({
       extensionId: VALID_ID,
       hostBinPath,
       plat: 'win32',
       home: tmpDir,
+      execReg: (args) => { (regCalls as string[][]).push([...args]); },
     });
+
+    // Both Chrome and Edge HKCU keys are registered (without touching real HKCU)
+    assert.strictEqual(regCalls.length, 2, 'should register Chrome + Edge');
+    assert.ok(regCalls.some((a) => a.join(' ').includes('Chrome')), 'Chrome key registered');
+    assert.ok(regCalls.some((a) => a.join(' ').includes('Edge')), 'Edge key registered');
 
     const wrapperPath = nativeWrapperPath('win32', tmpDir);
     assert.ok(existsSync(wrapperPath), `Wrapper should exist at ${wrapperPath}`);

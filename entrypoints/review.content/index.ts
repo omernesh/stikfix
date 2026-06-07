@@ -11,7 +11,7 @@
 
 import './styles.css'; // MUST be top-level for cssInjectionMode:'ui' to pick it up
 
-import { mountChip, teardownChip, getTabId } from './chip.js';
+import { mountChip, teardownChip, getTabId, refreshChipRoute } from './chip.js';
 import { mountFab } from './fab.js';
 import { openCard, closeCard, openElementCard } from './card.js';
 import { showToast } from './toast.js';
@@ -73,6 +73,9 @@ export default defineContentScript({
                   (err: unknown) => toast(`Could not load pins — ${String(err)}`, true)
                 );
               }
+              // Refresh the chip: a card Send may have just established a folder
+              // mapping → swap the chip from dropdown/needs-folder to routed label.
+              refreshChipRoute(container);
             },
             // onDiscard: re-arm pick mode only (nothing was written → no pin re-fetch).
             // Fires on Discard/Esc; never on Send success (onSent owns that path) so
@@ -112,6 +115,9 @@ export default defineContentScript({
                       (err: unknown) => toast(`Could not load pins — ${String(err)}`, true)
                     );
                   }
+                  // Refresh the chip: a card Send may have just established a folder
+                  // mapping → swap the chip from dropdown/needs-folder to routed label.
+                  refreshChipRoute(container);
                 }
               );
             });

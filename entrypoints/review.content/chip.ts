@@ -81,6 +81,10 @@ type SetRouteResponse = SetRouteOkResponse | SetRouteErrResponse;
 
 const teardownMap = new WeakMap<HTMLElement, () => void>();
 
+// refreshMap — chip.ts exposes refreshChipRoute(container) so index.ts can
+// re-resolve the route (e.g. after a card Send established a folder mapping).
+const refreshMap = new WeakMap<HTMLElement, () => void>();
+
 // ---------------------------------------------------------------------------
 // mountChip — entry point called from index.ts onMount
 // ---------------------------------------------------------------------------
@@ -243,37 +247,47 @@ export function mountChip(
   // Get current tab id (content script can ask the SW via an empty message,
   // but chrome.runtime.sendMessage in a content script returns the sender's
   // tabId in the response via the SW). We use a dedicated helper.
-  getTabId().then(tabId => {
-    const origin = window.location.origin;
+  // resolveAndRender — re-runnable route resolution. Called once on mount and
+  // again via refreshChipRoute(container) after a folder mapping is established
+  // (e.g. a card Send picked a folder). A fresh GET_ROUTE returns the mapped
+  // host (background.handleGetRoute is folder-aware), so the chip swaps from the
+  // dropdown/needs-folder state to the "→ name · <folder>" routed label.
+  function resolveAndRender(): void {
+    getTabId().then(tabId => {
+      const origin = window.location.origin;
 
-    chrome.runtime.sendMessage({
-      type: SFX_MSG.GET_ROUTE,
-      tabId,
-      origin,
-    }, (resp: RouteResponse | undefined) => {
-      // WR-02: guard resp against undefined (SW handler returned without sendResponse)
-      if (chrome.runtime.lastError || !resp) {
-        label.textContent = 'SW error';
-        dot.classList.add('sfx-dot-error');
-        return;
-      }
+      chrome.runtime.sendMessage({
+        type: SFX_MSG.GET_ROUTE,
+        tabId,
+        origin,
+      }, (resp: RouteResponse | undefined) => {
+        // WR-02: guard resp against undefined (SW handler returned without sendResponse)
+        if (chrome.runtime.lastError || !resp) {
+          label.textContent = 'SW error';
+          dot.classList.add('sfx-dot-error');
+          return;
+        }
 
-      if (resp.ok) {
-        // Mapped — show routed label + wire D-09 re-map affordance
-        renderRoutedLabel(label, dot, resp.host, chip, feedback, sendBtn, tabId, origin, showFeedback);
-        wireSendButton(sendBtn, feedback, tabId, resp.host, showFeedback);
-      } else if (resp.reason === 'unmapped') {
-        // Step 4 — one-time dropdown (EXT-07/EXT-08)
-        renderDropdown(chip, label, dot, feedback, sendBtn, tabId, origin, showFeedback);
-      } else {
-        label.textContent = resp.error ?? 'Route error';
-        dot.classList.add('sfx-dot-error');
-      }
+        if (resp.ok) {
+          // Mapped — show routed label + wire D-09 re-map affordance
+          renderRoutedLabel(label, dot, resp.host, chip, feedback, sendBtn, tabId, origin, showFeedback);
+          wireSendButton(sendBtn, feedback, tabId, resp.host, showFeedback, resolveAndRender);
+        } else if (resp.reason === 'unmapped') {
+          // Step 4 — one-time dropdown (EXT-07/EXT-08)
+          renderDropdown(chip, label, dot, feedback, sendBtn, tabId, origin, showFeedback, resolveAndRender);
+        } else {
+          label.textContent = resp.error ?? 'Route error';
+          dot.classList.add('sfx-dot-error');
+        }
+      });
+    }).catch(() => {
+      label.textContent = 'Tab error';
+      dot.classList.add('sfx-dot-error');
     });
-  }).catch(() => {
-    label.textContent = 'Tab error';
-    dot.classList.add('sfx-dot-error');
-  });
+  }
+
+  resolveAndRender();
+  refreshMap.set(container, resolveAndRender);
 
   // ---------------------------------------------------------------------------
   // Exit button handler
@@ -299,11 +313,25 @@ export function mountChip(
   teardownMap.set(container, () => {
     // Also exit pick mode if active so it never outlives the UI
     exitPickMode();
+    // Drop the refresh closure so a torn-down chip cannot be re-rendered
+    refreshMap.delete(container);
     // Remove chip from container — shadow root cleanup
     if (chip.parentElement) {
       chip.parentElement.removeChild(chip);
     }
   });
+}
+
+// ---------------------------------------------------------------------------
+// refreshChipRoute — called from index.ts after a card Send that may have
+// established a folder mapping. Re-resolves the route so the chip self-updates
+// from the dropdown/needs-folder state to the "→ name · <folder>" label.
+// No-op if the chip was torn down (closure removed from refreshMap).
+// ---------------------------------------------------------------------------
+
+export function refreshChipRoute(container: HTMLElement): void {
+  const fn = refreshMap.get(container);
+  if (fn) fn();
 }
 
 // ---------------------------------------------------------------------------
@@ -337,6 +365,14 @@ function renderRoutedLabel(
   origin: string,
   showFeedbackFn: (el: HTMLSpanElement, msg: string, isError: boolean) => void
 ): void {
+  // Remove any leftover one-time dropdown. resolveAndRender() (the refresh path
+  // after a folder pick) lands here without going through renderDropdown's change
+  // handler, so the <select> injected while unmapped would otherwise persist —
+  // the chip would show the routed label AND the stale "select project" dropdown,
+  // reading to the user as "nothing changed after I picked a folder."
+  const staleSelect = chip.querySelector('.sfx-chip-dropdown');
+  if (staleSelect) staleSelect.remove();
+
   // textContent only — no innerHTML (Pattern 9)
   label.textContent = `→ ${host.name} · ${host.notesDir}`;
   dot.classList.remove('sfx-dot-error');
@@ -364,7 +400,8 @@ function renderDropdown(
   sendBtn: HTMLButtonElement,
   tabId: number,
   origin: string,
-  showFeedbackFn: (el: HTMLSpanElement, msg: string, isError: boolean) => void
+  showFeedbackFn: (el: HTMLSpanElement, msg: string, isError: boolean) => void,
+  onRouteMaybeChanged?: () => void
 ): void {
   // Update label to explain what's needed. D-04: Send is ALSO live here — the
   // first Send on an unmapped origin opens the OS folder dialog (needs-folder),
@@ -442,7 +479,7 @@ function renderDropdown(
         renderRoutedLabel(label, dot, resp.host, chip, feedback, sendBtn, tabId, origin, showFeedbackFn);
 
         // Wire the Send button now that we have a host
-        wireSendButton(sendBtn, feedback, tabId, resp.host, showFeedbackFn);
+        wireSendButton(sendBtn, feedback, tabId, resp.host, showFeedbackFn, onRouteMaybeChanged);
       }
     );
   });
@@ -457,7 +494,8 @@ function renderDropdown(
     feedback,
     tabId,
     { name: '', port: 0, origins: [], notesDir: '', token: null },
-    showFeedbackFn
+    showFeedbackFn,
+    onRouteMaybeChanged
   );
   sendBtn.setAttribute('title', 'Send to choose a folder for this site');
 
@@ -478,7 +516,8 @@ function wireSendButton(
   feedback: HTMLSpanElement,
   tabId: number,
   _host: HostEntry,
-  showFeedbackFn: (el: HTMLSpanElement, msg: string, isError: boolean) => void
+  showFeedbackFn: (el: HTMLSpanElement, msg: string, isError: boolean) => void,
+  onRouteMaybeChanged?: () => void
 ): void {
   sendBtn.disabled = false;
   sendBtn.removeAttribute('title');
@@ -508,6 +547,10 @@ function wireSendButton(
           if (resp.ok) {
             sendBtn.disabled = false;
             showFeedbackFn(feedback, `sent ✓ ${resp.file}`, false);
+            // D-04: a Send from the dropdown/needs-folder state may have just
+            // established a folder mapping — re-resolve the route so the chip
+            // self-updates from dropdown → "→ name · <folder>" label.
+            onRouteMaybeChanged?.();
             return;
           }
           // D-04: origin has no mapping — open the OS folder dialog, then retry once.

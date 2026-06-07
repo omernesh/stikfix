@@ -106,10 +106,19 @@
   flex: 1;
 }
 
-/* Inline confirmation / error message */
+/* Inline confirmation / error message.
+ * FIX 3: a long toast (e.g. "No folder chosen — note not saved. Drop again to
+ * pick one.") must NOT push the dropdown/Send/icon/× out of alignment. Let the
+ * feedback take remaining space and truncate with an ellipsis (min-width:0 is
+ * required for a flex child to shrink below its content width). The control row
+ * keeps a stable baseline because every control is flex-shrink:0. */
 .sfx-chip-feedback {
   font-size: 12px;
   color: #16a34a;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 

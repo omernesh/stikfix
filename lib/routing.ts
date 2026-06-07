@@ -26,7 +26,8 @@ import type { HostEntry, StorageState } from './types.js';
  */
 export function resolveRoute(
   origin: string,
-  state: StorageState
+  state: StorageState,
+  opts: { singleHostFallback?: boolean } = {}
 ): HostEntry | null {
   // Step 1: a registry host that explicitly lists this origin
   const byAdvertised = Object.values(state.registry).find(
@@ -52,8 +53,12 @@ export function resolveRoute(
   // Step 2.5: single-host auto-select — if exactly one host is known, route to
   // it without asking. One project is unambiguous, so there is no dropdown to
   // show. Applies uniformly to GET_ROUTE, SEND_ANNOTATION and ENTER_REVIEW.
+  //
+  // D-04: callers in the folder-aware path pass { singleHostFallback: false } so
+  // an unmapped origin falls through to null → needs-folder (the OS folder
+  // dialog) instead of silently routing to the one host's --root.
   const knownNames = Object.keys(state.registry);
-  if (knownNames.length === 1) {
+  if (opts.singleHostFallback !== false && knownNames.length === 1) {
     const only = state.registry[knownNames[0]];
     return {
       ...only,

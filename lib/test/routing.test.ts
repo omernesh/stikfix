@@ -126,6 +126,33 @@ describe('resolveRoute', () => {
     assert.strictEqual(result.token, 'tok-1', 'auto-selected host carries its token');
   });
 
+  test('D-04: singleHostFallback:false → unmapped origin returns null (needs-folder)', () => {
+    // With one host but the folder-aware path opting out of single-host
+    // auto-select, an unmapped origin must fall through to null so the SW
+    // signals needs-folder (opens the OS folder dialog) instead of routing
+    // silently to the one host's --root.
+    const host = makeEntry({ name: 'only-proj', port: 39240 });
+    const state = makeState({ 'only-proj': host }, { 'only-proj': 'tok-1' });
+    const result = resolveRoute('https://brand-new-origin.com', state, {
+      singleHostFallback: false,
+    });
+    assert.strictEqual(result, null, 'opt-out must NOT auto-select the single host');
+  });
+
+  test('D-04: singleHostFallback:false still honors an explicit origin→host map', () => {
+    // Opting out of single-host auto-select must NOT break explicit mappings:
+    // an origin the user mapped to the host still routes (writes to --root).
+    const host = makeEntry({ name: 'only-proj', port: 39240 });
+    const state = makeState(
+      { 'only-proj': host },
+      { 'only-proj': 'tok-1' },
+      { 'https://mapped.com': 'only-proj' },
+    );
+    const result = resolveRoute('https://mapped.com', state, { singleHostFallback: false });
+    assert.ok(result, 'explicit origin→host mapping must still resolve');
+    assert.strictEqual(result.name, 'only-proj');
+  });
+
   test('returns null for empty registry + empty originMap', () => {
     const state = makeState({});
     assert.strictEqual(resolveRoute('https://anything.com', state), null);

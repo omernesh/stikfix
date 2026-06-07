@@ -44,10 +44,18 @@ interface AnnotationOkResponse {
 
 interface AnnotationErrResponse {
   ok: false;
-  error: string;
+  error?: string;
+  /** D-04: origin has no folder/host mapping — open the OS folder dialog */
+  reason?: 'needs-folder';
+  origin?: string;
 }
 
 type AnnotationResponse = AnnotationOkResponse | AnnotationErrResponse;
+
+/** SW response for SFX_PICK_FOLDER (background.handlePickFolder) — mirrors chip.ts. */
+type PickFolderResponse =
+  | { ok: true; folder: string }
+  | { ok: false; error: string };
 
 /** Per-card thumbnail entry (CAM-05) */
 interface ThumbnailEntry {
@@ -421,59 +429,105 @@ function _doSend(
     return;
   }
 
-  // SW relay — mirrors chip.ts wireSendButton exactly (INVARIANT B: no direct fetch)
-  // REL-01: sendMessage can throw synchronously if the extension is disabled mid-flight — never silent
-  try {
-    chrome.runtime.sendMessage(
-      { type: SFX_MSG.SEND_ANNOTATION, tabId, payload },
-      (resp: AnnotationResponse | undefined) => {
-        // WR-02: guard both lastError AND resp — never silent (REL-01)
-        if (chrome.runtime.lastError || !resp) {
-          const outcome: SendOutcome = { kind: 'channel-dead', lastErrorMessage: chrome.runtime.lastError?.message };
-          const spec = mapSendOutcome(outcome);
-          showToastFn(spec.message, spec.isError);
-          // Restore controls so user can retry
-          sendBtn.disabled = false;
-          sendBtn.textContent = 'Send';
-          cancelBtn.disabled = false;
-          textarea.readOnly = false;
-          return;
-        }
-
-        if (resp.ok) {
-          // resp.file is the exact host-returned filename — never client-reconstructed
-          const outcome: SendOutcome = { kind: 'ok', file: resp.file };
-          const spec = mapSendOutcome(outcome);
-          showToastFn(spec.message, spec.isError);
-          _doClose(onDismiss);
-          // Phase 6: notify after-Send hook (pin re-fetch) — called AFTER dismiss
-          onSent?.();
-        } else {
-          // Error: card stays open; restore controls (user can retry)
-          const outcome: SendOutcome = { kind: 'relay-error', error: resp.error };
-          const spec = mapSendOutcome(outcome);
-          showToastFn(spec.message, spec.isError);
-          sendBtn.textContent = 'Send';
-          cancelBtn.disabled = false;
-          textarea.readOnly = false;
-          // Re-apply disabled rule based on current textarea content (WR-02: removed
-          // the preceding sendBtn.disabled=false which was immediately overwritten here)
-          const hasText = textarea.value.trim().length > 0;
-          sendBtn.disabled = !hasText;
-        }
-      }
-    );
-  } catch (e) {
-    // Synchronous throw (extension disabled) — reproduce the channel-dead branch (REL-01)
-    const outcome: SendOutcome = { kind: 'channel-dead', lastErrorMessage: e instanceof Error ? e.message : String(e) };
-    const spec = mapSendOutcome(outcome);
-    showToastFn(spec.message, spec.isError);
-    // Restore controls so user can retry
-    sendBtn.disabled = false;
+  // Restore the card controls to an editable state (relay-error / cancel paths).
+  function restoreControls(): void {
     sendBtn.textContent = 'Send';
     cancelBtn.disabled = false;
     textarea.readOnly = false;
+    sendBtn.disabled = textarea.value.trim().length === 0;
   }
+
+  /**
+   * Send the assembled `payload` once. `allowRetry` gates the single D-04
+   * auto-retry: the FIRST send passes true; the retry (after a folder pick)
+   * passes false so a still-unmapped origin cannot loop the dialog forever.
+   *
+   * REL-01: every terminal path surfaces a visible toast and restores controls —
+   * a needs-folder response must NEVER leave the card stuck on "Sending…".
+   */
+  function sendOnce(allowRetry: boolean): void {
+    // SW relay — mirrors chip.ts wireSendButton exactly (INVARIANT B: no direct fetch)
+    // REL-01: sendMessage can throw synchronously if the extension is disabled mid-flight — never silent
+    try {
+      chrome.runtime.sendMessage(
+        { type: SFX_MSG.SEND_ANNOTATION, tabId, payload },
+        (resp: AnnotationResponse | undefined) => {
+          // WR-02: guard both lastError AND resp — never silent (REL-01)
+          if (chrome.runtime.lastError || !resp) {
+            const outcome: SendOutcome = { kind: 'channel-dead', lastErrorMessage: chrome.runtime.lastError?.message };
+            const spec = mapSendOutcome(outcome);
+            showToastFn(spec.message, spec.isError);
+            // Restore controls so user can retry
+            sendBtn.disabled = false;
+            sendBtn.textContent = 'Send';
+            cancelBtn.disabled = false;
+            textarea.readOnly = false;
+            return;
+          }
+
+          if (resp.ok) {
+            // resp.file is the exact host-returned filename — never client-reconstructed
+            const outcome: SendOutcome = { kind: 'ok', file: resp.file };
+            const spec = mapSendOutcome(outcome);
+            showToastFn(spec.message, spec.isError);
+            _doClose(onDismiss);
+            // Phase 6: notify after-Send hook (pin re-fetch) — called AFTER dismiss
+            onSent?.();
+            return;
+          }
+
+          // D-04: origin has no mapping — open the OS folder dialog, then retry once.
+          // MUST precede the generic relay-error branch (a needs-folder response has
+          // no `.error`, so it would otherwise fall through and hang on "Sending…").
+          if (resp.reason === 'needs-folder' && allowRetry) {
+            showToastFn('Choose a folder for this site…', false);
+            try {
+              chrome.runtime.sendMessage(
+                { type: SFX_MSG.PICK_FOLDER, tabId },
+                (pick: PickFolderResponse | undefined) => {
+                  if (chrome.runtime.lastError || !pick) {
+                    restoreControls();
+                    showToastFn('No folder chosen — note not saved. Drop again to pick one.', true);
+                    return;
+                  }
+                  if (pick.ok) {
+                    // Brief confirmation, then auto-retry the SAME payload ONCE.
+                    showToastFn(`Saving notes to ${pick.folder}`, false);
+                    sendOnce(false);
+                  } else {
+                    restoreControls();
+                    showToastFn('No folder chosen — note not saved. Drop again to pick one.', true);
+                  }
+                }
+              );
+            } catch (_pickErr) {
+              restoreControls();
+              showToastFn('No folder chosen — note not saved.', true);
+            }
+            return;
+          }
+
+          // Error (or retry exhausted): card stays open; restore controls (user can retry)
+          const outcome: SendOutcome = { kind: 'relay-error', error: resp.error ?? 'Send failed' };
+          const spec = mapSendOutcome(outcome);
+          showToastFn(spec.message, spec.isError);
+          restoreControls();
+        }
+      );
+    } catch (e) {
+      // Synchronous throw (extension disabled) — reproduce the channel-dead branch (REL-01)
+      const outcome: SendOutcome = { kind: 'channel-dead', lastErrorMessage: e instanceof Error ? e.message : String(e) };
+      const spec = mapSendOutcome(outcome);
+      showToastFn(spec.message, spec.isError);
+      // Restore controls so user can retry
+      sendBtn.disabled = false;
+      sendBtn.textContent = 'Send';
+      cancelBtn.disabled = false;
+      textarea.readOnly = false;
+    }
+  }
+
+  sendOnce(true);
 }
 
 // ---------------------------------------------------------------------------
@@ -891,51 +945,96 @@ function _doElementSend(
       return;
     }
 
-    // Step 8: SW relay (INVARIANT B — no direct fetch)
-    // REL-01: sendMessage can throw synchronously if the extension is disabled mid-flight — never silent
-    try {
-      chrome.runtime.sendMessage(
-        { type: SFX_MSG.SEND_ANNOTATION, tabId, payload },
-        (resp: AnnotationResponse | undefined) => {
-          // Step 9: guard both lastError AND resp — never silent (REL-01)
-          if (chrome.runtime.lastError || !resp) {
-            const outcome: SendOutcome = { kind: 'channel-dead', lastErrorMessage: chrome.runtime.lastError?.message };
-            const spec = mapSendOutcome(outcome);
-            showToastFn(spec.message, spec.isError);
-            restoreControls();
-            // Re-apply disabled rule (mirrors _doSend pattern)
-            sendBtn.disabled = textarea.value.trim().length === 0;
-            return;
-          }
+    // Step 8: SW relay (INVARIANT B — no direct fetch). The capture pipeline
+    // (steps 3-6) has already run; sendAssembled re-sends the SAME payload and
+    // MUST NOT re-capture on the D-04 folder-pick retry.
+    //
+    // REL-01: every terminal path surfaces a visible toast and restores controls.
+    function sendAssembled(allowRetry: boolean): void {
+      // REL-01: sendMessage can throw synchronously if the extension is disabled mid-flight — never silent
+      try {
+        chrome.runtime.sendMessage(
+          { type: SFX_MSG.SEND_ANNOTATION, tabId, payload },
+          (resp: AnnotationResponse | undefined) => {
+            // Step 9: guard both lastError AND resp — never silent (REL-01)
+            if (chrome.runtime.lastError || !resp) {
+              const outcome: SendOutcome = { kind: 'channel-dead', lastErrorMessage: chrome.runtime.lastError?.message };
+              const spec = mapSendOutcome(outcome);
+              showToastFn(spec.message, spec.isError);
+              restoreControls();
+              // Re-apply disabled rule (mirrors _doSend pattern)
+              sendBtn.disabled = textarea.value.trim().length === 0;
+              return;
+            }
 
-          if (resp.ok) {
-            const outcome: SendOutcome = { kind: 'ok', file: resp.file };
-            const spec = mapSendOutcome(outcome);
-            showToastFn(spec.message, spec.isError);
-            _doClose(onDismiss);
-            // Sticky-picker UX: re-arm pick mode after a successful element Send
-            // so the user can immediately pick the next element (success only —
-            // never on Discard/error).
-            onSent?.();
-          } else {
-            const outcome: SendOutcome = { kind: 'relay-error', error: resp.error };
+            if (resp.ok) {
+              const outcome: SendOutcome = { kind: 'ok', file: resp.file };
+              const spec = mapSendOutcome(outcome);
+              showToastFn(spec.message, spec.isError);
+              _doClose(onDismiss);
+              // Sticky-picker UX: re-arm pick mode after a successful element Send
+              // so the user can immediately pick the next element (success only —
+              // never on Discard/error).
+              onSent?.();
+              return;
+            }
+
+            // D-04: origin has no mapping — open the OS folder dialog, then retry once.
+            // Do NOT re-capture: re-send the already-assembled payload. MUST precede
+            // the generic relay-error branch (a needs-folder response has no `.error`,
+            // so it would otherwise fall through and hang on "Sending…").
+            if (resp.reason === 'needs-folder' && allowRetry) {
+              showToastFn('Choose a folder for this site…', false);
+              try {
+                chrome.runtime.sendMessage(
+                  { type: SFX_MSG.PICK_FOLDER, tabId },
+                  (pick: PickFolderResponse | undefined) => {
+                    if (chrome.runtime.lastError || !pick) {
+                      restoreControls();
+                      sendBtn.disabled = textarea.value.trim().length === 0;
+                      showToastFn('No folder chosen — note not saved. Drop again to pick one.', true);
+                      return;
+                    }
+                    if (pick.ok) {
+                      // Brief confirmation, then auto-retry the SAME payload ONCE
+                      // (no re-capture).
+                      showToastFn(`Saving notes to ${pick.folder}`, false);
+                      sendAssembled(false);
+                    } else {
+                      restoreControls();
+                      sendBtn.disabled = textarea.value.trim().length === 0;
+                      showToastFn('No folder chosen — note not saved. Drop again to pick one.', true);
+                    }
+                  }
+                );
+              } catch (_pickErr) {
+                restoreControls();
+                sendBtn.disabled = textarea.value.trim().length === 0;
+                showToastFn('No folder chosen — note not saved.', true);
+              }
+              return;
+            }
+
+            const outcome: SendOutcome = { kind: 'relay-error', error: resp.error ?? 'Send failed' };
             const spec = mapSendOutcome(outcome);
             showToastFn(spec.message, spec.isError);
             restoreControls();
             // Re-apply disabled rule (mirrors _doSend pattern)
             sendBtn.disabled = textarea.value.trim().length === 0;
           }
-        }
-      );
-    } catch (e) {
-      // Synchronous throw (extension disabled) — reproduce the channel-dead branch (REL-01)
-      const outcome: SendOutcome = { kind: 'channel-dead', lastErrorMessage: e instanceof Error ? e.message : String(e) };
-      const spec = mapSendOutcome(outcome);
-      showToastFn(spec.message, spec.isError);
-      restoreControls();
-      // Re-apply disabled rule (mirrors _doSend pattern)
-      sendBtn.disabled = textarea.value.trim().length === 0;
+        );
+      } catch (e) {
+        // Synchronous throw (extension disabled) — reproduce the channel-dead branch (REL-01)
+        const outcome: SendOutcome = { kind: 'channel-dead', lastErrorMessage: e instanceof Error ? e.message : String(e) };
+        const spec = mapSendOutcome(outcome);
+        showToastFn(spec.message, spec.isError);
+        restoreControls();
+        // Re-apply disabled rule (mirrors _doSend pattern)
+        sendBtn.disabled = textarea.value.trim().length === 0;
+      }
     }
+
+    sendAssembled(true);
   })();
 }
 

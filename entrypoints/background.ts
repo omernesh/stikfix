@@ -158,7 +158,7 @@ function resolveFolderAwareRoute(
     if (!paired) return { ok: false, error: 'Pair with the host first' };
     return { ok: true, host: paired, targetDir: mappedValue };
   }
-  const routed = resolveRoute(origin, state);
+  const routed = resolveRoute(origin, state, { singleHostFallback: false });
   if (!routed) return { ok: false, error: `No host mapped for origin: ${origin}` };
   return { ok: true, host: routed };
 }
@@ -197,7 +197,7 @@ async function handleEnterReview(
   // Get origin from chrome API — page cannot spoof this (T-03-01)
   const tab = await chrome.tabs.get(tabId);
   const origin = tab.url ? new URL(tab.url).origin : null;
-  const route = origin ? resolveRoute(origin, state) : null;
+  const route = origin ? resolveRoute(origin, state, { singleHostFallback: false }) : null;
 
   // Inject the on-demand content script (EXT-02 / D-04 / Pitfall 4)
   // WXT output path: entrypoints/review.content/index.ts → content-scripts/review.js
@@ -283,8 +283,10 @@ async function handleGetRoute(
     // user can pair, rather than dead-ending.
   }
 
-  // Step 1 + 2: advertised or persisted (origin→host) mapping
-  let route = resolveRoute(origin, state);
+  // Step 1 + 2: advertised or persisted (origin→host) mapping.
+  // D-04: single-host auto-select OFF so an unmapped origin shows as needs-folder
+  // (drives the folder dialog) rather than silently binding to the one host.
+  let route = resolveRoute(origin, state, { singleHostFallback: false });
   if (route) {
     return { ok: true, host: route };
   }
@@ -405,7 +407,7 @@ async function handleSendAnnotation(
   } else {
     // (2) Existing origin→host routing (UNCHANGED). resolveRoute also handles
     //     advertised-origin + single-host auto-select. No targetDir is attached.
-    const routed = resolveRoute(origin, state);
+    const routed = resolveRoute(origin, state, { singleHostFallback: false });
     if (!routed) {
       // (3) No mapping at all — signal the content script to pick a folder.
       return { ok: false, reason: 'needs-folder', origin };
@@ -811,7 +813,13 @@ async function handlePickFolder(
   return new Promise((resolve) => {
     chrome.runtime.sendNativeMessage(
       NATIVE_HOST_NAME,
-      { type: SFX_MSG.PICK_FOLDER, origin },
+      // WIRE PROTOCOL type — must be the literal the native host dispatches on
+      // ('PICK_FOLDER'), NOT the extension-internal SFX_MSG.PICK_FOLDER
+      // ('SFX_PICK_FOLDER'). The native host (native-host.ts) checks
+      // `m.type === 'PICK_FOLDER'`; sending the SFX_ constant made it fall through
+      // to "unknown message → exit 0" so the dialog never opened. Mirrors
+      // handlePairNative which correctly sends the literal 'GET_TOKEN'.
+      { type: 'PICK_FOLDER', origin },
       async (response: unknown) => {
         if (chrome.runtime.lastError) {
           resolve({ ok: false, error: chrome.runtime.lastError.message ?? 'native messaging error' });
