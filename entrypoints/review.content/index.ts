@@ -26,10 +26,20 @@ export default defineContentScript({
   cssInjectionMode: 'ui',        // WXT injects CSS into the shadow root (A4 check on first build)
 
   async main(ctx) {
-    // Idempotency guard: if a previous injection already mounted the review UI
-    // host into this page, do not mount a second one (prevents duplicate FAB/pins
-    // when the SW re-injects on reload while a prior context is still alive).
-    if (document.querySelector('sfx-review-ui')) return;
+    // Idempotency guard: never allow two review UIs in one frame.
+    //
+    // The DOM check alone is insufficient: createShadowRootUi only appends the
+    // <sfx-review-ui> host during ui.mount() (below), which runs AFTER the
+    // `await createShadowRootUi(...)` on the next line. A second injection — the
+    // SW re-injecting on tabs.onUpdated 'complete', a double 'complete' fire, or
+    // a fast re-enter — can run main() inside that await window, see no host
+    // element yet, and mount a duplicate chip. A synchronous flag on the
+    // isolated-world `window` (shared by every executeScript injection into the
+    // same frame) closes that race: it is set before the first await and checked
+    // before it. Cleared in onRemove so a later re-enter can mount again.
+    const w = window as Window & { __sfxReviewActive?: boolean };
+    if (w.__sfxReviewActive || document.querySelector('sfx-review-ui')) return;
+    w.__sfxReviewActive = true;
 
     // createShadowRootUi must be called inside main(ctx) — ctx is not available
     // in a plain scripting.executeScript func injection (WXT Discussion #623)
@@ -138,6 +148,9 @@ export default defineContentScript({
       },
 
       onRemove(elements: { container: HTMLElement } | undefined) {
+        // Release the isolated-world guard so a later re-enter can mount again
+        // (chip-X close, EXIT_REVIEW, and ctx invalidation all route here).
+        w.__sfxReviewActive = false;
         if (elements?.container) {
           teardownChip(elements.container);
           // Also close any open card so card-state stays consistent
@@ -148,9 +161,23 @@ export default defineContentScript({
           teardownPins();
         }
       },
+    }).catch((err: unknown) => {
+      // createShadowRootUi rejected before mount — release the guard so a later
+      // injection can retry instead of the flag wedging Review Mode off.
+      w.__sfxReviewActive = false;
+      throw err;
     });
 
-    ui.mount();
+    // If mounting fails, release the guard so a later injection can retry —
+    // otherwise the sticky flag would wedge Review Mode off for this frame
+    // until a full page reload (createShadowRootUi/mount throwing is rare but
+    // must stay recoverable, matching the pre-flag behavior).
+    try {
+      ui.mount();
+    } catch (err) {
+      w.__sfxReviewActive = false;
+      throw err;
+    }
 
     // TOP-LAYER PROMOTION: promote the shadow host into the browser top layer via
     // the Popover API so it paints above all normal page content regardless of
