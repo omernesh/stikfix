@@ -1252,21 +1252,39 @@ chrome.runtime.onInstalled.addListener(() => {
 // exit and re-enter review mode. Best-effort, same posture as handleEnterReview:
 // restricted URLs (chrome://, web store) or a tab closed mid-load just no-op.
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
-  if (changeInfo.status !== 'complete') return;
+  // Only two signals matter: an in-page URL change (SPA nav) or a finished load.
+  // Skip the noisy favicon/title updates so we don't read storage on every event.
+  if (!changeInfo.url && changeInfo.status !== 'complete') return;
   void (async () => {
     const prefs = await sfxPrefs.getValue();
     if (!prefs.reviewMode[String(tabId)]) return;
-    try {
-      await chrome.scripting.executeScript({
-        target: { tabId },
-        files: ['content-scripts/review.js'],
-      });
-      await chrome.scripting.insertCSS({
-        target: { tabId },
-        files: ['content-scripts/review.css'],
-      });
-    } catch {
-      // Restricted URL or tab gone — ignore (not a regression; best-effort).
+
+    // SPA in-page navigation: the URL changed without a document reload, so the
+    // content script (and its pins, scoped to the prior URL) is still alive on
+    // the old page's notes. Tell it to re-scope to the new URL. Best-effort:
+    // during a hard navigation the old CS may already be gone (sendMessage
+    // rejects) and the 'complete' branch below re-injects a fresh one.
+    if (changeInfo.url) {
+      chrome.tabs
+        .sendMessage(tabId, { type: SFX_MSG.URL_CHANGED, tabId })
+        .catch(() => {
+          // No live receiver (CS not injected yet / mid-navigation) — ignore.
+        });
+    }
+
+    if (changeInfo.status === 'complete') {
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId },
+          files: ['content-scripts/review.js'],
+        });
+        await chrome.scripting.insertCSS({
+          target: { tabId },
+          files: ['content-scripts/review.css'],
+        });
+      } catch {
+        // Restricted URL or tab gone — ignore (not a regression; best-effort).
+      }
     }
   })();
 });

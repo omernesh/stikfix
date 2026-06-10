@@ -53,6 +53,11 @@ interface PinEntry {
 let _pinEntries: PinEntry[] = [];
 let _cleanupFns: Array<() => void> = [];
 let _container: HTMLElement | null = null;
+// Monotonic token identifying the current mount session. teardownPins() bumps it
+// to cancel any in-flight mountPins() whose async fetch has not yet rendered, so
+// rapid teardown→remount cycles (SPA URL changes, repeated Send refreshes) can
+// never append pins from a superseded fetch on top of the current ones.
+let _mountToken = 0;
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -77,6 +82,10 @@ export async function mountPins(
     rootNode instanceof ShadowRoot ? rootNode.host : null;
 
   _container = container;
+
+  // Claim this mount session. If a later teardown/remount supersedes us while we
+  // await the fetch below, our token goes stale and we abort before rendering.
+  const myToken = ++_mountToken;
 
   // Fetch pin descriptors from host via SW relay (INVARIANT B — no direct fetch).
   // FIX-3a: retry up to 3 times on transient SW errors (post-reload race where
@@ -114,6 +123,10 @@ export async function mountPins(
     showToastFn(`Could not load pins — ${resp.error ?? 'unknown error'}`, true);
     return;
   }
+
+  // A teardown or newer mount happened while we awaited the fetch — abort so we
+  // don't append stale pins (e.g. prior page's notes after an SPA navigation).
+  if (myToken !== _mountToken) return;
 
   const pins = resp.pins;
 
@@ -238,6 +251,10 @@ export async function mountPins(
  * Idempotent — safe to call when no pins are mounted.
  */
 export function teardownPins(): void {
+  // Invalidate any in-flight mountPins() so its pending fetch won't render after
+  // we clear the DOM below (prevents stale pins lingering across re-scopes).
+  _mountToken++;
+
   // Remove all scroll/resize listeners
   for (const fn of _cleanupFns) {
     fn();

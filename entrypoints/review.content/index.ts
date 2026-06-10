@@ -41,6 +41,13 @@ export default defineContentScript({
     if (w.__sfxReviewActive || document.querySelector('sfx-review-ui')) return;
     w.__sfxReviewActive = true;
 
+    // SPA re-scope wiring (set once tabId resolves in onMount; torn down in
+    // onRemove). pinRefresh re-fetches pins + chip route for the current URL
+    // when the SW signals an in-page navigation; detachUrlListener removes the
+    // runtime listener so it never outlives the UI or fires after exit.
+    let pinRefresh: (() => void) | null = null;
+    let detachUrlListener: (() => void) | null = null;
+
     // createShadowRootUi must be called inside main(ctx) — ctx is not available
     // in a plain scripting.executeScript func injection (WXT Discussion #623)
     const ui = await createShadowRootUi(ctx, {
@@ -136,6 +143,25 @@ export default defineContentScript({
             mountPins(container, tabId, toast).catch(
               (err: unknown) => toast(`Could not load pins — ${String(err)}`, true)
             );
+
+            // SPA navigation re-scope: pins + chip route are URL-scoped, but an
+            // in-page nav does not reload the document, so without this the prior
+            // URL's pins linger on the new page. The SW sends URL_CHANGED on such
+            // navs; re-fetch pins (URL-filtered by the host) and refresh the chip.
+            pinRefresh = () => {
+              if (!container.isConnected) return; // UI already removed — no-op
+              teardownPins();
+              mountPins(container, tabId, toast).catch(
+                (err: unknown) => toast(`Could not load pins — ${String(err)}`, true)
+              );
+              refreshChipRoute(container);
+            };
+            const urlChangeListener = (msg: { type?: string }) => {
+              if (msg?.type === SFX_MSG.URL_CHANGED) pinRefresh?.();
+            };
+            chrome.runtime.onMessage.addListener(urlChangeListener);
+            detachUrlListener = () =>
+              chrome.runtime.onMessage.removeListener(urlChangeListener);
           })
           .catch(() => {
             // If tabId resolution fails, FAB is not mounted — the chip already
@@ -151,6 +177,11 @@ export default defineContentScript({
         // Release the isolated-world guard so a later re-enter can mount again
         // (chip-X close, EXIT_REVIEW, and ctx invalidation all route here).
         w.__sfxReviewActive = false;
+        // Detach the SPA URL-change listener and disarm pin refresh so neither
+        // outlives the UI (a stray URL_CHANGED after exit must not remount pins).
+        detachUrlListener?.();
+        detachUrlListener = null;
+        pinRefresh = null;
         if (elements?.container) {
           teardownChip(elements.container);
           // Also close any open card so card-state stays consistent

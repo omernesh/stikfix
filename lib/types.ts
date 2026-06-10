@@ -66,6 +66,10 @@ export const SFX_MSG = {
   // Phase 9 — ONB-04 / D-04: first note on an unmapped origin opens the OS folder
   // dialog via the native host; the SW persists origin→folder for silent reuse.
   PICK_FOLDER: 'SFX_PICK_FOLDER',
+  // SPA navigation: the SW detects an in-page URL change (tabs.onUpdated with
+  // changeInfo.url, no document reload) on a review-mode tab and notifies the
+  // live content script so it can re-scope pins + chip route to the new URL.
+  URL_CHANGED: 'SFX_URL_CHANGED',
 } as const;
 
 export type SfxMsgType = (typeof SFX_MSG)[keyof typeof SFX_MSG];

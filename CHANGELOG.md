@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-06-10
+
+### Fixed
+- **Stale pins after SPA navigation:** pins from a prior page no longer linger after an in-page (SPA) route change. Pins and the chip route are URL-scoped, but an in-page navigation does not reload the document, so the content script (and its pins) stayed bound to the old URL. The SW now detects in-page URL changes (`tabs.onUpdated` with `changeInfo.url`) on review-mode tabs and signals the live content script, which re-fetches pins (URL-filtered by the host) and refreshes the chip for the new URL. A mount-generation guard prevents overlapping refreshes from double-appending pins.
+
 ## [1.0.2] - 2026-06-10
 
 ### Fixed
