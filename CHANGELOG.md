@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-06-17
+
+### Added
+- **Two-way review loop — AI replies on the page.** Notes now carry a `reply` (and optional `fixed_in`) field the AI writes when it processes them, surfaced on the pin and in the notes panel. New status model: `unread` (yellow) → `flagged` (amber pin, hover shows the AI's clarification question) → `resolved` (green ✓ pin, hover shows what was fixed — stays visible so you can verify) → `read` (hidden archive). The `review-notes` skill now sets `status: resolved` + `reply` on a fix instead of immediately archiving; `read`/`*.read.md` is reserved for the developer-triggered archive/dismiss step.
+- **Notes panel.** A chip-toggled panel listing every note for the page: status counts, filter chips (all/unread/flagged/resolved), text search, and click-to-jump that scrolls to the pin. An "All pages" toggle lists notes across the whole project folder (`GET /annotations?scope=all`); clicking an off-page note navigates to it (http/https only).
+- **Live disk→UI sync.** While Review Mode is active and the tab is visible, the page polls for note changes (~4s) and re-renders pins + panel when the AI writes a reply or changes a status — no manual refresh needed.
+- **Pin decluttering.** Pins that would overlap now fan out deterministically so dense pages stay readable and every pin remains clickable.
+- **Continuous integration.** GitHub Actions runs `npm run check` on push and PRs across Ubuntu and Windows (cross-platform build gate).
+
+### Security
+- The notes panel only navigates to `http`/`https` note URLs; a note file whose `url` is a `javascript:`/`data:` URL can no longer trigger navigation.
+
 ## [1.0.4] - 2026-06-17
 
 ### Fixed

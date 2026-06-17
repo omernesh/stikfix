@@ -53,10 +53,11 @@ const SKIP_DIRS = new Set([
   '.wxt',
   '.planning',
   // Gitignored local-only trees (see .gitignore) — allowed to name upstream:
-  'notes',       // runtime user content, never committed
-  'private',     // private business/strategy docs, never published
-  '.claude',     // editor/agent config, never published
-  '.qmd-memory', // agent long-term memory, never published
+  'notes',        // runtime user content, never committed
+  'private',      // private business/strategy docs, never published
+  '.claude',      // editor/agent config, never published
+  '.qmd-memory',  // agent long-term memory, never published
+  'graphify-out', // gitignored knowledge-graph output; quotes upstream names verbatim
 ]);
 
 // Root-level documentation and legal files that may reference the upstream

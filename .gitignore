@@ -54,3 +54,6 @@ lib/test/*.js
 .keys/*.p12
 .keys/*.key
 graphify-out/
+
+# Local planning scratch (todo.md / lessons.md) — not a deliverable
+tasks/

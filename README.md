@@ -28,8 +28,8 @@ No cloud. No accounts. No sign-up. Everything stays on `127.0.0.1` — **your co
 
 1. Click **Enter Review Mode** on any page.
 2. Drop a **sticky note** — free-floating, or click an element to anchor it. Anchored notes auto-capture the CSS selector, computed styles, `outerHTML`, the bounding box, an auto-highlighted screenshot, and the React component name. No describing required.
-3. Tell your agent **"read my notes."** It reads the fresh `.md` files, makes the fixes, and marks each one done so the next pass only sees what's new.
-4. Glance, drop a few more, repeat. Your UI gets tighter every loop.
+3. Tell your agent **"read my notes."** It reads the fresh `.md` files, makes the fixes, and **writes a reply back into each note** — so the pin turns **green ✓** right on the page with a one-line "here's what I changed" (no fix is lost in a chat log). Anything ambiguous turns **amber** with the agent's clarifying question.
+4. Glance at the pins (or open the **notes panel** to filter/search/jump), drop a few more, repeat. Pins update live as the agent works — no refresh. Your UI gets tighter every loop.
 
 ## Quick start
 
@@ -75,7 +75,10 @@ Open your app, click **Enter Review Mode**, and start dropping notes. The first 
 - **Free notes** — a draggable post-it you can drop anywhere on the page. Captures URL, title, timestamp, viewport, and a screenshot.
 - **Element notes** — click any element and the note auto-captures a robust unique CSS selector ([`@medv/finder`](https://github.com/antonmedv/finder)), curated computed styles, truncated `outerHTML`, bounding box, `data-*`, accessibility role/label, the best-effort **React component name**, and an **auto element-highlight screenshot** showing exactly which element you meant.
 - **Region / marquee capture** — the camera tool dims the page, gives you a crosshair, and lets you drag a rectangle. stickyfix hides its own UI, captures, and crops the screenshot DPR-correctly. Stack multiple per note; each is a deletable thumbnail.
-- **Persistent on-page pins** — notes stay visible as pins on the page across reloads. View, edit, and delete them in place — backed by host-side CRUD over the localhost relay.
+- **Persistent on-page pins** — notes stay visible as pins on the page across reloads. View, edit, and delete them in place — backed by host-side CRUD over the localhost relay. Overlapping pins fan out automatically so dense pages stay readable.
+- **Two-way status, on the page** — pins reflect the loop: **unread** (yellow), **flagged** (amber — the agent needs you to clarify, with its question on hover), **resolved** (green ✓ — fixed, with the agent's reply on hover). Resolved notes stay visible so you can verify the fix; archived (`read`) notes disappear.
+- **Notes panel** — a chip-toggled list of every note: counts by status, filter chips, text search, and click-to-jump that scrolls right to the pin. Flip **All pages** to browse every note across the project, not just the current page.
+- **Live updates** — while Review Mode is on, pins and the panel refresh on their own (~4s, only when the tab is visible) as the agent writes replies and resolves notes. No manual reload.
 - **Per-origin project routing** — the first note on a new site opens an OS folder picker; after that, every tab routes to the right project's `notes/` folder automatically. No per-note picking.
 - **Cross-browser host** — one `npx stickyfix init` registers Chrome and Edge in a single pass.
 - **The `review-notes` AI skill** — the portable agent half of the loop (see below).
@@ -84,7 +87,7 @@ Open your app, click **Enter Review Mode**, and start dropping notes. The first 
 
 Every note becomes a markdown file in your project's `notes/` folder, named `<serial>-<YYYYMMDD-HHmmss>.md` (e.g. `0007-20260531-143022.md`), with any screenshots written alongside it as `<base>+<N>.png`. Element notes embed a full **Element context** section — selector, computed styles, `outerHTML`, React component — so an agent can locate the exact code without guessing.
 
-The **review-notes** skill is the agent half of the loop. It works through your unread notes in serial order, applies each fix, then renames each file to `*.read.md` so re-running is always idempotent.
+The **review-notes** skill is the agent half of the loop. It works through your unread notes in serial order, applies each fix, then writes a short **`reply`** into the note and marks it **`resolved`** (the pin turns green ✓ on the page). Re-running is always idempotent — resolved, flagged, and archived notes are skipped.
 
 **Claude Code (project-local):**
 
@@ -104,11 +107,11 @@ cp /path/to/stickyfix/skill/SKILL.md .claude/skills/review-notes/SKILL.md
 
 **Under the hood, it:**
 
-1. Finds every unread `notes/*.md` (skips `*.read.md`), oldest serial first.
+1. Finds every unread `notes/*.md` (skips `*.read.md` and already-resolved/flagged notes), oldest serial first.
 2. Reads the note plus its screenshots, then makes the code change.
-3. Marks the note read — only *after* the fix lands. If a fix is interrupted, the note stays unread and is retried next run.
-4. Flags anything ambiguous instead of guessing, so it surfaces again next run for you to clarify.
-5. Gives you a one-line recap: N fixed, K flagged, J already done.
+3. Marks the note **resolved** with a `reply` (and optional `fixed_in` commit ref) — only *after* the fix lands. If a fix is interrupted, the note stays unread and is retried next run. Resolved notes stay on the page (green ✓) so you can verify; archiving/dismissing (`status: read` + `*.read.md` rename, which hides the pin) is a separate step done after you've acknowledged them.
+4. Flags anything ambiguous instead of guessing — sets **flagged** with a `reply` question (amber pin), so it surfaces again next run for you to clarify.
+5. Gives you a one-line recap: N resolved, K flagged, J already done.
 
 Run it on a clean directory and it just says "no unread notes." Safe to fire any time.
 

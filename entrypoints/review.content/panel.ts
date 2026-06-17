@@ -392,23 +392,31 @@ function buildRow(pin: PinDescriptor): HTMLElement {
 
   // Click/keyboard handler
   const handleActivate = () => {
-    // Check if note is on the current page
-    let onCurrentPage = true;
+    // Parse the note's URL. pin.url comes from a note file on disk (which may be
+    // shared via a repo / written by another contributor), so it is untrusted:
+    // only http(s) destinations may ever reach window.location (a javascript:/data:
+    // url would otherwise execute in the page origin — security review W1).
+    let noteUrl: URL | null = null;
     try {
-      const noteUrl = new URL(pin.url);
-      onCurrentPage = noteUrl.pathname === window.location.pathname &&
-                      noteUrl.hostname === window.location.hostname;
+      noteUrl = new URL(pin.url);
     } catch {
-      onCurrentPage = true; // assume current page on malformed URL
+      noteUrl = null;
     }
+
+    const onCurrentPage =
+      noteUrl === null || // malformed → assume current page (best effort)
+      (noteUrl.pathname === window.location.pathname &&
+        noteUrl.hostname === window.location.hostname);
 
     if (onCurrentPage) {
       // Close panel, scroll to pin
       togglePanel();
       scrollToPinBySerial(pin.serial);
+    } else if (noteUrl !== null && (noteUrl.protocol === 'http:' || noteUrl.protocol === 'https:')) {
+      // Navigate to the note's page (All-pages mode only) — http(s) only.
+      window.location.href = noteUrl.href;
     } else {
-      // Navigate to the note's page (All-pages mode only)
-      window.location.href = pin.url;
+      _toast?.('Cannot open note — unsafe URL', true);
     }
   };
 
