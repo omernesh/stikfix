@@ -36,6 +36,8 @@ interface PinDescriptor {
   rect?: { x: number; y: number; width: number; height: number };
   note_position?: { x: number; y: number };
   screenshots: string[];
+  reply?: string;
+  fixedIn?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -601,8 +603,12 @@ function _buildPinElement(data: PinDescriptor): HTMLElement {
     pin.classList.add('sfx-pin-free');
   }
 
-  // Read state class
-  if (data.status === 'read') {
+  // Status class — flagged / resolved override the default unread style
+  if (data.status === 'flagged') {
+    pin.classList.add('sfx-pin-flagged');
+  } else if (data.status === 'resolved') {
+    pin.classList.add('sfx-pin-resolved');
+  } else if (data.status === 'read') {
     pin.classList.add('sfx-pin-read');
   }
 
@@ -620,8 +626,17 @@ function _buildPinElement(data: PinDescriptor): HTMLElement {
   // Hover preview — textContent only, never innerHTML (T-06-05)
   const preview = document.createElement('div');
   preview.className = 'sfx-pin-preview';
-  const previewText = (data.status === 'read' ? '[read] ' : '') + data.text.slice(0, 200);
-  preview.textContent = previewText;  // textContent — INVARIANT C
+  let previewText: string;
+  if (data.status === 'resolved') {
+    previewText = '✓ ' + (data.reply ?? data.text);
+  } else if (data.status === 'flagged') {
+    previewText = '⚠ ' + (data.reply ?? data.text);
+  } else if (data.status === 'read') {
+    previewText = '[read] ' + data.text;
+  } else {
+    previewText = data.text;
+  }
+  preview.textContent = previewText.slice(0, 200);  // textContent — INVARIANT C
   preview.style.display = 'none';
   pin.appendChild(preview);
 
@@ -760,9 +775,11 @@ function _updatePinAfterEdit(serial: string, newText: string, status: string): v
   entry.data.text = newText;
   entry.data.status = status;
 
-  // Update dot — unread = red (remove sfx-pin-read), read = green
+  // Update dot — unread = red (remove flagged/resolved/read classes)
   if (status === 'unread') {
     entry.pin.classList.remove('sfx-pin-read');
+    entry.pin.classList.remove('sfx-pin-flagged');
+    entry.pin.classList.remove('sfx-pin-resolved');
   } else {
     entry.pin.classList.add('sfx-pin-read');
   }
@@ -773,4 +790,29 @@ function _updatePinAfterEdit(serial: string, newText: string, status: string): v
     const previewText = (status === 'read' ? '[read] ' : '') + newText.slice(0, 200);
     preview.textContent = previewText;
   }
+}
+
+// ---------------------------------------------------------------------------
+// scrollToPinBySerial — Phase C integration point
+// ---------------------------------------------------------------------------
+
+/**
+ * Scroll the page to the pin for `serial` and flash a highlight. No-op if not mounted.
+ */
+export function scrollToPinBySerial(serial: string): void {
+  const entry = _pinEntries.find(e => e.data.serial === serial);
+  if (!entry) return;
+
+  // For element pins with a live anchor, prefer scrolling the anchor first
+  if (entry.data.mode === 'element' && entry.el !== null) {
+    entry.el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  } else {
+    entry.pin.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  // Flash highlight
+  entry.pin.classList.add('sfx-pin-highlight');
+  setTimeout(() => {
+    entry.pin.classList.remove('sfx-pin-highlight');
+  }, 1500);
 }

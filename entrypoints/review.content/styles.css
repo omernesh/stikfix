@@ -907,3 +907,41 @@
   font-family: system-ui, -apple-system, sans-serif;
   flex: 1;
 }
+
+/* ============================================================
+ * Review Loop v2 — pin status variants (Phase B)
+ * ============================================================ */
+
+/* Flagged pin — amber/orange: AI needs clarification */
+.sfx-pin.sfx-pin-flagged {
+  background: #fff7ed;
+  border-color: #ea580c;
+}
+
+/* Flagged dot — orange (distinct from unread red) */
+.sfx-pin.sfx-pin-flagged .sfx-pin-dot {
+  background: #ea580c;
+}
+
+/* Resolved pin — green: AI fixed it */
+.sfx-pin.sfx-pin-resolved {
+  background: #f0fdf4;
+  border-color: #16a34a;
+}
+
+/* Resolved dot — green */
+.sfx-pin.sfx-pin-resolved .sfx-pin-dot {
+  background: #16a34a;
+}
+
+/* Highlight pulse — used by scrollToPinBySerial (~1.5 s ring animation) */
+@keyframes sfx-pin-pulse {
+  0%   { box-shadow: 0 0 0 0   rgba(29, 110, 216, 0.70); }
+  40%  { box-shadow: 0 0 0 8px rgba(29, 110, 216, 0.35); }
+  100% { box-shadow: 0 0 0 14px rgba(29, 110, 216, 0.00); }
+}
+
+.sfx-pin.sfx-pin-highlight {
+  animation: sfx-pin-pulse 1.5s ease-out forwards;
+  z-index: 3;
+}
