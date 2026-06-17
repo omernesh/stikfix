@@ -4,7 +4,11 @@ description: |
   Process unread stickyfix review notes in the notes/ directory. Use when the
   user says "read my notes", "process review notes", "fix sticky notes", "run
   review-notes", or "what notes do I have". Reads each unread *.md note in
-  serial order, applies the requested code fix, then renames it *.read.md.
+  serial order, applies the requested code fix, then sets status:resolved and
+  writes a reply: field so the extension shows a green ✓ pin on the page.
+  Flagged (ambiguous) notes get status:flagged plus a reply: clarification
+  question shown as an amber pin. Archive/dismiss (status:read + *.read.md
+  rename) is a separate step done only after developer acknowledgement.
   Idempotent — re-running on an already-processed directory reports "no unread
   notes".
 ---
