@@ -635,6 +635,187 @@ describe('registerNativeHost — native wrapper points manifest at launcher', ()
 });
 
 // ---------------------------------------------------------------------------
+// Firefox port (cross-browser) — allowed_extensions, Mozilla paths, registry key
+// ---------------------------------------------------------------------------
+
+describe('Firefox: nativeManifestPath — Mozilla locations', () => {
+  const fakeHome = '/home/testuser';
+
+  test('darwin: returns Mozilla/NativeMessagingHosts path', () => {
+    const result = nativeManifestPath('darwin', fakeHome, 'firefox');
+    const normalized = result.replace(/\\/g, '/');
+    assert.ok(
+      normalized.includes('Library/Application Support/Mozilla/NativeMessagingHosts'),
+      `Expected macOS Mozilla path, got: ${result}`
+    );
+    assert.ok(result.endsWith('com.stickyfix.host.json'), `Expected .json suffix, got: ${result}`);
+  });
+
+  test('linux: returns .mozilla/native-messaging-hosts path', () => {
+    const result = nativeManifestPath('linux', fakeHome, 'firefox');
+    const normalized = result.replace(/\\/g, '/');
+    assert.ok(
+      normalized.includes('.mozilla/native-messaging-hosts'),
+      `Expected Linux Mozilla path, got: ${result}`
+    );
+    assert.ok(result.endsWith('com.stickyfix.host.json'), `Expected .json suffix, got: ${result}`);
+  });
+
+  test('win32: returns a stickyfix data-dir path with a firefox-distinct filename', () => {
+    const fakeWinHome = 'C:\\Users\\testuser';
+    const result = nativeManifestPath('win32', fakeWinHome, 'firefox');
+    assert.ok(result.includes('stickyfix'), `Expected stickyfix data dir, got: ${result}`);
+    // Distinct from the Chrome win32 manifest so they can coexist on disk
+    const chromeWin = nativeManifestPath('win32', fakeWinHome, 'chrome');
+    assert.notStrictEqual(result, chromeWin, 'Firefox win32 manifest must differ from Chrome');
+    assert.ok(result.endsWith('.json'), `Expected .json suffix, got: ${result}`);
+  });
+
+  test('chrome remains the default (no regression)', () => {
+    const def = nativeManifestPath('linux', fakeHome);
+    const chrome = nativeManifestPath('linux', fakeHome, 'chrome');
+    assert.strictEqual(def, chrome, 'Default browser must be chrome');
+    assert.ok(def.replace(/\\/g, '/').includes('.config/google-chrome'));
+  });
+});
+
+describe('Firefox: buildManifest — allowed_extensions (not allowed_origins)', () => {
+  const GECKO_ID = 'stickyfix@stickyfix.dev';
+
+  test('emits allowed_extensions with the gecko id', () => {
+    const m = buildManifest(GECKO_ID, '/usr/bin/node', 'firefox') as {
+      allowed_extensions: string[];
+      allowed_origins?: unknown;
+    };
+    assert.ok(Array.isArray(m.allowed_extensions), 'allowed_extensions must be an array');
+    assert.strictEqual(m.allowed_extensions.length, 1);
+    assert.strictEqual(m.allowed_extensions[0], GECKO_ID);
+  });
+
+  test('does NOT emit allowed_origins (Firefox rejects that field)', () => {
+    const m = buildManifest(GECKO_ID, '/usr/bin/node', 'firefox') as Record<string, unknown>;
+    assert.strictEqual(m.allowed_origins, undefined, 'Firefox manifest must not carry allowed_origins');
+  });
+
+  test('name/type/path preserved with absolute path', () => {
+    const m = buildManifest(GECKO_ID, './rel/host', 'firefox') as {
+      name: string; type: string; path: string;
+    };
+    assert.strictEqual(m.name, 'com.stickyfix.host');
+    assert.strictEqual(m.type, 'stdio');
+    assert.ok(isAbsolute(m.path), `Expected absolute path, got: ${m.path}`);
+  });
+
+  test('accepts a gecko id and rejects a Chrome a-p id on the firefox path', () => {
+    assert.doesNotThrow(() => buildManifest(GECKO_ID, '/usr/bin/node', 'firefox'));
+    // A Chrome-shaped id has no @domain — must be rejected on the firefox path
+    assert.throws(() => buildManifest(STABLE_EXTENSION_ID, '/usr/bin/node', 'firefox'));
+  });
+
+  test('chrome path still rejects a gecko id (no cross-contamination)', () => {
+    assert.throws(() => buildManifest(GECKO_ID, '/usr/bin/node', 'chrome'));
+    assert.throws(() => buildManifest(GECKO_ID, '/usr/bin/node')); // default chrome
+  });
+});
+
+describe('Firefox: registerNativeHost — Mozilla registry key + manifest', () => {
+  let tmpDir: string;
+  const GECKO_ID = 'stickyfix@stickyfix.dev';
+
+  before(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), 'sfx-ff-reg-test-'));
+  });
+
+  after(() => {
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  test('win32: registers ONLY the Mozilla HKCU key (no Chrome/Edge)', () => {
+    const hostBinPath = join(tmpDir, 'dist', 'host', 'stickyfix-native.cjs');
+    // No-op execReg — never touch the developer's real HKCU (see Chrome test note).
+    const regCalls: readonly string[][] = [];
+    registerNativeHost({
+      extensionId: GECKO_ID,
+      hostBinPath,
+      plat: 'win32',
+      home: tmpDir,
+      browser: 'firefox',
+      execReg: (args) => { (regCalls as string[][]).push([...args]); },
+    });
+
+    assert.strictEqual(regCalls.length, 1, 'firefox registers exactly one key');
+    const joined = regCalls[0]!.join(' ');
+    assert.ok(joined.includes('Mozilla'), `Expected Mozilla key, got: ${joined}`);
+    assert.ok(!joined.includes('Google'), 'must not register Chrome key');
+    assert.ok(!joined.includes('Edge'), 'must not register Edge key');
+
+    // Manifest is written at the firefox path and carries allowed_extensions
+    const manifestPath = nativeManifestPath('win32', tmpDir, 'firefox');
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as {
+      path: string; allowed_extensions: string[]; allowed_origins?: unknown;
+    };
+    assert.deepStrictEqual(manifest.allowed_extensions, [GECKO_ID]);
+    assert.strictEqual(manifest.allowed_origins, undefined);
+
+    const wrapperPath = nativeWrapperPath('win32', tmpDir, 'firefox');
+    assert.ok(existsSync(wrapperPath), `Wrapper should exist at ${wrapperPath}`);
+    assert.strictEqual(manifest.path, wrapperPath, 'Manifest path must point at the wrapper');
+  });
+
+  test('linux: writes the Firefox manifest under .mozilla and round-trips unregister', () => {
+    const hostBinPath = join(tmpDir, 'dist', 'host', 'stickyfix-native.cjs');
+    registerNativeHost({
+      extensionId: GECKO_ID,
+      hostBinPath,
+      plat: 'linux',
+      home: tmpDir,
+      browser: 'firefox',
+    });
+
+    const manifestPath = nativeManifestPath('linux', tmpDir, 'firefox');
+    assert.ok(
+      manifestPath.replace(/\\/g, '/').includes('.mozilla/native-messaging-hosts'),
+      `Expected .mozilla path, got: ${manifestPath}`
+    );
+    assert.ok(existsSync(manifestPath), 'Firefox manifest should be written');
+
+    unregisterNativeHost({ plat: 'linux', home: tmpDir, browser: 'firefox' });
+    assert.ok(!existsSync(manifestPath), 'Firefox manifest should be removed after unregister');
+  });
+});
+
+describe('Firefox: enumerateArtifacts — Mozilla manifest + registry key', () => {
+  test('win32: includes ONLY the Mozilla registry key', () => {
+    const artifacts = enumerateArtifacts({
+      plat: 'win32', home: 'C:\\Users\\u', root: 'C:\\proj', browser: 'firefox',
+    });
+    const regKeys = artifacts.registryKeys ?? [];
+    assert.deepStrictEqual(regKeys.length, 1, 'firefox enumerates exactly one reg key');
+    assert.ok(regKeys[0]!.includes('Mozilla'), `Expected Mozilla key: ${JSON.stringify(regKeys)}`);
+    assert.ok(!regKeys.some((k) => k.includes('Google') || k.includes('Edge')), 'no Chrome/Edge keys');
+  });
+
+  test('linux: includes the .mozilla manifest path', () => {
+    const artifacts = enumerateArtifacts({
+      plat: 'linux', home: '/home/u', root: '/proj', browser: 'firefox',
+    });
+    const paths = (artifacts.paths ?? []).map((p) => p.replace(/\\/g, '/'));
+    assert.ok(
+      paths.some((p) => p.includes('.mozilla/native-messaging-hosts')),
+      `Missing Firefox manifest path: ${JSON.stringify(paths)}`
+    );
+  });
+
+  test('chrome (default) still enumerates Chrome + Edge keys (no regression)', () => {
+    const artifacts = enumerateArtifacts({ plat: 'win32', home: 'C:\\Users\\u', root: 'C:\\proj' });
+    const regKeys = artifacts.registryKeys ?? [];
+    assert.ok(regKeys.some((k) => k.includes('Chrome')), 'Chrome key still present');
+    assert.ok(regKeys.some((k) => k.includes('Edge') || k.includes('Microsoft')), 'Edge key still present');
+    assert.ok(!regKeys.some((k) => k.includes('Mozilla')), 'chrome path must not list Mozilla');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // buildPickerArgs — no shell metacharacters (ONB-04 / T-09-01)
 // ---------------------------------------------------------------------------
 

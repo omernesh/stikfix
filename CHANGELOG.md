@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Firefox MV3 support (full port).** New `npm run build:firefox` WXT target emits a Firefox build with `browser_specific_settings.gecko.id` (`stickyfix@stickyfix.dev`, `strict_min_version 109.0`). `npx stickyfix init --root <dir> --browser firefox` registers a Firefox native-messaging host — `allowed_extensions` (gecko id) instead of `allowed_origins`, Mozilla manifest paths (macOS/Linux) and the `HKCU\Software\Mozilla\NativeMessagingHosts` registry key on Windows. The Chrome build is unchanged (same `key`, same derived extension ID).
+
+### Fixed
+- **Hermetic port-scan test (WR-06).** The test previously hardcoded the production port `39240` as its "occupied" blocker, so it failed with `EADDRINUSE` whenever a real stickyfix host was already running on that port. It now occupies an OS-assigned ephemeral port and scans a range starting on it. `bindServer()` gained optional `startPort`/`endPort` params (defaulting to the existing `39240`–`39260` range) to support this — production behavior is unchanged.
+
 ## [1.1.1] - 2026-06-17
 
 ### Fixed

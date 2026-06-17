@@ -23,6 +23,11 @@ import { isInsideDir } from '../security.js';
 // value passed to chrome.runtime.sendNativeMessage in background.ts.
 const NATIVE_HOST_NAME = 'com.stickyfix.host';
 const MANIFEST_FILENAME = `${NATIVE_HOST_NAME}.json`;
+// On Windows the Firefox manifest shares the stickyfix data dir with the Chrome
+// one, so it needs a distinct filename to avoid clobbering the Chrome manifest.
+// (On macOS/Linux Firefox uses a separate Mozilla dir, so this filename only
+// differs the win32 on-disk JSON; the registry value points straight at it.)
+const FIREFOX_MANIFEST_FILENAME = `${NATIVE_HOST_NAME}.firefox.json`;
 
 // Native-messaging launcher wrapper file names. On Windows, Chrome launches the
 // native host via CreateProcess, which cannot execute a .cjs directly — so the
@@ -33,6 +38,17 @@ const NATIVE_WRAPPER_NIX = `${NATIVE_HOST_NAME}.sh`;
 // Chrome/Edge registry key prefixes (Windows HKCU — Pitfall 5: never HKLM)
 const REG_CHROME_KEY = `HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\${NATIVE_HOST_NAME}`;
 const REG_EDGE_KEY = `HKCU\\Software\\Microsoft\\Edge\\NativeMessagingHosts\\${NATIVE_HOST_NAME}`;
+// Firefox registry key prefix (Windows HKCU — same HKCU rule as Chrome/Edge)
+const REG_FIREFOX_KEY = `HKCU\\Software\\Mozilla\\NativeMessagingHosts\\${NATIVE_HOST_NAME}`;
+
+// Target browser family. 'chrome' covers Chrome + Edge (Chromium, identical
+// native-messaging contract); 'firefox' uses the Mozilla manifest shape + paths.
+export type TargetBrowser = 'chrome' | 'firefox';
+
+// The default add-on id used by the Firefox path. Must match
+// browser_specific_settings.gecko.id in wxt.config.ts and the
+// allowed_extensions entry in the Firefox native-messaging manifest.
+export const DEFAULT_GECKO_ID = 'stickyfix@stickyfix.dev';
 
 // Config file location (read by native host at startup)
 const CONFIG_DIR = (home: string) => join(home, '.config', 'stickyfix');
@@ -62,7 +78,31 @@ const LAUNCHER_SH_FILENAME = 'stickyfix-host.sh';
 export function nativeManifestPath(
   plat: NodeJS.Platform = process.platform,
   home: string = homedir(),
+  browser: TargetBrowser = 'chrome',
 ): string {
+  if (browser === 'firefox') {
+    switch (plat) {
+      case 'darwin':
+        return join(
+          home,
+          'Library',
+          'Application Support',
+          'Mozilla',
+          'NativeMessagingHosts',
+          MANIFEST_FILENAME,
+        );
+      case 'linux':
+        return join(home, '.mozilla', 'native-messaging-hosts', MANIFEST_FILENAME);
+      case 'win32':
+        // Windows: the manifest JSON lives on disk in the stickyfix data dir
+        // (same place as the Chrome one would, but a distinct filename via the
+        // firefox suffix so both can coexist); the registry key points at it.
+        return join(home, '.local', 'share', 'stickyfix', FIREFOX_MANIFEST_FILENAME);
+      default:
+        throw new Error(`Unsupported platform: ${plat}`);
+    }
+  }
+
   switch (plat) {
     case 'darwin':
       return join(
@@ -94,8 +134,9 @@ export function nativeManifestPath(
 export function nativeWrapperPath(
   plat: NodeJS.Platform = process.platform,
   home: string = homedir(),
+  browser: TargetBrowser = 'chrome',
 ): string {
-  const dir = dirname(nativeManifestPath(plat, home));
+  const dir = dirname(nativeManifestPath(plat, home, browser));
   return join(dir, plat === 'win32' ? NATIVE_WRAPPER_WIN : NATIVE_WRAPPER_NIX);
 }
 
@@ -111,8 +152,9 @@ export function writeNativeWrapper(
   hostBinPath: string,
   plat: NodeJS.Platform = process.platform,
   home: string = homedir(),
+  browser: TargetBrowser = 'chrome',
 ): string {
-  const wrapperPath = nativeWrapperPath(plat, home);
+  const wrapperPath = nativeWrapperPath(plat, home, browser);
   mkdirSync(dirname(wrapperPath), { recursive: true });
   const abs = resolve(hostBinPath);
 
@@ -201,21 +243,52 @@ export function getLauncherPaths(
 const EXT_ID_RE = /^[a-p]{32}$/;
 
 /**
- * Build a Chrome native-messaging manifest object for the given extension ID
+ * Regex: a Firefox/gecko add-on id. Firefox accepts either an email-style id
+ * (`name@domain`) or a UUID in braces; stickyfix ships the email-style id
+ * `stickyfix@stickyfix.dev`. We validate the `local@domain` shape (no spaces,
+ * a single @, a dot-bearing domain) rather than the Chrome a-p alphabet.
+ */
+const GECKO_ID_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Build a native-messaging manifest object for the given extension identity
  * and host binary path.
  *
  * - hostBinPath is resolved to an ABSOLUTE path (Pitfall 4).
- * - extensionId must be exactly 32 lowercase a-p chars; throws otherwise.
- * - allowed_origins contains exactly one entry: `chrome-extension://<id>/`.
+ * - browser 'chrome' (default): `extensionId` must be exactly 32 lowercase a-p
+ *   chars; emits `allowed_origins: ["chrome-extension://<id>/"]`.
+ * - browser 'firefox': `extensionId` is the gecko add-on id (e.g.
+ *   `stickyfix@stickyfix.dev`); emits `allowed_extensions: [<gecko-id>]`.
+ *   Firefox rejects a manifest carrying `allowed_origins`, so the two shapes
+ *   are mutually exclusive.
  */
-export function buildManifest(extensionId: string, hostBinPath: string): object {
+export function buildManifest(
+  extensionId: string,
+  hostBinPath: string,
+  browser: TargetBrowser = 'chrome',
+): object {
+  const absPath = resolve(hostBinPath);
+
+  if (browser === 'firefox') {
+    if (!GECKO_ID_RE.test(extensionId)) {
+      throw new Error(
+        `Invalid Firefox add-on id "${extensionId}": must be a gecko id like "name@domain.tld".`
+      );
+    }
+    return {
+      name: NATIVE_HOST_NAME,
+      description: 'stickyfix native messaging host',
+      path: absPath,
+      type: 'stdio',
+      allowed_extensions: [extensionId],
+    };
+  }
+
   if (!EXT_ID_RE.test(extensionId)) {
     throw new Error(
       `Invalid extension ID "${extensionId}": must be exactly 32 lowercase a-p characters.`
     );
   }
-
-  const absPath = resolve(hostBinPath);
 
   return {
     name: NATIVE_HOST_NAME,
@@ -467,40 +540,54 @@ interface RegisterOptions {
   plat?: NodeJS.Platform;
   home?: string;
   /**
+   * Target browser family. 'chrome' (default) registers Chrome + Edge HKCU keys
+   * and emits `allowed_origins`; 'firefox' registers the Mozilla HKCU key and
+   * emits `allowed_extensions`. Default preserves existing caller behavior.
+   */
+  browser?: TargetBrowser;
+  /**
    * Injectable registry writer (win32). Defaults to the real `reg ADD`.
    * Tests MUST pass a no-op here: the registry key name is a hardcoded HKCU
    * constant, so a real `reg ADD` from a test pollutes the developer's actual
-   * Chrome/Edge registration (and points it at a temp manifest that is deleted
-   * in afterEach — breaking native messaging until `init` is re-run).
+   * Chrome/Edge/Firefox registration (and points it at a temp manifest that is
+   * deleted in afterEach — breaking native messaging until `init` is re-run).
    */
   execReg?: (args: readonly string[]) => void;
 }
 
 /**
- * Write the native-messaging manifest and, on Windows, register it in both
- * the Chrome and Edge HKCU registry keys.
+ * Write the native-messaging manifest and, on Windows, register the matching
+ * HKCU registry key(s):
+ *   - chrome  → Google\Chrome + Microsoft\Edge keys, `allowed_origins`
+ *   - firefox → Mozilla key, `allowed_extensions`
  *
  * execFileSync is used (NEVER exec, NEVER shell) — T-09-03.
  */
 export function registerNativeHost(opts: RegisterOptions): void {
   const plat = opts.plat ?? process.platform;
   const home = opts.home ?? homedir();
+  const browser = opts.browser ?? 'chrome';
 
-  const manifestPath = nativeManifestPath(plat, home);
-  // Chrome's CreateProcess cannot run a .cjs directly — point the manifest at a
-  // per-OS wrapper that runs `node <abs cjs>` instead of the raw bin path.
-  const wrapperPath = writeNativeWrapper(opts.hostBinPath, plat, home);
-  const manifest = buildManifest(opts.extensionId, wrapperPath);
+  const manifestPath = nativeManifestPath(plat, home, browser);
+  // Chrome's CreateProcess (and Firefox on Windows) cannot run a .cjs directly —
+  // point the manifest at a per-OS wrapper that runs `node <abs cjs>` instead.
+  const wrapperPath = writeNativeWrapper(opts.hostBinPath, plat, home, browser);
+  const manifest = buildManifest(opts.extensionId, wrapperPath, browser);
   writeManifest(manifest, manifestPath);
 
   if (plat === 'win32') {
     const execReg = opts.execReg ?? ((args: readonly string[]) => {
       execFileSync('reg', args as string[]);
     });
-    // Register for Chrome (HKCU — Pitfall 5, never HKLM)
-    execReg(['ADD', REG_CHROME_KEY, '/ve', '/t', 'REG_SZ', '/d', manifestPath, '/f']);
-    // Register for Edge (drop-in, D-05)
-    execReg(['ADD', REG_EDGE_KEY, '/ve', '/t', 'REG_SZ', '/d', manifestPath, '/f']);
+    if (browser === 'firefox') {
+      // Register for Firefox (HKCU — Pitfall 5, never HKLM)
+      execReg(['ADD', REG_FIREFOX_KEY, '/ve', '/t', 'REG_SZ', '/d', manifestPath, '/f']);
+    } else {
+      // Register for Chrome (HKCU — Pitfall 5, never HKLM)
+      execReg(['ADD', REG_CHROME_KEY, '/ve', '/t', 'REG_SZ', '/d', manifestPath, '/f']);
+      // Register for Edge (drop-in, D-05)
+      execReg(['ADD', REG_EDGE_KEY, '/ve', '/t', 'REG_SZ', '/d', manifestPath, '/f']);
+    }
   }
 }
 
@@ -511,6 +598,11 @@ export function registerNativeHost(opts: RegisterOptions): void {
 interface UnregisterOptions {
   plat?: NodeJS.Platform;
   home?: string;
+  /**
+   * Target browser family. 'chrome' (default) removes the Chrome + Edge keys;
+   * 'firefox' removes the Mozilla key and uses the Firefox manifest/wrapper paths.
+   */
+  browser?: TargetBrowser;
   /** Override the manifest path (used by tests to avoid touching real OS paths) */
   manifestPath?: string;
   /** Override launcher paths (used by tests) */
@@ -519,7 +611,9 @@ interface UnregisterOptions {
 
 /**
  * Remove the native-messaging manifest, launcher files, Desktop shortcut,
- * and on Windows delete the Chrome and Edge HKCU registry keys.
+ * and on Windows delete the matching HKCU registry key(s):
+ *   - chrome  → Google\Chrome + Microsoft\Edge keys
+ *   - firefox → Mozilla key
  *
  * Idempotent: does not throw if any artifact is already absent.
  * execFileSync is used (NEVER exec) with the /f flag to tolerate absent keys.
@@ -527,10 +621,11 @@ interface UnregisterOptions {
 export function unregisterNativeHost(opts: UnregisterOptions = {}): void {
   const plat = opts.plat ?? process.platform;
   const home = opts.home ?? homedir();
-  const manifestPath = opts.manifestPath ?? nativeManifestPath(plat, home);
+  const browser = opts.browser ?? 'chrome';
+  const manifestPath = opts.manifestPath ?? nativeManifestPath(plat, home, browser);
 
   rmSync(manifestPath, { force: true });
-  rmSync(nativeWrapperPath(plat, home), { force: true });
+  rmSync(nativeWrapperPath(plat, home, browser), { force: true });
 
   // Remove launcher files
   const defaultPaths = getLauncherPaths(plat, home);
@@ -555,15 +650,23 @@ export function unregisterNativeHost(opts: UnregisterOptions = {}): void {
 
   if (plat === 'win32') {
     // /f flag suppresses "are you sure?" prompt; tolerates absent key (non-zero exit ignored)
-    try {
-      execFileSync('reg', ['DELETE', REG_CHROME_KEY, '/f']);
-    } catch {
-      // Key may not exist — ignore
-    }
-    try {
-      execFileSync('reg', ['DELETE', REG_EDGE_KEY, '/f']);
-    } catch {
-      // Key may not exist — ignore
+    if (browser === 'firefox') {
+      try {
+        execFileSync('reg', ['DELETE', REG_FIREFOX_KEY, '/f']);
+      } catch {
+        // Key may not exist — ignore
+      }
+    } else {
+      try {
+        execFileSync('reg', ['DELETE', REG_CHROME_KEY, '/f']);
+      } catch {
+        // Key may not exist — ignore
+      }
+      try {
+        execFileSync('reg', ['DELETE', REG_EDGE_KEY, '/f']);
+      } catch {
+        // Key may not exist — ignore
+      }
     }
   }
 }
@@ -576,6 +679,11 @@ interface ArtifactOptions {
   plat?: NodeJS.Platform;
   home?: string;
   root?: string;
+  /**
+   * Target browser family. 'chrome' (default) enumerates Chrome + Edge
+   * artifacts; 'firefox' enumerates the Mozilla manifest path + registry key.
+   */
+  browser?: TargetBrowser;
 }
 
 interface ArtifactList {
@@ -603,10 +711,11 @@ export function enumerateArtifacts(opts: ArtifactOptions = {}): ArtifactList {
   const plat = opts.plat ?? process.platform;
   const home = opts.home ?? homedir();
   const root = opts.root;
+  const browser = opts.browser ?? 'chrome';
 
   const paths: string[] = [
-    nativeManifestPath(plat, home),
-    nativeWrapperPath(plat, home),
+    nativeManifestPath(plat, home, browser),
+    nativeWrapperPath(plat, home, browser),
     CONFIG_PATH(home),
   ];
 
@@ -627,7 +736,12 @@ export function enumerateArtifacts(opts: ArtifactOptions = {}): ArtifactList {
     paths.push(join(launcherDir(plat, home), LAUNCHER_VBS_FILENAME));
   }
 
-  const registryKeys: string[] = plat === 'win32' ? [REG_CHROME_KEY, REG_EDGE_KEY] : [];
+  const registryKeys: string[] =
+    plat === 'win32'
+      ? browser === 'firefox'
+        ? [REG_FIREFOX_KEY]
+        : [REG_CHROME_KEY, REG_EDGE_KEY]
+      : [];
 
   return { paths, registryKeys };
 }

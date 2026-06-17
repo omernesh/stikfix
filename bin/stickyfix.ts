@@ -16,7 +16,8 @@ import { homedir } from 'node:os';
 import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 
-import { registerNativeHost, unregisterNativeHost, createLauncherFiles } from '../host/src/bootstrap/register.js';
+import { registerNativeHost, unregisterNativeHost, createLauncherFiles, DEFAULT_GECKO_ID } from '../host/src/bootstrap/register.js';
+import type { TargetBrowser } from '../host/src/bootstrap/register.js';
 import { STABLE_EXTENSION_ID, MANIFEST_PUBLIC_KEY } from '../host/src/extension-id.js';
 
 // ---------------------------------------------------------------------------
@@ -29,6 +30,7 @@ const { values, positionals } = parseArgs({
     root: { type: 'string' },
     'extension-id': { type: 'string' },
     port: { type: 'string' },
+    browser: { type: 'string' },
   },
   strict: false,
 });
@@ -50,18 +52,38 @@ if (subcommand === 'init') {
   const rawRoot = values['root'];
   const rawExtId = values['extension-id'];
   const rawPort = values['port'];
+  const rawBrowser = values['browser'];
 
   if (!rawRoot || typeof rawRoot !== 'string') {
     console.error('stickyfix init: --root is required');
-    console.error('Usage: npx stickyfix init --root <project-dir> [--extension-id <id>] [--port <port>]');
+    console.error('Usage: npx stickyfix init --root <project-dir> [--browser <chrome|firefox>] [--extension-id <id>] [--port <port>]');
     process.exit(1);
   }
 
-  // Default to the stable derived extension ID when --extension-id is not supplied.
-  // The manifest key field in wxt.config.ts pins this ID deterministically.
-  // Pass --extension-id only when overriding (e.g. after CWS publish with a new key).
+  // Resolve target browser (default chrome — covers Chrome + Edge).
+  const browser: TargetBrowser =
+    typeof rawBrowser === 'string' && rawBrowser.toLowerCase() === 'firefox'
+      ? 'firefox'
+      : 'chrome';
+  if (typeof rawBrowser === 'string' && !['chrome', 'firefox'].includes(rawBrowser.toLowerCase())) {
+    console.error(`stickyfix init: unknown --browser "${rawBrowser}" (expected chrome or firefox)`);
+    process.exit(1);
+  }
+  const isFirefox = browser === 'firefox';
+
+  // Resolve the extension identity.
+  //  - chrome:  default to the stable derived extension ID (pinned by the
+  //             manifest `key` in wxt.config.ts). Override via --extension-id
+  //             after a CWS publish that uses a different key.
+  //  - firefox: default to the gecko add-on id (matches
+  //             browser_specific_settings.gecko.id). --extension-id may pass a
+  //             custom gecko id string.
   const extensionId: string =
-    rawExtId && typeof rawExtId === 'string' ? rawExtId : STABLE_EXTENSION_ID;
+    rawExtId && typeof rawExtId === 'string'
+      ? rawExtId
+      : isFirefox
+        ? DEFAULT_GECKO_ID
+        : STABLE_EXTENSION_ID;
 
   const port: number | undefined = rawPort ? parseInt(rawPort as string, 10) : undefined;
 
@@ -80,7 +102,7 @@ if (subcommand === 'init') {
   const hostBinPath = resolve(join(__dirname, 'stickyfix-native.cjs'));
 
   try {
-    registerNativeHost({ extensionId, hostBinPath });
+    registerNativeHost({ extensionId, hostBinPath, browser });
   } catch (err) {
     console.error('stickyfix init: failed to register native host:', String(err));
     process.exit(1);
@@ -96,12 +118,25 @@ if (subcommand === 'init') {
   // icon), so prefer the multi-size stickyfix.ico there; elsewhere the .desktop
   // Icon= takes the 128px PNG.
   const projectRoot = resolve(join(__dirname, '..', '..'));
+
+  // Resolve the WXT output directory for the target browser. WXT can emit
+  // firefox as MV2 or MV3 depending on config, so probe both names and fall back
+  // to the first that exists (else firefox-mv3 for the load instructions).
+  const firefoxOutputCandidates = [
+    join(projectRoot, '.output', 'firefox-mv2'),
+    join(projectRoot, '.output', 'firefox-mv3'),
+  ];
+  const chromeOutputDir = join(projectRoot, '.output', 'chrome-mv3');
+  const browserOutputDir = isFirefox
+    ? (firefoxOutputCandidates.find((d) => existsSync(d)) ?? firefoxOutputCandidates[1])
+    : chromeOutputDir;
+
   const icoCandidates = [
     join(projectRoot, 'public', 'icon', 'stickyfix.ico'),
-    join(projectRoot, '.output', 'chrome-mv3', 'icon', 'stickyfix.ico'),
+    join(browserOutputDir, 'icon', 'stickyfix.ico'),
   ];
   const pngCandidates = [
-    join(projectRoot, '.output', 'chrome-mv3', 'icon', '128.png'),
+    join(browserOutputDir, 'icon', '128.png'),
     join(projectRoot, 'public', 'icon', '128.png'),
     join(projectRoot, 'assets', 'icon', '128.png'),
   ];
@@ -143,9 +178,15 @@ if (subcommand === 'init') {
   console.log('');
   console.log('--- Next steps (no terminal required after these) ---');
   console.log('');
-  console.log('  1. Load the extension (unpacked):');
-  console.log('       chrome://extensions  →  Developer mode ON  →  Load unpacked');
-  console.log('       Folder: ' + resolve(join(projectRoot, '.output', 'chrome-mv3')));
+  if (isFirefox) {
+    console.log('  1. Load the extension (temporary add-on):');
+    console.log('       about:debugging#/runtime/this-firefox  →  Load Temporary Add-on…');
+    console.log('       Pick: ' + resolve(join(browserOutputDir, 'manifest.json')));
+  } else {
+    console.log('  1. Load the extension (unpacked):');
+    console.log('       chrome://extensions  →  Developer mode ON  →  Load unpacked');
+    console.log('       Folder: ' + resolve(browserOutputDir));
+  }
   console.log('');
   console.log('  2. Start the backend — double-click the desktop launcher:');
 
@@ -182,8 +223,13 @@ if (subcommand === 'init') {
 // ---------------------------------------------------------------------------
 
 } else if (subcommand === 'uninstall') {
+  const rawBrowser = values['browser'];
+  const browser: TargetBrowser =
+    typeof rawBrowser === 'string' && rawBrowser.toLowerCase() === 'firefox'
+      ? 'firefox'
+      : 'chrome';
   try {
-    unregisterNativeHost({});
+    unregisterNativeHost({ browser });
   } catch (err) {
     console.error('stickyfix uninstall: error removing native-host manifest:', String(err));
     // Continue to remove config file even if manifest removal failed
@@ -201,7 +247,7 @@ if (subcommand === 'init') {
 // ---------------------------------------------------------------------------
 
 } else {
-  console.error('Usage: npx stickyfix <init|uninstall> [--root <dir>] [--extension-id <id>] [--port <port>]');
+  console.error('Usage: npx stickyfix <init|uninstall> [--root <dir>] [--browser <chrome|firefox>] [--extension-id <id>] [--port <port>]');
   console.error('');
   console.error('  init        Register the native host and write config');
   console.error('  uninstall   Remove the native host manifest, launchers, and config');
