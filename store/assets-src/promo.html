@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+html, body {
+  width: 440px;
+  height: 280px;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+body {
+  background: linear-gradient(135deg, #5B57E6, #7C3AED);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+.wordmark {
+  color: #ffffff;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.tagline {
+  color: rgba(255,255,255,0.85);
+  font-size: 14px;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+<svg width="64" height="64" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="0" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5B57E6"/>
+      <stop offset="1" stop-color="#7C3AED"/>
+    </linearGradient>
+    <linearGradient id="note2" x1="0" y1="0" x2="0" y2="252" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FDE047"/>
+      <stop offset="1" stop-color="#FACC15"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg2)"/>
+  <g transform="translate(146 168) rotate(-7 118 126)">
+    <path d="M0,28 Q0,8 20,8 L176,8 L236,68 L236,236 Q236,256 216,256 L20,256 Q0,256 0,236 Z" fill="#000000" opacity="0.20" transform="translate(8 14)"/>
+    <path d="M0,20 Q0,0 20,0 L176,0 L236,60 L236,232 Q236,252 216,252 L20,252 Q0,252 0,232 Z" fill="url(#note2)"/>
+    <path d="M176,0 L236,60 L188,60 Q176,60 176,48 Z" fill="#EAB308"/>
+    <g fill="#92400E" opacity="0.55">
+      <rect x="34" y="92" width="150" height="16" rx="8"/>
+      <rect x="34" y="128" width="168" height="16" rx="8"/>
+      <rect x="34" y="164" width="104" height="16" rx="8"/>
+    </g>
+  </g>
+  <g>
+    <path d="M296,156 A52,52 0 1 1 400,156 Q400,229 348,290 Q296,229 296,156 Z" fill="#000000" opacity="0.20" transform="translate(7 12)"/>
+    <path d="M296,156 A52,52 0 1 1 400,156 Q400,229 348,290 Q296,229 296,156 Z" fill="#F43F5E"/>
+    <path d="M315,140 A33,33 0 0 1 360,118" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="10" stroke-linecap="round" fill="none"/>
+    <circle cx="348" cy="156" r="22" fill="#FFFFFF"/>
+  </g>
+</svg>
+<div class="wordmark">stickyfix</div>
+<div class="tagline">Pin notes on any page — your AI reads them.</div>
+</body>
+</html>

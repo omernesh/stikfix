@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1280">
+<style>
+html, body {
+  width: 1280px;
+  height: 800px;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Caption bar */
+.caption-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: linear-gradient(135deg, #5B57E6, #7C3AED);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 9999;
+  letter-spacing: 0.01em;
+}
+
+/* Left half: web page */
+.left-half {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 640px;
+  height: 800px;
+  background: #f8fafc;
+  overflow: hidden;
+}
+
+/* Divider */
+.divider {
+  position: absolute;
+  top: 0;
+  left: 640px;
+  width: 1px;
+  height: 800px;
+  background: #334155;
+  z-index: 100;
+}
+
+/* Right half: code editor */
+.right-half {
+  position: absolute;
+  top: 0;
+  left: 641px;
+  width: 639px;
+  height: 800px;
+  background: #1e1e2e;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Navbar inside left half */
+.navbar {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 24px;
+  box-sizing: border-box;
+}
+.navbar-logo {
+  font-size: 17px;
+  font-weight: 700;
+  color: #7C3AED;
+  flex-shrink: 0;
+}
+.navbar-links {
+  display: flex;
+  gap: 2px;
+}
+.navbar-links a {
+  text-decoration: none;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+.navbar-links a.active {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+.navbar-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7C3AED, #5B57E6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+/* Sidebar in left half */
+.sidebar {
+  position: absolute;
+  top: 96px;
+  left: 0;
+  width: 180px;
+  bottom: 0;
+  background: #ffffff;
+  border-right: 1px solid #e2e8f0;
+  padding: 12px 0;
+}
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.sidebar-item.active {
+  background: #ede9fe;
+  color: #7C3AED;
+}
+
+/* Main content in left half */
+.main-content {
+  position: absolute;
+  top: 96px;
+  left: 180px;
+  right: 0;
+  bottom: 0;
+  padding: 20px;
+  background: #f8fafc;
+  box-sizing: border-box;
+}
+.page-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 16px 0;
+}
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.stat-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+.stat-label {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+.stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+.mini-table {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.mini-table-header {
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+.mini-row {
+  display: flex;
+  padding: 8px 16px;
+  font-size: 12px;
+  color: #374151;
+  border-bottom: 1px solid #f1f5f9;
+  gap: 8px;
+}
+.mini-row:last-child { border-bottom: none; }
+.mini-email { flex: 1; color: #374151; }
+.mini-badge {
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+}
+.badge-green { background: #dcfce7; color: #15803d; }
+.badge-blue { background: #dbeafe; color: #1d4ed8; }
+.badge-yellow { background: #fef9c3; color: #a16207; }
+
+/* Pins */
+.sfx-pin {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px 4px 4px 0;
+  border: 2px solid #9ca3af;
+  background: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  z-index: 2;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.20);
+  font-size: 14px;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+.sfx-pin.sfx-pin-free {
+  background: #fde68a;
+  border-color: #f59e0b;
+}
+.sfx-pin.sfx-pin-element {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+.sfx-pin-dot {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #dc2626;
+  border: 1.5px solid #ffffff;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+/* StickyFix chip */
+#sfx-chip {
+  pointer-events: auto;
+  position: absolute;
+  top: 56px;
+  right: 16px;
+  z-index: 5;
+  background: #ffffff;
+  border: 1px solid #cccccc;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  line-height: 1;
+  color: #111111;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  cursor: default;
+  user-select: none;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.sfx-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  flex-shrink: 0;
+}
+.sfx-chip-label {
+  font-size: 13px;
+  color: #111111;
+}
+.sfx-chip-btn {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  padding: 3px 8px;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  background: #f0f0f0;
+  color: #111111;
+  cursor: pointer;
+  line-height: 1;
+}
+
+/* Editor tab bar */
+.editor-tabs {
+  display: flex;
+  align-items: center;
+  background: #181825;
+  border-bottom: 1px solid #313244;
+  padding: 0;
+  height: 36px;
+  flex-shrink: 0;
+  margin-top: 40px;
+}
+.editor-tab {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  height: 100%;
+  font-size: 12px;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #6c7086;
+  gap: 6px;
+  border-right: 1px solid #313244;
+}
+.editor-tab.active {
+  background: #2d2d3f;
+  color: #cdd6f4;
+  border-bottom: 2px solid #7C3AED;
+}
+.tab-icon {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  background: #89dceb;
+  flex-shrink: 0;
+}
+
+/* Editor content */
+.editor-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  padding: 16px 0;
+}
+.line-numbers {
+  width: 48px;
+  flex-shrink: 0;
+  padding: 0 8px 0 16px;
+  text-align: right;
+  font-family: 'Consolas', 'Fira Code', 'Monaco', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #6c7086;
+  user-select: none;
+}
+.code-area {
+  flex: 1;
+  padding: 0 16px;
+  font-family: 'Consolas', 'Fira Code', 'Monaco', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  overflow: hidden;
+}
+.code-line {
+  display: block;
+  white-space: pre;
+  height: 22.4px;
+}
+/* Syntax colors */
+.c-delimiter { color: #6c7086; }
+.c-key { color: #89b4fa; }
+.c-val { color: #a6e3a1; }
+.c-url { color: #a6e3a1; }
+.c-body { color: #cdd6f4; }
+.c-comment { color: #6c7086; }
+.c-colon { color: #cdd6f4; }
+</style>
+</head>
+<body>
+
+<!-- Caption bar -->
+<div class="caption-bar">Every note is written as a markdown file your AI agent can read.</div>
+
+<!-- LEFT HALF: FlowSync dashboard -->
+<div class="left-half">
+
+  <!-- Navbar -->
+  <div class="navbar">
+    <div class="navbar-logo">FlowSync</div>
+    <nav class="navbar-links">
+      <a href="#" class="active">Dashboard</a>
+      <a href="#">Projects</a>
+      <a href="#">Analytics</a>
+      <a href="#">Team</a>
+    </nav>
+    <div class="navbar-avatar">JD</div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-item active">Overview</div>
+    <div class="sidebar-item">Tasks</div>
+    <div class="sidebar-item">Reports</div>
+    <div class="sidebar-item">Settings</div>
+    <div class="sidebar-item">Help</div>
+  </div>
+
+  <!-- Main content -->
+  <div class="main-content">
+    <h1 class="page-title">Dashboard</h1>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">Revenue (MTD)</div>
+        <div class="stat-value">$84.2K</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Active Users</div>
+        <div class="stat-value">2,847</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Conversion</div>
+        <div class="stat-value">3.4%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Churn Rate</div>
+        <div class="stat-value">1.2%</div>
+      </div>
+    </div>
+    <div class="mini-table">
+      <div class="mini-table-header">Recent Activity</div>
+      <div class="mini-row"><span class="mini-email">sarah@acme.com</span><span class="mini-badge badge-green">Success</span></div>
+      <div class="mini-row"><span class="mini-email">mike@startup.io</span><span class="mini-badge badge-blue">Active</span></div>
+      <div class="mini-row"><span class="mini-email">priya@corp.com</span><span class="mini-badge badge-yellow">Pending</span></div>
+    </div>
+  </div>
+
+  <!-- Pins -->
+  <div class="sfx-pin sfx-pin-free" style="left:180px;top:260px;">
+    📌
+    <span class="sfx-pin-dot"></span>
+  </div>
+  <div class="sfx-pin sfx-pin-element" style="left:420px;top:350px;">
+    📌
+    <span class="sfx-pin-dot"></span>
+  </div>
+
+  <!-- Chip -->
+  <div id="sfx-chip">
+    <span class="sfx-status-dot"></span>
+    <span class="sfx-chip-label">myapp / dashboard</span>
+    <button class="sfx-chip-btn">Review</button>
+  </div>
+
+</div>
+
+<!-- Divider -->
+<div class="divider"></div>
+
+<!-- RIGHT HALF: Code editor -->
+<div class="right-half">
+  <!-- Tab bar -->
+  <div class="editor-tabs">
+    <div class="editor-tab active">
+      <div class="tab-icon"></div>
+      note-0003.md
+    </div>
+    <div class="editor-tab" style="color:#4a4a6a;">
+      note-0001.md
+    </div>
+  </div>
+
+  <!-- Code content -->
+  <div class="editor-content">
+    <div class="line-numbers">
+      <div>1</div>
+      <div>2</div>
+      <div>3</div>
+      <div>4</div>
+      <div>5</div>
+      <div>6</div>
+      <div>7</div>
+      <div>8</div>
+      <div>9</div>
+      <div>10</div>
+      <div>11</div>
+    </div>
+    <div class="code-area">
+      <span class="code-line"><span class="c-delimiter">---</span></span>
+      <span class="code-line"><span class="c-key">id</span><span class="c-colon">: </span><span class="c-val">note-0003</span></span>
+      <span class="code-line"><span class="c-key">url</span><span class="c-colon">: </span><span class="c-url">http://localhost:3000/dashboard</span></span>
+      <span class="code-line"><span class="c-key">selector</span><span class="c-colon">: </span><span class="c-val">button.cta-primary</span></span>
+      <span class="code-line"><span class="c-key">status</span><span class="c-colon">: </span><span class="c-val">unread</span></span>
+      <span class="code-line"><span class="c-key">screenshot</span><span class="c-colon">: </span><span class="c-val">screenshots/note-0003.png</span></span>
+      <span class="code-line"><span class="c-delimiter">---</span></span>
+      <span class="code-line"> </span>
+      <span class="code-line"><span class="c-body">The CTA button contrast fails WCAG AA — bump to #1558b0</span></span>
+      <span class="code-line"> </span>
+      <span class="code-line"> </span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

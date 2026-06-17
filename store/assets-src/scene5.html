@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1280">
+<style>
+html, body {
+  width: 1280px;
+  height: 800px;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Caption bar */
+.caption-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: linear-gradient(135deg, #5B57E6, #7C3AED);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 9999;
+  letter-spacing: 0.01em;
+}
+
+/* Navbar */
+.navbar {
+  position: fixed;
+  top: 40px;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 32px;
+  z-index: 10;
+  box-sizing: border-box;
+}
+.navbar-logo {
+  font-size: 18px;
+  font-weight: 700;
+  color: #7C3AED;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
+.navbar-links {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+.navbar-links a {
+  text-decoration: none;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+}
+.navbar-links a.active {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+.navbar-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7C3AED, #5B57E6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* Sidebar */
+.sidebar {
+  position: fixed;
+  top: 96px;
+  left: 0;
+  width: 200px;
+  bottom: 0;
+  background: #ffffff;
+  border-right: 1px solid #e2e8f0;
+  padding: 16px 0;
+  box-sizing: border-box;
+  z-index: 9;
+}
+.sidebar-section {
+  padding: 0 12px;
+}
+.sidebar-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0 8px;
+  margin-bottom: 6px;
+  margin-top: 12px;
+}
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-bottom: 2px;
+}
+.sidebar-item.active {
+  background: #ede9fe;
+  color: #7C3AED;
+}
+
+/* Main content */
+.main {
+  margin-left: 200px;
+  margin-top: 96px;
+  padding: 24px;
+  background: #f8fafc;
+  min-height: calc(800px - 96px);
+  box-sizing: border-box;
+}
+
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 4px 0;
+}
+.page-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 24px 0;
+}
+
+.stat-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 18px 20px;
+}
+.stat-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+.stat-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+.stat-change { font-size: 12px; font-weight: 500; }
+.stat-change.up { color: #16a34a; }
+.stat-change.down { color: #dc2626; }
+
+.table-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.table-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.table-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 10px 20px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+td {
+  padding: 12px 20px;
+  font-size: 13px;
+  color: #374151;
+  border-bottom: 1px solid #f1f5f9;
+}
+tr:last-child td { border-bottom: none; }
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.badge-green { background: #dcfce7; color: #15803d; }
+.badge-blue { background: #dbeafe; color: #1d4ed8; }
+.badge-yellow { background: #fef9c3; color: #a16207; }
+.badge-red { background: #fee2e2; color: #dc2626; }
+
+/* StickyFix chip */
+#sfx-chip {
+  pointer-events: auto;
+  position: fixed;
+  top: 56px;
+  right: 16px;
+  z-index: 5;
+  background: #ffffff;
+  border: 1px solid #cccccc;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  line-height: 1;
+  color: #111111;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  cursor: default;
+  user-select: none;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 400px;
+  white-space: nowrap;
+}
+.sfx-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  flex-shrink: 0;
+}
+.sfx-chip-label {
+  font-size: 13px;
+  color: #111111;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+.sfx-chip-btn {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  padding: 3px 8px;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  background: #f0f0f0;
+  color: #111111;
+  cursor: pointer;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* FAB */
+#sfx-fab {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  z-index: 4;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #cccccc;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  pointer-events: auto;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 20px;
+}
+
+/* Toast */
+.sfx-toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 320px;
+  border-radius: 6px;
+  border: 1px solid #cccccc;
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.20);
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  color: #111111;
+}
+.sfx-toast-stripe {
+  width: 4px;
+  flex-shrink: 0;
+  background: #16a34a;
+}
+.sfx-toast-body {
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+.sfx-toast-icon {
+  font-size: 14px;
+  color: #16a34a;
+  flex-shrink: 0;
+}
+.sfx-toast-msg {
+  font-size: 13px;
+  color: #111111;
+  word-break: break-word;
+}
+.sfx-toast-dismiss {
+  padding: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #666666;
+  flex-shrink: 0;
+  align-self: center;
+}
+</style>
+</head>
+<body>
+
+<!-- Caption bar -->
+<div class="caption-bar">Drop a note. It lands in the right project folder. Never lost.</div>
+
+<!-- Navbar -->
+<div class="navbar">
+  <div class="navbar-logo">FlowSync</div>
+  <nav class="navbar-links">
+    <a href="#" class="active">Dashboard</a>
+    <a href="#">Projects</a>
+    <a href="#">Analytics</a>
+    <a href="#">Team</a>
+  </nav>
+  <div class="navbar-avatar">JD</div>
+</div>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="sidebar-label" style="padding:0 20px;">Main</div>
+  <div class="sidebar-section">
+    <div class="sidebar-item active">Overview</div>
+    <div class="sidebar-item">Tasks</div>
+    <div class="sidebar-item">Reports</div>
+  </div>
+  <div class="sidebar-label" style="padding:0 20px;">Account</div>
+  <div class="sidebar-section">
+    <div class="sidebar-item">Settings</div>
+    <div class="sidebar-item">Help</div>
+  </div>
+</div>
+
+<!-- Main content -->
+<div class="main">
+  <h1 class="page-title">Dashboard</h1>
+  <p class="page-subtitle">Welcome back, James. Here's what's happening today.</p>
+
+  <div class="stat-cards">
+    <div class="stat-card">
+      <div class="stat-label">Revenue (MTD)</div>
+      <div class="stat-value">$84.2K</div>
+      <div class="stat-change up">↑ 12.4% vs last month</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Active Users</div>
+      <div class="stat-value">2,847</div>
+      <div class="stat-change up">↑ 8.1% vs last month</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Conversion</div>
+      <div class="stat-value">3.4%</div>
+      <div class="stat-change down">↓ 0.2% vs last month</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Churn Rate</div>
+      <div class="stat-value">1.2%</div>
+      <div class="stat-change up">↓ 0.3% vs last month</div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-header-row">
+      <div class="table-title">Recent Activity</div>
+      <button style="padding:6px 12px;border:1px solid #e2e8f0;border-radius:6px;background:#fff;font-size:12px;color:#64748b;cursor:pointer;">Export</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Event</th>
+          <th>Plan</th>
+          <th>Status</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>sarah@acme.com</td>
+          <td>Subscription renewed</td>
+          <td>Pro</td>
+          <td><span class="badge badge-green">Success</span></td>
+          <td>Jun 17, 2026</td>
+        </tr>
+        <tr>
+          <td>mike@startup.io</td>
+          <td>Trial started</td>
+          <td>Free</td>
+          <td><span class="badge badge-blue">Active</span></td>
+          <td>Jun 17, 2026</td>
+        </tr>
+        <tr>
+          <td>priya@corp.com</td>
+          <td>Upgrade initiated</td>
+          <td>Business</td>
+          <td><span class="badge badge-yellow">Pending</span></td>
+          <td>Jun 16, 2026</td>
+        </tr>
+        <tr>
+          <td>alex@agency.co</td>
+          <td>Payment failed</td>
+          <td>Pro</td>
+          <td><span class="badge badge-red">Failed</span></td>
+          <td>Jun 16, 2026</td>
+        </tr>
+        <tr>
+          <td>lin@design.com</td>
+          <td>Cancelled subscription</td>
+          <td>Pro</td>
+          <td><span class="badge badge-red">Churned</span></td>
+          <td>Jun 15, 2026</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- StickyFix chip -->
+<div id="sfx-chip">
+  <span class="sfx-status-dot"></span>
+  <span class="sfx-chip-label">/myapp · dashboard</span>
+  <button class="sfx-chip-btn">Review</button>
+</div>
+
+<!-- FAB -->
+<div id="sfx-fab">📝</div>
+
+<!-- Toast -->
+<div class="sfx-toast">
+  <div class="sfx-toast-stripe"></div>
+  <div class="sfx-toast-body">
+    <span class="sfx-toast-icon">✓</span>
+    <span class="sfx-toast-msg">Note saved → notes/note-0007.md</span>
+  </div>
+  <button class="sfx-toast-dismiss">×</button>
+</div>
+
+</body>
+</html>
