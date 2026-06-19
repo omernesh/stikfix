@@ -38,7 +38,7 @@ tech_stack:
     - sfxOriginMap value disambiguation by absolute-path shape (isFolderValue) so origin→host and origin→folder coexist without corruption
     - SW routing precedence: origin→folder (paired host + targetDir) ▸ origin→host (no targetDir) ▸ needs-folder
     - single auto-retry after a successful folder pick (allowRetry flag prevents dialog loops)
-    - origin-from-tab + X-Stickyfix-Token attachment preserved on every targetDir request (anti-spoof + no new unauthenticated surface)
+    - origin-from-tab + X-Stikfix-Token attachment preserved on every targetDir request (anti-spoof + no new unauthenticated surface)
     - reliability: cancelled/failed folder pick surfaces a visible chip toast — note never silently dropped (REL-01)
 key_files:
   created:
@@ -98,7 +98,7 @@ Refactored `wireSendButton` into a reusable `sendOnce(payload, allowRetry)`: a `
 
 - **T-09-14b (Tampering):** every targetDir is re-validated server-side on every request via the shared `validateChosenFolder`; writes confined to `<validated>/notes`; invalid/system targetDir → 400, never a write outside.
 - **T-09-15 (Spoofing):** origin is still derived from `chrome.tabs.get` in the SW, never from the message body.
-- **T-08-tokengate (Info disclosure):** every targetDir request still requires `X-Stickyfix-Token`; no new unauthenticated surface.
+- **T-08-tokengate (Info disclosure):** every targetDir request still requires `X-Stikfix-Token`; no new unauthenticated surface.
 - **REL-01 (Reliability):** a cancelled folder dialog surfaces a visible chip toast and never silently drops the note.
 - **Back-compat:** absent targetDir → `cfg.notesDir` byte-for-byte unchanged; existing origin→host routing untouched; `server.test.ts` and `native-host.test.ts` regression cases pass.
 
@@ -124,7 +124,7 @@ Both deviations are correctness-required to satisfy the plan's own must-haves an
 
 ## Known Stubs
 
-None. The Send payload remains the existing "stickyfix relay proof" free-note stub from earlier plans (unchanged by this plan); wiring real note content is outside D-04 gap-closure scope and is handled by the note-authoring plans.
+None. The Send payload remains the existing "stikfix relay proof" free-note stub from earlier plans (unchanged by this plan); wiring real note content is outside D-04 gap-closure scope and is handled by the note-authoring plans.
 
 ## Commits
 
@@ -141,7 +141,7 @@ _None — all tasks verified._
 - First note on unmapped origin → OS folder dialog → note `.md` landed in chosen folder (`D:\docker\sfx-d04-test\notes`). ✅
 - Second note on same origin → no dialog, silent reuse. ✅
 - Cancel dialog → visible toast "No folder chosen — note not saved", nothing written. ✅ (Check A)
-- Regression: origin mapped to host via dropdown wrote to `--root` (`D:\docker\stickyfix-uat\notes`, note `0022`) with no dialog. ✅ (Check B)
+- Regression: origin mapped to host via dropdown wrote to `--root` (`D:\docker\stikfix-uat\notes`, note `0022`) with no dialog. ✅ (Check B)
 
 ### Post-UAT fixes folded in (commits `f6355ef`, `8cbae0c`)
 - `f6355ef` — D-04 end-to-end fix-pass: PICK_FOLDER wire-type mismatch (dialog never opened), single-host auto-select swallowed unmapped origins, stale `<select>` left after pick (chip looked stuck on "select project"), card free/element needs-folder handling, win32 frontmost dialog, native `.bat`/`.sh` wrapper + VBS launcher, injectable `execReg` (no HKCU clobber in tests).

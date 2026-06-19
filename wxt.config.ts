@@ -2,16 +2,16 @@ import { defineConfig } from 'wxt';
 
 // Firefox add-on identity (FUT-01 → shipped). Must match the native-messaging
 // manifest's `allowed_extensions` entry (host/src/bootstrap/register.ts) and the
-// gecko id the bootstrapper registers (bin/stickyfix.ts --browser firefox).
-const GECKO_ID = 'stickyfix@stickyfix.dev';
+// gecko id the bootstrapper registers (bin/stikfix.ts --browser firefox).
+const GECKO_ID = 'stikfix@stikfix.com';
 
 export default defineConfig({
-  // WXT 0.20 defaults the firefox target to MV2. stickyfix is MV3-only by spec
+  // WXT 0.20 defaults the firefox target to MV2. stikfix is MV3-only by spec
   // (Chrome MV3 service worker, scripting/permissions APIs), so pin MV3 for all
   // targets — Firefox 109+ supports MV3 background scripts + browser_specific_settings.
   manifestVersion: 3,
   manifest: ({ browser }) => ({
-    name: 'stickyfix',
+    name: 'stikfix',
     description: 'Pin sticky notes on any page — your AI reads them.',
     version: '1.1.1',
     icons: {
@@ -30,7 +30,7 @@ export default defineConfig({
     //
     // Stable extension ID (Phase 9 enhancement): base64 SPKI/DER public key.
     // Generated with Node crypto.generateKeyPairSync('rsa',{modulusLength:2048}).
-    // Private key is in .keys/stickyfix-extension.pem (gitignored — needed only for CWS publish).
+    // Private key is in .keys/stikfix-extension.pem (gitignored — needed only for CWS publish).
     // Derived extension ID: ccdfmbhdcafhmnnnfjpbhgebfkfgjgca
     // To re-derive: sha256(DER-public-key-bytes)[0..15] → hex → map 0-9a-f to a-p
     ...(browser === 'firefox'

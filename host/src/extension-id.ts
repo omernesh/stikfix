@@ -19,7 +19,7 @@ import { createHash } from 'node:crypto';
 /**
  * The stable extension ID derived from the committed public key in wxt.config.ts.
  * Generated during Phase 9 bootstrapping (2026-06-05).
- * Private key is at .keys/stickyfix-extension.pem (gitignored).
+ * Private key is at .keys/stikfix-extension.pem (gitignored).
  *
  * If you regenerate the keypair, update wxt.config.ts `key` field AND this constant.
  */

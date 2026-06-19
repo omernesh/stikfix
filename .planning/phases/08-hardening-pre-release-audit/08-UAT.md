@@ -5,7 +5,7 @@ silent drop), verify the D-05 SW-idle-eviction + multi-note regression, manually
 the D-04 over-12-MB pre-flight toast, and spot-check D-02a rapid multi-Send serial
 integrity. This runbook covers the runtime confirmations that cannot be gated by node:test.
 
-**Who runs this:** Omer (or any developer with Chrome + a running stickyfix host).
+**Who runs this:** Omer (or any developer with Chrome + a running stikfix host).
 
 **Time estimate:** 15–25 minutes.
 
@@ -55,7 +55,7 @@ The host listens on `127.0.0.1:39240` by default and prints the bound port on st
 
 ### 3. Configure the extension
 
-Open the extension popup (click the stickyfix icon in the Chrome toolbar).
+Open the extension popup (click the stikfix icon in the Chrome toolbar).
 Add a host entry pointing at `http://127.0.0.1:39240` with token `my-uat-token`.
 Map your test origin (e.g. `http://localhost:3000`) to this host.
 
@@ -159,7 +159,7 @@ deterministic.
 **Method A (deterministic — recommended):**
 
 1. Open `chrome://extensions`.
-2. Find the stickyfix extension entry.
+2. Find the stikfix extension entry.
 3. Click "service worker" link to open the SW devtools pane.
 4. Click **Stop** to terminate the SW.
 5. Immediately switch back to the review page and click **Send** on an open note.

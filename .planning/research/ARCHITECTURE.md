@@ -45,7 +45,7 @@
              │ (127.0.0.1 only)
              ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│  stickyfix-host (Node HTTP server, per project)                         │
+│  stikfix-host (Node HTTP server, per project)                         │
 │                                                                         │
 │  port: first free in 39240..39260                                       │
 │  GET /status  → { app, name, origins, notesDir, version }              │
@@ -78,7 +78,7 @@
 | **Service Worker** (`background.ts`) | Host discovery (port scan 39240-39260), origin-to-host routing, `chrome.storage.local` R/W, HTTP client for all `fetch()` to localhost, tab event listeners | Only context that can make cross-origin fetch to 127.0.0.1 without CORS restriction (has host_permissions; service worker origin bypasses CORS) |
 | **Content Script** (`review.content/`) | UI rendering inside Shadow DOM, user interaction (drag, pick, type), screenshot capture (`chrome.tabs.captureVisibleTab` via SW relay), canvas crop, message relay to SW | Never fetches to localhost directly — sends structured messages to SW |
 | **Popup** (`popup/`) | Token entry per host, host list display, Review Mode toggle, one-time origin→project picker | UI only; reads/writes storage via `chrome.storage.local` or delegates to SW |
-| **stickyfix-host** | HTTP server on 127.0.0.1, token validation, serial assignment (in-process mutex), `.md` write, `.png` write, path safety, CORS headers | Writes only inside `--root/notes/`; no outbound network; single Node process per project |
+| **stikfix-host** | HTTP server on 127.0.0.1, token validation, serial assignment (in-process mutex), `.md` write, `.png` write, path safety, CORS headers | Writes only inside `--root/notes/`; no outbound network; single Node process per project |
 | **review-notes skill** | Glob `notes/*.md`, exclude `*.read.md`, sort by serial, process each, rename to `*.read.md` | Read-only agent skill shipped in repo; runs in the consuming project's AI session |
 
 ---
@@ -93,14 +93,14 @@ Chrome content scripts are subject to the same-origin policy of the *injected pa
 
 **Option A (recommended — used by upstream GPL project):** Route all localhost fetches through the **service worker**. The content script sends a `chrome.runtime.sendMessage` to the SW with the annotation payload; the SW does the `fetch()` to `http://127.0.0.1:<port>/annotation`. The SW has the extension's origin (not the page's), so `host_permissions` grants it unrestricted access to localhost. No CORS headers needed on the host for this path. This is architecturally cleaner — the SW is the single HTTP client.
 
-**Option B (also works, but adds complexity):** The host echoes the request `Origin` in `Access-Control-Allow-Origin` and allows `X-Stickyfix-Token`. The content script sets the token header and posts directly. This requires the host to correctly handle OPTIONS preflights and works only if the request origin is the page's origin. The PRD specifies this in §8.4, suggesting it as the CORS model. This works but adds a second code path and couples the host's CORS to arbitrary page origins.
+**Option B (also works, but adds complexity):** The host echoes the request `Origin` in `Access-Control-Allow-Origin` and allows `X-Stikfix-Token`. The content script sets the token header and posts directly. This requires the host to correctly handle OPTIONS preflights and works only if the request origin is the page's origin. The PRD specifies this in §8.4, suggesting it as the CORS model. This works but adds a second code path and couples the host's CORS to arbitrary page origins.
 
-**Recommendation: Use Option A (SW relay) as the primary path.** Keep the host's CORS permissive (echo origin, allow X-Stickyfix-Token) as fallback and for any future direct-fetch paths. The PRD's `host_permissions: ["http://127.0.0.1/*"]` on the SW is already correct for this.
+**Recommendation: Use Option A (SW relay) as the primary path.** Keep the host's CORS permissive (echo origin, allow X-Stikfix-Token) as fallback and for any future direct-fetch paths. The PRD's `host_permissions: ["http://127.0.0.1/*"]` on the SW is already correct for this.
 
 **Impact on message flow:**
 ```
 [Content Script] → chrome.runtime.sendMessage({type:"POST_ANNOTATION", payload}) →
-[Service Worker] → fetch("http://127.0.0.1:<port>/annotation", {headers:{X-Stickyfix-Token}}) →
+[Service Worker] → fetch("http://127.0.0.1:<port>/annotation", {headers:{X-Stikfix-Token}}) →
 [Host]          → write .md → return {ok, file, serial} →
 [Service Worker] → chrome.tabs.sendMessage(tabId, {type:"ANNOTATION_RESULT", ...}) →
 [Content Script] → show toast
@@ -120,7 +120,7 @@ Service Worker wakes on "enter review mode" message from popup/content-script
 Probe ports 39240..39260 in parallel:
   GET http://127.0.0.1:<port>/status  (no token, discovery handshake)
     ↓
-Collect all {app:"stickyfix", name, origins, notesDir} responses
+Collect all {app:"stikfix", name, origins, notesDir} responses
     ↓
 Merge into hostRegistry:
   { [name]: { port, origins:[], token:string|null, notesDir } }
@@ -134,8 +134,8 @@ Persist to chrome.storage.local (survives SW recycle)
 Active tab origin (scheme://host:port) →
   (1) hostRegistry: any host with origins[] including this origin? → use it
   (2) chrome.storage.local originMap: persisted origin→hostName mapping? → use it
-  (3) Page self-id: content script reads <meta name="stickyfix-project"> or
-      window.__stickyfix_project → matches hostRegistry[name]? → use it
+  (3) Page self-id: content script reads <meta name="stikfix-project"> or
+      window.__stikfix_project → matches hostRegistry[name]? → use it
   (4) None: content script shows one-time dropdown of hostRegistry names →
       user picks → persist to originMap → done (never asked again for this origin)
 ```
@@ -146,7 +146,7 @@ When a host restarts on a new port, its `/status` still returns the same `name`.
 
 ### Same-Origin Collision
 
-If two projects both serve on `:3000`, the page self-id (`<meta>` or `window.__stickyfix_project`) takes priority over the origin map. Documented as optional, rarely needed.
+If two projects both serve on `:3000`, the page self-id (`<meta>` or `window.__stikfix_project`) takes priority over the origin map. Documented as optional, rarely needed.
 
 ---
 
@@ -184,11 +184,11 @@ v1: all writes go to fixed notesDir, no per-note subpath — no traversal surfac
 | Control | Implementation |
 |---------|---------------|
 | Bind address | `server.listen(port, "127.0.0.1")` — never `0.0.0.0` |
-| Token validation | `req.headers["x-stickyfix-token"] === storedToken` on POST; 401 on mismatch |
+| Token validation | `req.headers["x-stikfix-token"] === storedToken` on POST; 401 on mismatch |
 | Body size cap | Read up to 12 MB; reject with 413 if exceeded |
-| CORS | Echo `req.headers.origin` in `Access-Control-Allow-Origin`; allow `X-Stickyfix-Token` in ACAH |
+| CORS | Echo `req.headers.origin` in `Access-Control-Allow-Origin`; allow `X-Stikfix-Token` in ACAH |
 | No eval | Pure `fs`, `http`, `crypto`, `path` — no shelling out |
-| Token storage | Written to `<root>/.stickyfix-token` on startup (gitignored); printed to console |
+| Token storage | Written to `<root>/.stikfix-token` on startup (gitignored); printed to console |
 
 ---
 
@@ -208,7 +208,7 @@ v1: all writes go to fixed notesDir, no per-note subpath — no traversal surfac
    b. Content script: assemble payload {mode:"free", comment, page, viewport, screenshots:[...dataUrls]}
    c. chrome.runtime.sendMessage({type:"SEND_ANNOTATION", tabId, payload})
    d. SW: looks up resolved host for tab's origin (from storage)
-   e. SW: fetch POST http://127.0.0.1:<port>/annotation with X-Stickyfix-Token
+   e. SW: fetch POST http://127.0.0.1:<port>/annotation with X-Stikfix-Token
    f. Host: validate token, assign serial, write .md, write +N.png files
    g. Host: return {ok:true, file:"0003-20260531-143022.md", serial:3}
    h. SW: chrome.tabs.sendMessage(tabId, {type:"ANNOTATION_RESULT", ok, file})
@@ -237,7 +237,7 @@ v1: all writes go to fixed notesDir, no per-note subpath — no traversal surfac
       so the element outline IS visible in +1. Manual region crops happen AFTER
       hiding UI. Order matters:
         i.  auto-highlight shot: capture WITH highlight box shown → +1
-        ii. hide stickyfix UI
+        ii. hide stikfix UI
         iii. manual region crops are already dataUrls on the card
         iv. payload = [...manualCrops] prepended by element-highlight dataUrl
    b. Everything else same as free note from step 4c onward
@@ -258,7 +258,7 @@ All land in notesDir alongside the .md
 ## Recommended Project Structure
 
 ```
-stickyfix/
+stikfix/
 ├── package.json                         # workspace root: wxt + host scripts
 ├── wxt.config.ts                        # manifest, host_permissions, icon gen
 ├── tsconfig.json                        # base TS config
@@ -478,5 +478,5 @@ This is a single-developer local tool. "Scaling" means multi-project concurrency
 
 ---
 
-*Architecture research for: stickyfix (Chrome MV3 extension + localhost Node host)*
+*Architecture research for: stikfix (Chrome MV3 extension + localhost Node host)*
 *Researched: 2026-05-31*

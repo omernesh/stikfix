@@ -9,7 +9,7 @@ requires: []
 provides:
   - WXT vanilla-TypeScript MV3 extension scaffold buildable on Windows
   - package.json with pinned deps (wxt@0.20.26, typescript@6.0.3, @types/chrome@0.1.42, @types/node@25.9.1, yaml@2.9.0) and full scripts
-  - wxt.config.ts with manifest name=stickyfix, version=0.1.0, and icon map 16/32/48/128
+  - wxt.config.ts with manifest name=stikfix, version=0.1.0, and icon map 16/32/48/128
   - tsconfig.json extending .wxt/tsconfig.json with strict:true and types:["chrome"] for TS6
   - entrypoints/background.ts placeholder (defineBackground, type:module)
   - entrypoints/popup/index.html + main.ts with sfx-popup-root namespace
@@ -29,7 +29,7 @@ tech-stack:
     - "@types/node@25.9.1 (Node built-in types for host tsconfig)"
     - yaml@2.9.0 (YAML frontmatter serialization, host runtime dep)
   patterns:
-    - "sfx-* / stickyfix identifier namespace enforced from commit one"
+    - "sfx-* / stikfix identifier namespace enforced from commit one"
     - "Two-tsconfig split: tsconfig.json (extension, bundler) + tsconfig.host.json (host, NodeNext) — TS6 types:[] default requires explicit listing"
     - "Pre-sized committed PNGs instead of @wxt-dev/auto-icons/sharp — zero native binary CI risk"
     - "postinstall=wxt prepare wires .wxt/tsconfig.json generation into npm install"
@@ -70,7 +70,7 @@ completed: 2026-05-31
 
 # Phase 01 Plan 01: WXT MV3 Extension Scaffold Summary
 
-**WXT 0.20.26 vanilla-TypeScript MV3 extension scaffold on Windows — package.json with pinned deps and full scripts, manifest with stickyfix name + 4 icon sizes, placeholder background/popup entrypoints, and npx wxt build producing a loadable .output/chrome-mv3/ artifact with correct manifest.json**
+**WXT 0.20.26 vanilla-TypeScript MV3 extension scaffold on Windows — package.json with pinned deps and full scripts, manifest with stikfix name + 4 icon sizes, placeholder background/popup entrypoints, and npx wxt build producing a loadable .output/chrome-mv3/ artifact with correct manifest.json**
 
 ## Performance
 
@@ -98,11 +98,11 @@ completed: 2026-05-31
 
 ## Files Created/Modified
 
-- `package.json` — name=stickyfix, type=module, full scripts (dev/build/host/check/postinstall), pinned devDependencies and dependencies
+- `package.json` — name=stikfix, type=module, full scripts (dev/build/host/check/postinstall), pinned devDependencies and dependencies
 - `package-lock.json` — lockfile for reproducible installs
 - `wxt.config.ts` — WXT defineConfig: manifest name, description, version, icons map with leading-slash paths
 - `tsconfig.json` — extends .wxt/tsconfig.json, compilerOptions strict:true + types:["chrome"]
-- `entrypoints/background.ts` — defineBackground placeholder, type:module, logs stickyfix background loaded
+- `entrypoints/background.ts` — defineBackground placeholder, type:module, logs stikfix background loaded
 - `entrypoints/popup/index.html` — minimal HTML with div#sfx-popup-root and module script
 - `entrypoints/popup/main.ts` — queries #sfx-popup-root, sets placeholder textContent
 - `public/icon/16.png` — 16x16 solid-color RGB PNG (79 bytes)
@@ -124,7 +124,7 @@ completed: 2026-05-31
 **1. [Rule 3 - Blocking] Created entrypoints before npm install due to wxt prepare ordering**
 
 - **Found during:** Task 1 (Initialize package.json and install pinned Phase 1 dependencies)
-- **Issue:** `npm install` ran `wxt prepare` via postinstall hook, which requires `entrypoints/` directory to contain at least one entrypoint. With package.json written first and entrypoints not yet created, the postinstall failed: "No entrypoints found in D:\docker\stickyfix\entrypoints".
+- **Issue:** `npm install` ran `wxt prepare` via postinstall hook, which requires `entrypoints/` directory to contain at least one entrypoint. With package.json written first and entrypoints not yet created, the postinstall failed: "No entrypoints found in D:\docker\stikfix\entrypoints".
 - **Fix:** Created entrypoints/background.ts, entrypoints/popup/index.html, and entrypoints/popup/main.ts before the second `npm install` attempt. These files belong to Task 2 per the plan, but were moved earlier to unblock the install. They were included in the Task 1 commit (same logical unit).
 - **Files modified:** entrypoints/background.ts, entrypoints/popup/index.html, entrypoints/popup/main.ts
 - **Verification:** Second `npm install` succeeded; .wxt/tsconfig.json generated; wxt prepare ran in 240 ms.

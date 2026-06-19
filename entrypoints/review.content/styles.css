@@ -1,5 +1,5 @@
 /*
- * stickyfix connection chip — shadow-root scoped CSS
+ * stikfix connection chip — shadow-root scoped CSS
  *
  * Rules:
  *  - :host all:initial ensures zero inheritance from the host page (Pattern 9)

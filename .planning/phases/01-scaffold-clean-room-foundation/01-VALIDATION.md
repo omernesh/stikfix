@@ -41,7 +41,7 @@ created: 2026-05-31
 | 1-01-xx | 01 | 1 | BUILD-02 | — | N/A | build | `npx wxt build` (Task 3 verify; also via `npm run build`) + manifest icon assertion | ❌ W0 | ⬜ pending |
 | 1-01-xx | 01 | 1 | BUILD-03 | — | N/A | asset | grep manifest for `icon/16.png`..`icon/128.png`; files exist in `public/icon/` and `.output/chrome-mv3/icon/` | ❌ W0 | ⬜ pending |
 | 1-02-xx | 02 | 1 | BUILD-01 | — | N/A | build | `npm run build` exits 0 on Windows (no sips/Bun) | ❌ W0 | ⬜ pending |
-| 1-02-xx | 02 | 1 | BUILD-05 | — | N/A | smoke | host smoke test spawns stub, asserts `app==stickyfix`, exit 0 | ❌ W0 | ⬜ pending |
+| 1-02-xx | 02 | 1 | BUILD-05 | — | N/A | smoke | host smoke test spawns stub, asserts `app==stikfix`, exit 0 | ❌ W0 | ⬜ pending |
 | 1-03-xx | 03 | 2 | BUILD-04 | — | clean-room: zero GPL artifacts | grep-gate | clean-room script exits non-zero on `__opc_`/`opencode`/`JodusNodus` match (RED), exit 0 on clean tree (GREEN) | ❌ W0 | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky. Exact task IDs assigned by the planner.*

@@ -1,5 +1,5 @@
 /**
- * Thumbnail kind renumbering helper for stickyfix.
+ * Thumbnail kind renumbering helper for stikfix.
  *
  * renumberThumbnailKinds — pure, node:test-safe (no DOM/chrome at module level).
  *

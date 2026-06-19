@@ -6,7 +6,7 @@
  * - nativeManifestPath: per-OS path resolution
  * - buildManifest: required fields, absolute path, allowed_origins, bad-ID rejection
  * - writeManifest + unregisterNativeHost round-trip on tmpdir
- * - enumerateArtifacts: includes manifest + config + .stickyfix-port + launcher + (win32) reg keys
+ * - enumerateArtifacts: includes manifest + config + .stikfix-port + launcher + (win32) reg keys
  * - buildPickerArgs: no shell metacharacters, no interpolated user input
  * - deriveExtensionId: known-vector test (stable ID from committed public key)
  * - createLauncherFiles: writes launcher file with correct content on non-win32 plat
@@ -92,7 +92,7 @@ describe('nativeManifestPath — per-OS paths', () => {
       normalized.includes('Library/Application Support/Google/Chrome/NativeMessagingHosts'),
       `Expected macOS Chrome path, got: ${result}`
     );
-    assert.ok(result.endsWith('com.stickyfix.host.json'), `Expected .json suffix, got: ${result}`);
+    assert.ok(result.endsWith('com.stikfix.host.json'), `Expected .json suffix, got: ${result}`);
     // Normalize to forward slashes for cross-platform path comparison
     const normalizedResult = result.replace(/\\/g, '/');
     const normalizedHome = fakeHome.replace(/\\/g, '/');
@@ -106,17 +106,17 @@ describe('nativeManifestPath — per-OS paths', () => {
       normalized.includes('.config/google-chrome/NativeMessagingHosts'),
       `Expected Linux Chrome path, got: ${result}`
     );
-    assert.ok(result.endsWith('com.stickyfix.host.json'), `Expected .json suffix, got: ${result}`);
+    assert.ok(result.endsWith('com.stikfix.host.json'), `Expected .json suffix, got: ${result}`);
   });
 
-  test('win32: returns .local/share/stickyfix path', () => {
+  test('win32: returns .local/share/stikfix path', () => {
     const fakeWinHome = 'C:\\Users\\testuser';
     const result = nativeManifestPath('win32', fakeWinHome);
     assert.ok(
-      result.includes('.local') || result.includes('stickyfix'),
-      `Expected stickyfix data dir path, got: ${result}`
+      result.includes('.local') || result.includes('stikfix'),
+      `Expected stikfix data dir path, got: ${result}`
     );
-    assert.ok(result.endsWith('com.stickyfix.host.json'), `Expected .json suffix, got: ${result}`);
+    assert.ok(result.endsWith('com.stikfix.host.json'), `Expected .json suffix, got: ${result}`);
   });
 
   test('unsupported platform throws', () => {
@@ -138,13 +138,13 @@ describe('nativeManifestPath — per-OS paths', () => {
 describe('buildManifest — fields + validation', () => {
   const VALID_ID = 'abcdefghijklmnopabcdefghijklmnop'; // 32 lowercase a-p chars
 
-  test('returns object with name com.stickyfix.host', () => {
-    const m = buildManifest(VALID_ID, '/usr/local/bin/stickyfix');
-    assert.strictEqual((m as { name: string }).name, 'com.stickyfix.host');
+  test('returns object with name com.stikfix.host', () => {
+    const m = buildManifest(VALID_ID, '/usr/local/bin/stikfix');
+    assert.strictEqual((m as { name: string }).name, 'com.stikfix.host');
   });
 
   test('returns object with description', () => {
-    const m = buildManifest(VALID_ID, '/usr/local/bin/stickyfix') as Record<string, unknown>;
+    const m = buildManifest(VALID_ID, '/usr/local/bin/stikfix') as Record<string, unknown>;
     assert.ok(typeof m.description === 'string' && m.description.length > 0);
   });
 
@@ -222,14 +222,14 @@ describe('writeManifest + unregisterNativeHost round-trip', () => {
   });
 
   test('writeManifest creates the manifest file at manifestPath', () => {
-    const manifestPath = join(tmpDir, 'com.stickyfix.host.json');
+    const manifestPath = join(tmpDir, 'com.stikfix.host.json');
     const manifest = buildManifest(VALID_ID, join(tmpDir, 'fake-host.js'));
     writeManifest(manifest, manifestPath);
     assert.ok(existsSync(manifestPath), `Manifest file should exist at ${manifestPath}`);
   });
 
   test('writeManifest creates parent directories recursively', () => {
-    const deepPath = join(tmpDir, 'nested', 'dir', 'com.stickyfix.host.json');
+    const deepPath = join(tmpDir, 'nested', 'dir', 'com.stikfix.host.json');
     const manifest = buildManifest(VALID_ID, join(tmpDir, 'fake-host.js'));
     writeManifest(manifest, deepPath);
     assert.ok(existsSync(deepPath), `Manifest should be created in nested dir`);
@@ -244,7 +244,7 @@ describe('writeManifest + unregisterNativeHost round-trip', () => {
     const { readFileSync } = await import('node:fs');
     const content = readFileSync(manifestPath, 'utf8');
     const parsed = JSON.parse(content) as Record<string, unknown>;
-    assert.strictEqual(parsed.name, 'com.stickyfix.host');
+    assert.strictEqual(parsed.name, 'com.stikfix.host');
     assert.strictEqual(parsed.type, 'stdio');
     assert.ok(Array.isArray(parsed.allowed_origins));
     assert.ok(typeof parsed.path === 'string' && isAbsolute(parsed.path as string));
@@ -394,7 +394,7 @@ describe('unregisterNativeHost — removes launcher files (ONB-05 extension)', (
   });
 
   test('removes .command launcher on darwin', () => {
-    const manifestPath = join(tmpDir, 'com.stickyfix.host.json');
+    const manifestPath = join(tmpDir, 'com.stikfix.host.json');
     const manifest = buildManifest(VALID_ID, join(tmpDir, 'fake.js'));
     writeManifest(manifest, manifestPath);
 
@@ -480,7 +480,7 @@ describe('enumerateArtifacts — uninstall completeness (ONB-05)', () => {
     const artifacts = enumerateArtifacts({ plat: 'darwin', home: '/home/u', root: '/proj' });
     const paths = artifacts.paths ?? [];
     assert.ok(
-      paths.some((p: string) => p.includes('com.stickyfix.host.json')),
+      paths.some((p: string) => p.includes('com.stikfix.host.json')),
       `Manifest path missing from darwin artifacts: ${JSON.stringify(paths)}`
     );
   });
@@ -489,29 +489,29 @@ describe('enumerateArtifacts — uninstall completeness (ONB-05)', () => {
     const artifacts = enumerateArtifacts({ plat: 'linux', home: '/home/u', root: '/proj' });
     const paths = artifacts.paths ?? [];
     assert.ok(
-      paths.some((p: string) => p.includes('com.stickyfix.host.json')),
+      paths.some((p: string) => p.includes('com.stikfix.host.json')),
       `Manifest path missing from linux artifacts: ${JSON.stringify(paths)}`
     );
   });
 
-  test('includes .stickyfix-port in all platforms', () => {
+  test('includes .stikfix-port in all platforms', () => {
     for (const plat of ['darwin', 'linux', 'win32'] as NodeJS.Platform[]) {
       const artifacts = enumerateArtifacts({ plat, home: '/home/u', root: '/proj' });
       const paths = artifacts.paths ?? [];
       assert.ok(
-        paths.some((p: string) => p.includes('.stickyfix-port')),
-        `Missing .stickyfix-port in artifacts for ${plat}: ${JSON.stringify(paths)}`
+        paths.some((p: string) => p.includes('.stikfix-port')),
+        `Missing .stikfix-port in artifacts for ${plat}: ${JSON.stringify(paths)}`
       );
     }
   });
 
-  test('includes stickyfix config path (all platforms)', () => {
+  test('includes stikfix config path (all platforms)', () => {
     for (const plat of ['darwin', 'linux', 'win32'] as NodeJS.Platform[]) {
       const artifacts = enumerateArtifacts({ plat, home: '/home/u', root: '/proj' });
       const paths = artifacts.paths ?? [];
       assert.ok(
-        paths.some((p: string) => p.includes('stickyfix') && p.includes('config')),
-        `Missing stickyfix config path for ${plat}: ${JSON.stringify(paths)}`
+        paths.some((p: string) => p.includes('stikfix') && p.includes('config')),
+        `Missing stikfix config path for ${plat}: ${JSON.stringify(paths)}`
       );
     }
   });
@@ -593,7 +593,7 @@ describe('registerNativeHost — native wrapper points manifest at launcher', ()
   });
 
   test('win32: writes wrapper and points manifest path at it', () => {
-    const hostBinPath = join(tmpDir, 'dist', 'host', 'stickyfix-native.cjs');
+    const hostBinPath = join(tmpDir, 'dist', 'host', 'stikfix-native.cjs');
     // CRITICAL: inject a no-op execReg. The HKCU key name is a hardcoded
     // constant, so a real `reg ADD` here would clobber the developer's actual
     // Chrome/Edge native-messaging registration (pointing it at this tmpDir
@@ -648,7 +648,7 @@ describe('Firefox: nativeManifestPath — Mozilla locations', () => {
       normalized.includes('Library/Application Support/Mozilla/NativeMessagingHosts'),
       `Expected macOS Mozilla path, got: ${result}`
     );
-    assert.ok(result.endsWith('com.stickyfix.host.json'), `Expected .json suffix, got: ${result}`);
+    assert.ok(result.endsWith('com.stikfix.host.json'), `Expected .json suffix, got: ${result}`);
   });
 
   test('linux: returns .mozilla/native-messaging-hosts path', () => {
@@ -658,13 +658,13 @@ describe('Firefox: nativeManifestPath — Mozilla locations', () => {
       normalized.includes('.mozilla/native-messaging-hosts'),
       `Expected Linux Mozilla path, got: ${result}`
     );
-    assert.ok(result.endsWith('com.stickyfix.host.json'), `Expected .json suffix, got: ${result}`);
+    assert.ok(result.endsWith('com.stikfix.host.json'), `Expected .json suffix, got: ${result}`);
   });
 
-  test('win32: returns a stickyfix data-dir path with a firefox-distinct filename', () => {
+  test('win32: returns a stikfix data-dir path with a firefox-distinct filename', () => {
     const fakeWinHome = 'C:\\Users\\testuser';
     const result = nativeManifestPath('win32', fakeWinHome, 'firefox');
-    assert.ok(result.includes('stickyfix'), `Expected stickyfix data dir, got: ${result}`);
+    assert.ok(result.includes('stikfix'), `Expected stikfix data dir, got: ${result}`);
     // Distinct from the Chrome win32 manifest so they can coexist on disk
     const chromeWin = nativeManifestPath('win32', fakeWinHome, 'chrome');
     assert.notStrictEqual(result, chromeWin, 'Firefox win32 manifest must differ from Chrome');
@@ -680,7 +680,7 @@ describe('Firefox: nativeManifestPath — Mozilla locations', () => {
 });
 
 describe('Firefox: buildManifest — allowed_extensions (not allowed_origins)', () => {
-  const GECKO_ID = 'stickyfix@stickyfix.dev';
+  const GECKO_ID = 'stikfix@stikfix.com';
 
   test('emits allowed_extensions with the gecko id', () => {
     const m = buildManifest(GECKO_ID, '/usr/bin/node', 'firefox') as {
@@ -701,7 +701,7 @@ describe('Firefox: buildManifest — allowed_extensions (not allowed_origins)', 
     const m = buildManifest(GECKO_ID, './rel/host', 'firefox') as {
       name: string; type: string; path: string;
     };
-    assert.strictEqual(m.name, 'com.stickyfix.host');
+    assert.strictEqual(m.name, 'com.stikfix.host');
     assert.strictEqual(m.type, 'stdio');
     assert.ok(isAbsolute(m.path), `Expected absolute path, got: ${m.path}`);
   });
@@ -720,7 +720,7 @@ describe('Firefox: buildManifest — allowed_extensions (not allowed_origins)', 
 
 describe('Firefox: registerNativeHost — Mozilla registry key + manifest', () => {
   let tmpDir: string;
-  const GECKO_ID = 'stickyfix@stickyfix.dev';
+  const GECKO_ID = 'stikfix@stikfix.com';
   const VALID_AP_ID = 'abcdefghijklmnopabcdefghijklmnop'; // 32 a-p chars (Chrome)
 
   before(() => {
@@ -732,7 +732,7 @@ describe('Firefox: registerNativeHost — Mozilla registry key + manifest', () =
   });
 
   test('win32: registers ONLY the Mozilla HKCU key (no Chrome/Edge)', () => {
-    const hostBinPath = join(tmpDir, 'dist', 'host', 'stickyfix-native.cjs');
+    const hostBinPath = join(tmpDir, 'dist', 'host', 'stikfix-native.cjs');
     // No-op execReg — never touch the developer's real HKCU (see Chrome test note).
     const regCalls: readonly string[][] = [];
     registerNativeHost({
@@ -775,7 +775,7 @@ describe('Firefox: registerNativeHost — Mozilla registry key + manifest', () =
   });
 
   test('win32: Firefox uninstall does NOT remove the co-installed Chrome wrapper', () => {
-    const hostBinPath = join(tmpDir, 'dist', 'host', 'stickyfix-native.cjs');
+    const hostBinPath = join(tmpDir, 'dist', 'host', 'stikfix-native.cjs');
     const noopReg = () => {};
     // Install BOTH browsers (no-op execReg — never touch the real HKCU).
     registerNativeHost({ extensionId: VALID_AP_ID, hostBinPath, plat: 'win32', home: tmpDir, browser: 'chrome', execReg: noopReg });
@@ -787,7 +787,7 @@ describe('Firefox: registerNativeHost — Mozilla registry key + manifest', () =
     assert.ok(existsSync(firefoxWrapper), 'Firefox wrapper should exist after firefox install');
     assert.notStrictEqual(chromeWrapper, firefoxWrapper, 'wrappers must be distinct files');
     // Chrome wrapper keeps the canonical (unsuffixed) name — regression guard.
-    assert.ok(chromeWrapper.endsWith('com.stickyfix.host.bat'), `Chrome wrapper name changed: ${chromeWrapper}`);
+    assert.ok(chromeWrapper.endsWith('com.stikfix.host.bat'), `Chrome wrapper name changed: ${chromeWrapper}`);
 
     // Uninstall ONLY Firefox.
     unregisterNativeHost({ plat: 'win32', home: tmpDir, browser: 'firefox' });
@@ -805,7 +805,7 @@ describe('Firefox: registerNativeHost — Mozilla registry key + manifest', () =
   });
 
   test('linux: writes the Firefox manifest under .mozilla and round-trips unregister', () => {
-    const hostBinPath = join(tmpDir, 'dist', 'host', 'stickyfix-native.cjs');
+    const hostBinPath = join(tmpDir, 'dist', 'host', 'stikfix-native.cjs');
     registerNativeHost({
       extensionId: GECKO_ID,
       hostBinPath,

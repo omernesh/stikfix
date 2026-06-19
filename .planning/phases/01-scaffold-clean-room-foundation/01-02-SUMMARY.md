@@ -11,7 +11,7 @@ provides:
   - tsconfig.host.json: NodeNext ESM tsconfig, target ES2022, outDir dist/host, types:["node"]
   - host/src/index.ts: CLI stub — parseArgs --root/origin/name/notes-dir/port/token, prints startup JSON
   - dist/host/index.js: compiled ESM artifact (gitignored, produced by tsc -p tsconfig.host.json)
-  - scripts/host-smoke-test.mjs: spawnSync-based smoke test asserting app=stickyfix and root match
+  - scripts/host-smoke-test.mjs: spawnSync-based smoke test asserting app=stikfix and root match
 
 affects:
   - 01-03-clean-room-gate (scripts/ dir established; host-smoke-test.mjs referenced in check chain)
@@ -52,7 +52,7 @@ completed: 2026-05-31
 
 # Phase 01 Plan 02: Host CLI Stub and Smoke Test Summary
 
-**NodeNext-compiled host stub (tsc -> dist/host/index.js) that parses --root via util.parseArgs and prints a JSON startup line {app:"stickyfix",...}, plus a spawnSync-based smoke test that asserts the startup fields and exits 0 — satisfying the host half of BUILD-05**
+**NodeNext-compiled host stub (tsc -> dist/host/index.js) that parses --root via util.parseArgs and prints a JSON startup line {app:"stikfix",...}, plus a spawnSync-based smoke test that asserts the startup fields and exits 0 — satisfying the host half of BUILD-05**
 
 ## Performance
 
@@ -65,8 +65,8 @@ completed: 2026-05-31
 ## Accomplishments
 
 - `tsc -p tsconfig.host.json` exits 0 and emits runnable ESM at `dist/host/index.js`
-- `node dist/host/index.js --root .` prints `{"app":"stickyfix","name":".","root":".","port":null,"token":null,"notesDir":null}` and exits 0
-- `node dist/host/index.js` (no --root) prints `stickyfix-host: --root is required` and exits non-zero
+- `node dist/host/index.js --root .` prints `{"app":"stikfix","name":".","root":".","port":null,"token":null,"notesDir":null}` and exits 0
+- `node dist/host/index.js` (no --root) prints `stikfix-host: --root is required` and exits non-zero
 - `node scripts/host-smoke-test.mjs` prints `smoke test: PASS` and exits 0
 - Smoke test creates and removes temp dir (sfx-smoke-*) cleanly; no temp artifacts left
 - Pitfall 6 guard: smoke test exits 1 with build instructions if `dist/host/index.js` absent
@@ -81,8 +81,8 @@ completed: 2026-05-31
 ## Files Created/Modified
 
 - `tsconfig.host.json` — NodeNext ESM config: target ES2022, module/moduleResolution NodeNext, outDir dist/host, rootDir host/src, strict:true, types:["node"], esModuleInterop, skipLibCheck, include host/src/**/*.ts
-- `host/src/index.ts` — parseArgs stub: options root/origin(multiple)/name/notes-dir/port/token, strict:false; missing --root -> console.error + exit(1); else prints JSON startup line with app:"stickyfix"
-- `scripts/host-smoke-test.mjs` — mkdtempSync temp root, spawnSync dist/host/index.js with 5000ms timeout, asserts app==="stickyfix" && root===tmpRoot, rmSync finally, existsSync guard
+- `host/src/index.ts` — parseArgs stub: options root/origin(multiple)/name/notes-dir/port/token, strict:false; missing --root -> console.error + exit(1); else prints JSON startup line with app:"stikfix"
+- `scripts/host-smoke-test.mjs` — mkdtempSync temp root, spawnSync dist/host/index.js with 5000ms timeout, asserts app==="stikfix" && root===tmpRoot, rmSync finally, existsSync guard
 
 ## Decisions Made
 

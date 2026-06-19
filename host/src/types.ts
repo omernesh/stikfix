@@ -1,5 +1,5 @@
 /**
- * Shared TypeScript interfaces for stickyfix-host.
+ * Shared TypeScript interfaces for stikfix-host.
  * Matches PRD §9.1 (annotation payload) and the resolved Config shape.
  */
 

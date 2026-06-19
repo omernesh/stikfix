@@ -116,7 +116,7 @@ The following runtime behaviors are **NOT yet verified** and are deferred to a s
 - [ ] `…+1.png` is full viewport + orange box on the picked element, with NO sfx UI anywhere in the image (ELEM-08 / D-02a)
 - [ ] Frozen-rect behavior: pick → scroll → Send places the box at the click-time position (Pitfall 2)
 - [ ] Host down → Send surfaces an error toast (no silent drop — REL-01)
-- [ ] No stickyfix console errors throughout
+- [ ] No stikfix console errors throughout
 
 **Rationale for deferral:** The pick→element-card→Send loop is only fully exercisable now that this plan wires it; running a separate Chrome session for the element slice in isolation duplicates the 05-02 pick-mode UAT (also deferred). One consolidated session verifies 05-02 + 05-03 together with less rebuild/reload churn. Mirrors Phase 4's deferred-manual convention (04-VALIDATION.md Tests 1 & 5, 🟡M).
 

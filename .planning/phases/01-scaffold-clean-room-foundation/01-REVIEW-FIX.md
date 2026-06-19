@@ -38,7 +38,7 @@ status: all_fixed
 
 **GREEN path — `npm run check` exit 0:**
 ```
-> stickyfix@0.1.0 check
+> stikfix@0.1.0 check
 > tsc --noEmit && tsc --noEmit -p tsconfig.host.json && node scripts/clean-room-check.mjs && node scripts/host-smoke-test.mjs
 
 clean-room audit: PASS — no banned identifiers found

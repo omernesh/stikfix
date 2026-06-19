@@ -494,7 +494,7 @@ label.onclick = () => {
 
 ### Pitfall 3: Single-rAF Capture Leaks Own-UI Pixels
 
-**What goes wrong:** After hiding shadow-root UI, one `requestAnimationFrame` fires before the browser composites the new visual state — stickyfix elements are still visible in the captured PNG.
+**What goes wrong:** After hiding shadow-root UI, one `requestAnimationFrame` fires before the browser composites the new visual state — stikfix elements are still visible in the captured PNG.
 **Why it happens:** rAF fires before paint; a second rAF ensures the previous frame was committed.
 **How to avoid:** Always use `waitTwoRafs()` (two nested rAFs) before `captureVisibleTab`.
 **Warning signs:** Own-UI pixels appear in screenshot; chip or FAB visible in the captured image.
@@ -754,14 +754,14 @@ test('DPR=2 (HiDPI)', () => {
 ## Sources
 
 ### Primary (HIGH confidence)
-- `D:\docker\stickyfix\entrypoints\review.content\chip.ts` — existing drag pattern, SFX_SEND_ANNOTATION wiring, renderDropdown, wireSendButton
-- `D:\docker\stickyfix\entrypoints\review.content\index.ts` — createShadowRootUi mount pattern
-- `D:\docker\stickyfix\entrypoints\background.ts` — SW onMessage router, handleSendAnnotation pattern, `return true` async pattern
-- `D:\docker\stickyfix\lib\types.ts` — SFX_MSG constants, import hazard documentation (lines 69-79)
-- `D:\docker\stickyfix\host\src\types.ts` — AnnotationPayload shape
-- `D:\docker\stickyfix\PRD.md` §7.3 — captureVisibleTab + canvas drawImage spec, DPR multiply spec, hide-own-UI spec
-- `D:\docker\stickyfix\PRD.md` §9.1/9.2 — Payload and note file format
-- `D:\docker\stickyfix\.planning\phases\04-free-note-mode-capture-utilities\04-CONTEXT.md` — all locked decisions
+- `D:\docker\stikfix\entrypoints\review.content\chip.ts` — existing drag pattern, SFX_SEND_ANNOTATION wiring, renderDropdown, wireSendButton
+- `D:\docker\stikfix\entrypoints\review.content\index.ts` — createShadowRootUi mount pattern
+- `D:\docker\stikfix\entrypoints\background.ts` — SW onMessage router, handleSendAnnotation pattern, `return true` async pattern
+- `D:\docker\stikfix\lib\types.ts` — SFX_MSG constants, import hazard documentation (lines 69-79)
+- `D:\docker\stikfix\host\src\types.ts` — AnnotationPayload shape
+- `D:\docker\stikfix\PRD.md` §7.3 — captureVisibleTab + canvas drawImage spec, DPR multiply spec, hide-own-UI spec
+- `D:\docker\stikfix\PRD.md` §9.1/9.2 — Payload and note file format
+- `D:\docker\stikfix\.planning\phases\04-free-note-mode-capture-utilities\04-CONTEXT.md` — all locked decisions
 
 ### Secondary (MEDIUM confidence)
 - npm registry: `npm view interactjs version` → 1.10.27 confirmed

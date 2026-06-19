@@ -1,5 +1,5 @@
 /**
- * stickyfix post-it card — shadow-root UI
+ * stikfix post-it card — shadow-root UI
  *
  * Single free-note card: textarea + Send/Cancel + interactjs drag on header.
  * FREE-01: opens on FAB click.

@@ -1,5 +1,5 @@
 /**
- * Note read/list/edit/delete service for stickyfix-host.
+ * Note read/list/edit/delete service for stikfix-host.
  * HOST-14/15/16: resolveSerialFile, listAnnotations, editNote, deleteNote
  *
  * matchesUrlPath is IMPORTED from lib/pin-position.ts (single source of truth —

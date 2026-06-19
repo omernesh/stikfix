@@ -96,18 +96,18 @@ describe('resolveConfigValues — env fallback precedence', () => {
     rmSync(tmpRoot, { recursive: true, force: true });
   });
 
-  test('parsed flag wins over STICKYFIX_ROOT', () => {
+  test('parsed flag wins over STIKFIX_ROOT', () => {
     const v = resolveConfigValues(
       { root: tmpRoot },
-      { STICKYFIX_ROOT: '/some/other/path', npm_config_root: '/npm/path' },
+      { STIKFIX_ROOT: '/some/other/path', npm_config_root: '/npm/path' },
     );
     assert.strictEqual(v['root'], tmpRoot);
   });
 
-  test('STICKYFIX_ROOT used when no flag', () => {
+  test('STIKFIX_ROOT used when no flag', () => {
     const v = resolveConfigValues(
       {},
-      { STICKYFIX_ROOT: tmpRoot, npm_config_root: '/npm/path' },
+      { STIKFIX_ROOT: tmpRoot, npm_config_root: '/npm/path' },
     );
     assert.strictEqual(v['root'], tmpRoot);
   });
@@ -120,34 +120,34 @@ describe('resolveConfigValues — env fallback precedence', () => {
     assert.strictEqual(v['root'], tmpRoot);
   });
 
-  test('STICKYFIX_ORIGINS comma-split into array', () => {
+  test('STIKFIX_ORIGINS comma-split into array', () => {
     const v = resolveConfigValues(
       {},
-      { STICKYFIX_ROOT: tmpRoot, STICKYFIX_ORIGINS: 'http://localhost:3000,http://localhost:4000' },
+      { STIKFIX_ROOT: tmpRoot, STIKFIX_ORIGINS: 'http://localhost:3000,http://localhost:4000' },
     );
     assert.deepStrictEqual(v['origin'], ['http://localhost:3000', 'http://localhost:4000']);
   });
 
-  test('npm_config_origin wrapped in array when no flag or STICKYFIX_ORIGINS', () => {
+  test('npm_config_origin wrapped in array when no flag or STIKFIX_ORIGINS', () => {
     const v = resolveConfigValues(
       {},
-      { STICKYFIX_ROOT: tmpRoot, npm_config_origin: 'http://localhost:5173' },
+      { STIKFIX_ROOT: tmpRoot, npm_config_origin: 'http://localhost:5173' },
     );
     assert.deepStrictEqual(v['origin'], ['http://localhost:5173']);
   });
 
-  test('parsed origin flag wins over STICKYFIX_ORIGINS', () => {
+  test('parsed origin flag wins over STIKFIX_ORIGINS', () => {
     const v = resolveConfigValues(
       { origin: ['http://flag-origin.test'] },
-      { STICKYFIX_ROOT: tmpRoot, STICKYFIX_ORIGINS: 'http://env-origin.test' },
+      { STIKFIX_ROOT: tmpRoot, STIKFIX_ORIGINS: 'http://env-origin.test' },
     );
     assert.deepStrictEqual(v['origin'], ['http://flag-origin.test']);
   });
 
-  test('resolveConfig uses STICKYFIX_ROOT end-to-end', () => {
-    // Simulate PowerShell: no argv flags, but STICKYFIX_ROOT set
+  test('resolveConfig uses STIKFIX_ROOT end-to-end', () => {
+    // Simulate PowerShell: no argv flags, but STIKFIX_ROOT set
     // We call resolveConfig with empty values and inject env via resolveConfigValues
-    const merged = resolveConfigValues({}, { STICKYFIX_ROOT: tmpRoot });
+    const merged = resolveConfigValues({}, { STIKFIX_ROOT: tmpRoot });
     const cfg = resolveConfig(merged);
     assert.strictEqual(cfg.root, tmpRoot);
   });

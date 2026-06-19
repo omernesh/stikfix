@@ -1,5 +1,5 @@
 /**
- * Port-discovery helpers for stickyfix-host.
+ * Port-discovery helpers for stikfix-host.
  * Extracted so tests can import bindServer without running the full index.ts boot.
  * WR-06: removeAllListeners between scan attempts prevents stale-handler accumulation.
  */
@@ -60,7 +60,7 @@ export async function bindServer(
       return (server.address() as AddressInfo).port;
     }
     throw new Error(
-      `stickyfix-host: --port ${preferredPort} is already in use. ` +
+      `stikfix-host: --port ${preferredPort} is already in use. ` +
       `Remove --port to auto-scan ${PORT_RANGE_START}–${PORT_RANGE_END}.`
     );
   }
@@ -81,7 +81,7 @@ export async function bindServer(
   }
 
   throw new Error(
-    `stickyfix-host: no free port found in ${startPort}–${endPort}. ` +
+    `stikfix-host: no free port found in ${startPort}–${endPort}. ` +
     `Use --port to specify a different port.`
   );
 }

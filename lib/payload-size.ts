@@ -1,5 +1,5 @@
 /**
- * Payload-size pre-flight check for stickyfix.
+ * Payload-size pre-flight check for stikfix.
  *
  * exceedsBodyCap — pure, node:test-safe (no DOM/chrome at module level).
  *

@@ -1,5 +1,5 @@
 /**
- * Security helpers for stickyfix-host.
+ * Security helpers for stikfix-host.
  * D-04: readBody with 12 MB hard cap
  * D-06/HOST-05: checkToken with crypto.timingSafeEqual
  * D-10/HOST-09: isInsideDir path-traversal guard (Windows-correct with path.sep)
@@ -16,11 +16,11 @@ const MAX_BODY = 12 * 1024 * 1024; // 12 MB hard cap (D-04)
 // ---------------------------------------------------------------------------
 
 /**
- * Validate X-Stickyfix-Token header using constant-time comparison.
+ * Validate X-Stikfix-Token header using constant-time comparison.
  * Returns false if header is missing, not a string, or wrong length/value.
  */
 export function checkToken(req: Pick<IncomingMessage, 'headers'>, expectedToken: string): boolean {
-  const provided = req.headers['x-stickyfix-token'];
+  const provided = req.headers['x-stikfix-token'];
   if (typeof provided !== 'string') return false;
   // Compare UTF-8 byte lengths — timingSafeEqual requires equal-length buffers (Pattern 5)
   // Using Buffer.from(...,'utf8') avoids a RangeError when multibyte chars make

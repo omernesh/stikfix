@@ -1,5 +1,5 @@
 /**
- * stickyfix persistent pins — shadow-root UI
+ * stikfix persistent pins — shadow-root UI
  *
  * mountPins / teardownPins: load notes from disk (via SW relay SFX_LIST_ANNOTATIONS)
  * and render one on-page pin per note for the current URL path.

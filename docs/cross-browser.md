@@ -9,20 +9,20 @@
 
 ## Microsoft Edge — supported now
 
-Edge is a Chromium-based browser and a complete drop-in for stickyfix. No separate
+Edge is a Chromium-based browser and a complete drop-in for stikfix. No separate
 build is needed; the same `.output/chrome-mv3/` artifact that works in Chrome loads
 directly in Edge.
 
 ### Native-messaging manifest registration
 
-The `npx stickyfix init` bootstrapper registers the native-messaging manifest in both
+The `npx stikfix init` bootstrapper registers the native-messaging manifest in both
 Chrome and Edge locations on all platforms so a single install covers both browsers.
 
 **Windows (registry — no admin rights required):**
 
 ```
-HKCU\Software\Google\Chrome\NativeMessagingHosts\com.stickyfix.host
-HKCU\Software\Microsoft\Edge\NativeMessagingHosts\com.stickyfix.host
+HKCU\Software\Google\Chrome\NativeMessagingHosts\com.stikfix.host
+HKCU\Software\Microsoft\Edge\NativeMessagingHosts\com.stikfix.host
 ```
 
 Edge checks the Chrome registry path as a fallback. Writing both keys is the
@@ -32,15 +32,15 @@ opens first.
 **macOS (user-level, no admin rights):**
 
 ```
-~/Library/Application Support/Google/Chrome/NativeMessagingHosts/com.stickyfix.host.json
-~/Library/Application Support/Microsoft Edge/NativeMessagingHosts/com.stickyfix.host.json
+~/Library/Application Support/Google/Chrome/NativeMessagingHosts/com.stikfix.host.json
+~/Library/Application Support/Microsoft Edge/NativeMessagingHosts/com.stikfix.host.json
 ```
 
 **Linux (user-level):**
 
 ```
-~/.config/google-chrome/NativeMessagingHosts/com.stickyfix.host.json
-~/.config/microsoft-edge/NativeMessagingHosts/com.stickyfix.host.json
+~/.config/google-chrome/NativeMessagingHosts/com.stikfix.host.json
+~/.config/microsoft-edge/NativeMessagingHosts/com.stikfix.host.json
 ```
 
 ### Dual-store extension ID caveat
@@ -58,7 +58,7 @@ the `allowed_origins` array of the native-messaging manifest:
 }
 ```
 
-Running `npx stickyfix init` again after loading the extension in Edge will prompt
+Running `npx stikfix init` again after loading the extension in Edge will prompt
 for the Edge extension ID and append it to the manifest automatically.
 
 ---
@@ -73,7 +73,7 @@ interchangeable**.
 
 Chrome/Edge use `allowed_origins` (a list of `chrome-extension://<ID>/` URIs).
 Firefox uses `allowed_extensions` (a list of add-on IDs such as
-`"stickyfix@stickyfix.dev"`). A Chrome manifest placed in a Firefox search path will
+`"stikfix@stikfix.com"`). A Chrome manifest placed in a Firefox search path will
 cause Firefox to log a warning about the unrecognised `allowed_origins` field and
 refuse to connect.
 
@@ -81,11 +81,11 @@ refuse to connect.
 
 ```json
 {
-  "name": "com.stickyfix.host",
-  "description": "stickyfix native messaging host",
-  "path": "/path/to/dist/host/stickyfix-native.cjs",
+  "name": "com.stikfix.host",
+  "description": "stikfix native messaging host",
+  "path": "/path/to/dist/host/stikfix-native.cjs",
   "type": "stdio",
-  "allowed_extensions": ["stickyfix@stickyfix.dev"]
+  "allowed_extensions": ["stikfix@stikfix.com"]
 }
 ```
 
@@ -98,41 +98,41 @@ the add-on's identity, so the native-messaging connection will be refused.
 **macOS (user-level):**
 
 ```
-~/Library/Application Support/Mozilla/NativeMessagingHosts/com.stickyfix.host.json
+~/Library/Application Support/Mozilla/NativeMessagingHosts/com.stikfix.host.json
 ```
 
 **Linux (user-level):**
 
 ```
-~/.mozilla/native-messaging-hosts/com.stickyfix.host.json
+~/.mozilla/native-messaging-hosts/com.stikfix.host.json
 ```
 
 **Windows (registry — HKCU, no admin rights):**
 
 ```
-HKCU\Software\Mozilla\NativeMessagingHosts\com.stickyfix.host
+HKCU\Software\Mozilla\NativeMessagingHosts\com.stikfix.host
 ```
 
 The registry value (Default) must point to the absolute path of the manifest JSON
 file, matching the pattern used for Chrome/Edge.
 
 **Windows coexistence — distinct filenames.** On Windows the Firefox manifest and
-its launcher wrapper live in the same stickyfix data dir as the Chrome ones
-(`~/.local/share/stickyfix/`). To let both browsers be installed at once, the
+its launcher wrapper live in the same stikfix data dir as the Chrome ones
+(`~/.local/share/stikfix/`). To let both browsers be installed at once, the
 Firefox files use a `.firefox` infix so they never collide with — or get deleted
 alongside — the Chrome files:
 
 | File | Chrome | Firefox |
 |------|--------|---------|
-| On-disk manifest JSON | `com.stickyfix.host.json` | `com.stickyfix.host.firefox.json` |
-| Native-host wrapper | `com.stickyfix.host.bat` | `com.stickyfix.host.firefox.bat` |
+| On-disk manifest JSON | `com.stikfix.host.json` | `com.stikfix.host.firefox.json` |
+| Native-host wrapper | `com.stikfix.host.bat` | `com.stikfix.host.firefox.bat` |
 
-The Firefox registry value points at `com.stickyfix.host.firefox.json`, whose
-`path` field points at `com.stickyfix.host.firefox.bat`. Because the wrapper is a
-separate file, `npx stickyfix uninstall --browser firefox` removes only the
+The Firefox registry value points at `com.stikfix.host.firefox.json`, whose
+`path` field points at `com.stikfix.host.firefox.bat`. Because the wrapper is a
+separate file, `npx stikfix uninstall --browser firefox` removes only the
 Firefox wrapper and leaves the Chrome wrapper (still referenced by the Chrome
 manifest) intact. (On macOS/Linux Firefox uses its own Mozilla directory, so the
-manifest keeps the canonical `com.stickyfix.host.json` filename there; only the
+manifest keeps the canonical `com.stikfix.host.json` filename there; only the
 wrapper carries the `.firefox` infix to stay paired.)
 
 ### Required extension manifest addition
@@ -141,7 +141,7 @@ wrapper carries the `.firefox` infix to stay paired.)
 {
   "browser_specific_settings": {
     "gecko": {
-      "id": "stickyfix@stickyfix.dev",
+      "id": "stikfix@stikfix.com",
       "strict_min_version": "109.0"
     }
   }
@@ -182,8 +182,8 @@ extension directory and scaffolds an Xcode project:
 ```bash
 xcrun safari-web-extension-converter /path/to/chrome-extension-directory \
   --project-location ./safari-project \
-  --app-name "stickyfix" \
-  --bundle-identifier dev.stickyfix.app
+  --app-name "stikfix" \
+  --bundle-identifier dev.stikfix.app
 ```
 
 This produces a Swift/Xcode project with:
@@ -207,7 +207,7 @@ This produces a Swift/Xcode project with:
    1–3 days). Rapid iteration during development is possible via TestFlight but not
    via direct file distribution.
 
-4. **Token pairing.** The existing `npx stickyfix init` native-messaging registration
+4. **Token pairing.** The existing `npx stikfix init` native-messaging registration
    path does not apply to Safari. A new pairing mechanism using
    `SFSafariApplication.dispatchMessage` would need to be designed.
 

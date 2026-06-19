@@ -17,7 +17,7 @@ key_files:
     - scripts/clean-room-check.mjs
     - CLEAN-ROOM.md
 decisions:
-  - "D-03 no-peek self-audit found no new tokens beyond the three known (opencode, __opc_, JodusNodus): CURATED_STYLE_PROPS are W3C CSS names, __stickyfix_ is our own namespace, annot/* is our domain vocabulary"
+  - "D-03 no-peek self-audit found no new tokens beyond the three known (opencode, __opc_, JodusNodus): CURATED_STYLE_PROPS are W3C CSS names, __stikfix_ is our own namespace, annot/* is our domain vocabulary"
   - "Phase 8 SC-4 release gate PASS recorded in CLEAN-ROOM.md §6 with per-file disposition table"
   - "08-UAT.md mirrors 07-HUMAN-UAT.md structure: header + scenario table + Before You Begin + numbered Steps"
 metrics:
@@ -39,7 +39,7 @@ Performed a NO-PEEK self-audit of our own repository WITHOUT opening the GPL-3.0
 
 Findings:
 - `CURATED_STYLE_PROPS` in `element-context.ts` — standard W3C CSS property names, not upstream identifiers. Clean.
-- `__stickyfix_` in `background.ts` — our own project namespace (`window.__stickyfix_project`). Clean.
+- `__stikfix_` in `background.ts` — our own project namespace (`window.__stikfix_project`). Clean.
 - `annot`/`ANNOT` substrings throughout — substring of `annotation`, our domain vocabulary from PRD §7. Clean.
 
 Result: **no new banned tokens required**. The three original tokens are the complete banned set.

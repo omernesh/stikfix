@@ -116,7 +116,7 @@ if (target && target.closest('button, select, input, option, a, textarea, .sfx-l
 **File header invariant comment** (`lib/capture.ts` lines 1–10):
 ```typescript
 /**
- * Capture utilities for stickyfix.
+ * Capture utilities for stikfix.
  *
  * computeCropCoords — pure, node:test-safe (no DOM/chrome at module level).
  * waitTwoRafs, cropToRect, captureTab — browser-only, exercised in 04-03.

@@ -1,5 +1,5 @@
 /**
- * Native messaging stdio framing for stickyfix.
+ * Native messaging stdio framing for stikfix.
  * Implements the Chrome native messaging wire protocol:
  *   4-byte UInt32LE JSON byte length + UTF-8 JSON body.
  *

@@ -5,7 +5,7 @@ tags: [debugging, wxt, mv3, chrome-extension, architecture, gotcha]
 worker: Pixel
 ---
 
-Five real bugs found during Phase 3 manual Chrome UAT (stickyfix). All would
+Five real bugs found during Phase 3 manual Chrome UAT (stikfix). All would
 have shipped broken; none were caught by tsc or unit tests because they only
 manifest in a live Chrome content-script context.
 
@@ -58,9 +58,9 @@ POST /annotation succeeded). LNA gates *public-origin* initiators, not
 host is harmless but irrelevant to the extension path.
 
 ## Bonus: host token regenerates per launch
-`resolveConfig` does `token = flag/env ?? randomUUID()` — `.stickyfix-token` is written
+`resolveConfig` does `token = flag/env ?? randomUUID()` — `.stikfix-token` is written
 but never read back, so a fresh random token every restart invalidates the popup's saved
-token. For stable dev/UAT, pin `STICKYFIX_TOKEN`. (Auto-reading the file back is a
+token. For stable dev/UAT, pin `STIKFIX_TOKEN`. (Auto-reading the file back is a
 candidate UX fix but deviates from PRD §8.1's documented 3-tier order.)
 
 ## Bonus: npm on Windows PowerShell strips `--root`

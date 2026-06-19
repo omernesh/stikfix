@@ -13,7 +13,7 @@ updated: 2026-06-01
 ## Tests
 
 ### 1. Capture trio round-trip
-expected: `captureTab(tabId)` → SW `captureVisibleTab` → `waitTwoRafs` → `cropToRect` returns a DPR-correct PNG crop; the stickyfix own-UI (chip/FAB) is absent from the screenshot (double-rAF flush worked); a free note sent in the same session still writes `screenshots: []`.
+expected: `captureTab(tabId)` → SW `captureVisibleTab` → `waitTwoRafs` → `cropToRect` returns a DPR-correct PNG crop; the stikfix own-UI (chip/FAB) is absent from the screenshot (double-rAF flush worked); a free note sent in the same session still writes `screenshots: []`.
 result: [pending]
 
 ### 2. FAB drag + viewport clamp

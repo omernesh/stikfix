@@ -268,7 +268,7 @@ node dist/host/src/index.js --root C:\path\to\project --origin http://localhost:
 - `--port <number>` — optional; default scans 39240-39260
 - `--name <string>` — optional; project display name
 - `--notes-dir <dir>` — optional; override notes subdir (must resolve inside --root)
-- `--token <string>` — optional; else `STICKYFIX_TOKEN` env, else random UUID
+- `--token <string>` — optional; else `STIKFIX_TOKEN` env, else random UUID
 
 Host startup prints: project name, bound port, declared origins, token, and absolute notes dir (HOST-01).
 
@@ -405,7 +405,7 @@ docs/
 ```markdown
 # review-notes Skill
 
-**Purpose:** Process unread sticky notes (*.md files) left by the stickyfix Chrome
+**Purpose:** Process unread sticky notes (*.md files) left by the stikfix Chrome
 extension, fix each one, and rename it `*.read.md` so re-runs are idempotent.
 
 ## Preconditions
@@ -457,7 +457,7 @@ extension, fix each one, and rename it `*.read.md` so re-runs are idempotent.
 ---
 name: review-notes
 description: |
-  Process unread stickyfix review notes in the `notes/` directory. Use when the
+  Process unread stikfix review notes in the `notes/` directory. Use when the
   user says "read my notes", "process review notes", "fix sticky notes", "run
   review-notes", or "what notes do I have". Reads each unread `*.md` note,
   applies the requested code fix, then renames it `*.read.md`. Idempotent —
@@ -535,7 +535,7 @@ The notes directory defaults to `./notes` relative to the project root.
 
 ### Pitfall 6: README Regression — Losing Windows PowerShell Notes
 
-**What goes wrong:** Rewriting the README from scratch loses the Windows-specific host startup instructions (equals-sign form, `node` direct form, `STICKYFIX_ORIGINS` env var). These are critical for the developer's platform.
+**What goes wrong:** Rewriting the README from scratch loses the Windows-specific host startup instructions (equals-sign form, `node` direct form, `STIKFIX_ORIGINS` env var). These are critical for the developer's platform.
 
 **How to avoid:** The existing README has accurate Windows PowerShell content — preserve it verbatim in the rewrite. Flag it explicitly in the plan task.
 
@@ -651,7 +651,7 @@ Validation for this phase is **fixture-based functional verification** — creat
 |--------|----------|----------------|-------------------|------------|
 | SKILL-01 | `skill/SKILL.md` readable by any agent; wrapper in `.claude/skills/review-notes/` | File existence check | `ls skill/SKILL.md .claude/skills/review-notes/SKILL.md` | Yes (shell) |
 | SKILL-02 | Glob excludes `*.read.md`; sorts ascending | Human-driven skill run + fixture | Fixture: create `notes/` with 3 notes + 1 `*.read.md`; run skill; verify only 3 unread processed | Human UAT |
-| SKILL-03 | Reads frontmatter, body, element-context, screenshot path | Human-driven skill run | Fixture: UAT samples from `D:\docker\stickyfix-uat\notes\`; run skill; verify fix applied | Human UAT |
+| SKILL-03 | Reads frontmatter, body, element-context, screenshot path | Human-driven skill run | Fixture: UAT samples from `D:\docker\stikfix-uat\notes\`; run skill; verify fix applied | Human UAT |
 | SKILL-04 | Rename to `*.read.md` + `status: read`; re-run idempotent | Human-driven skill run | Re-run skill on same dir; verify "no unread notes" output | Human UAT |
 | SKILL-05 | Empty queue, ambiguous note, missing screenshot | Fixture-based | Three fixtures (see Wave 0 gaps); run skill; verify each outcome | Human UAT |
 | DOC-01 | README with quickstart + demo GIF | File review | Read README; verify 5-step quickstart present; verify GIF placeholder + record instructions | Human review |
@@ -720,7 +720,7 @@ The planner must include a **fixture creation task** (Wave 0) that creates a `te
 - `host/src/types.ts` — `AnnotationPayload`, `ElementContext`, `Screenshot` interface definitions [VERIFIED]
 - `scripts/clean-room-check.mjs` — banned identifiers, scan scope, SKIP_DIRS, actual audit output [VERIFIED]
 - `package.json` — `host` npm script = `node dist/host/src/index.js`; no new deps needed [VERIFIED]
-- `D:\docker\stickyfix-uat\notes\*.md` — 8 live UAT note samples confirming format [VERIFIED]
+- `D:\docker\stikfix-uat\notes\*.md` — 8 live UAT note samples confirming format [VERIFIED]
 - `C:\Users\omern\.claude\skills\scrapling\SKILL.md`, `waha-admin\SKILL.md` — SKILL.md frontmatter format, wrapper pattern [VERIFIED]
 
 ### Secondary (MEDIUM confidence)

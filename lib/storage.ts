@@ -1,5 +1,5 @@
 /**
- * WXT storage.defineItem definitions for the stickyfix extension.
+ * WXT storage.defineItem definitions for the stikfix extension.
  * Uses chrome.storage.local via WXT's typed wrapper.
  *
  * NOTE: This file imports from 'wxt/utils/storage' and is intentionally

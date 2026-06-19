@@ -1,5 +1,5 @@
 /**
- * Canvas highlight box draw utility for stickyfix.
+ * Canvas highlight box draw utility for stikfix.
  *
  * drawHighlightBox — pure, node:test-safe (no DOM/chrome at module level).
  * Takes a canvas element reference (passed in) — no document.createElement calls.

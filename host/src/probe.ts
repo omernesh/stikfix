@@ -14,7 +14,7 @@ import { BIND_HOST } from './bind.js';
 /**
  * Probe an existing host instance on the given port.
  *
- * Returns { port } if a live stickyfix-host is running for the same root,
+ * Returns { port } if a live stikfix-host is running for the same root,
  * or null if the port is stale / belongs to something else / unreachable.
  *
  * Bounded by a 700 ms timeout. Uses node:http only (builtins, no new deps).
@@ -39,7 +39,7 @@ export function probeExistingHost(root: string, port: number): Promise<{ port: n
         try {
           const body = JSON.parse(Buffer.concat(chunks).toString('utf8')) as Record<string, unknown>;
           if (
-            body['app'] === 'stickyfix' &&
+            body['app'] === 'stikfix' &&
             typeof body['root'] === 'string' &&
             resolvePath(body['root'] as string) === resolvePath(root)
           ) {

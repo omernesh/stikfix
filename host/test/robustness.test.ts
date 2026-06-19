@@ -1,10 +1,10 @@
 /**
  * Tests for single-instance guard (FIX-SI) and token persistence (FIX-TP).
  *
- * FIX-SI: probeExistingHost resolves { port } when a live stickyfix-host responds
+ * FIX-SI: probeExistingHost resolves { port } when a live stikfix-host responds
  *         on that port for the same root; resolves null for a stale port (no server).
  *
- * FIX-TP: A temp root with an existing .stickyfix-token reuses that token;
+ * FIX-TP: A temp root with an existing .stikfix-token reuses that token;
  *         a fresh root gets a newly-generated UUID.
  *
  * Conventions:
@@ -42,7 +42,7 @@ describe('probeExistingHost — single-instance guard (FIX-SI)', () => {
       const path = (req.url ?? '/').split('?', 1)[0];
       if (req.method === 'GET' && path === '/status') {
         const body = JSON.stringify({
-          app: 'stickyfix',
+          app: 'stikfix',
           version: '0.0.0-test',
           name: 'test-root',
           root: tmpRoot,
@@ -100,7 +100,7 @@ describe('probeExistingHost — single-instance guard (FIX-SI)', () => {
       const path = (req.url ?? '/').split('?', 1)[0];
       if (req.method === 'GET' && path === '/status') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ app: 'stickyfix', root: otherRoot }));
+        res.end(JSON.stringify({ app: 'stikfix', root: otherRoot }));
       } else {
         res.writeHead(404);
         res.end();
@@ -170,12 +170,12 @@ describe('token persistence — reuse across restarts (FIX-TP)', () => {
   test('FIX-TP: fresh root with no token file generates a UUID and writes it', () => {
     // resolveConfig generates a UUID when no token is supplied
     const cfg = resolveConfig({ root: tmpRoot });
-    const tokenPath = join(tmpRoot, '.stickyfix-token');
+    const tokenPath = join(tmpRoot, '.stikfix-token');
 
     // Write it (simulating what index.ts does when no rawToken and no existing file)
     writeTokenFile(tmpRoot, cfg.token);
 
-    assert.ok(existsSync(tokenPath), '.stickyfix-token should be created');
+    assert.ok(existsSync(tokenPath), '.stikfix-token should be created');
     const written = readFileSync(tokenPath, 'utf8').trim();
     assert.strictEqual(written, cfg.token, 'Written token should match resolved token');
 
@@ -187,15 +187,15 @@ describe('token persistence — reuse across restarts (FIX-TP)', () => {
     );
   });
 
-  test('FIX-TP: existing .stickyfix-token is reused when no explicit token is given', () => {
-    const tokenPath = join(tmpRoot, '.stickyfix-token');
+  test('FIX-TP: existing .stikfix-token is reused when no explicit token is given', () => {
+    const tokenPath = join(tmpRoot, '.stikfix-token');
     const existingToken = 'a1b2c3d4-e5f6-4789-abcd-ef0123456789';
 
     // Pre-write a token file (simulating a previous run)
     writeFileSync(tokenPath, existingToken, { encoding: 'utf8', mode: 0o600 });
 
     // Simulate the FIX-TP logic from index.ts:
-    // rawToken is undefined (no --token / STICKYFIX_TOKEN / npm_config_token)
+    // rawToken is undefined (no --token / STIKFIX_TOKEN / npm_config_token)
     const rawToken: string | undefined = undefined;
     const cfg = resolveConfig({ root: tmpRoot }); // resolveConfig generates a new UUID
     let finalToken = cfg.token; // starts as a fresh UUID
@@ -219,8 +219,8 @@ describe('token persistence — reuse across restarts (FIX-TP)', () => {
     );
   });
 
-  test('FIX-TP: explicit --token overrides existing .stickyfix-token', () => {
-    const tokenPath = join(tmpRoot, '.stickyfix-token');
+  test('FIX-TP: explicit --token overrides existing .stikfix-token', () => {
+    const tokenPath = join(tmpRoot, '.stikfix-token');
     const existingToken = 'existing-token-should-not-be-used';
     const explicitToken = 'explicit-token-from-cli-flag';
 
@@ -242,10 +242,10 @@ describe('token persistence — reuse across restarts (FIX-TP)', () => {
     assert.strictEqual(finalToken, explicitToken, 'Explicit --token must win over existing file');
   });
 
-  test('FIX-TP: empty .stickyfix-token file falls through to fresh UUID', () => {
+  test('FIX-TP: empty .stikfix-token file falls through to fresh UUID', () => {
     const freshRoot = mkdtempSync(join(tmpdir(), 'sfx-empty-token-'));
     try {
-      const tokenPath = join(freshRoot, '.stickyfix-token');
+      const tokenPath = join(freshRoot, '.stikfix-token');
 
       // Write an empty token file (edge case)
       writeFileSync(tokenPath, '', { encoding: 'utf8', mode: 0o600 });

@@ -72,8 +72,8 @@ try {
   }
 
   // Assert startup shape
-  if (startup.app !== 'stickyfix') {
-    console.error(`smoke test: expected app:"stickyfix", got: ${JSON.stringify(startup.app)}`);
+  if (startup.app !== 'stikfix') {
+    console.error(`smoke test: expected app:"stikfix", got: ${JSON.stringify(startup.app)}`);
     process.exit(1);
   }
   if (typeof startup.port !== 'number' || startup.port < 1) {
@@ -109,8 +109,8 @@ try {
   }
 
   const status = await statusRes.json();
-  if (status.app !== 'stickyfix') {
-    console.error(`smoke test: /status.app expected "stickyfix", got ${JSON.stringify(status.app)}`);
+  if (status.app !== 'stikfix') {
+    console.error(`smoke test: /status.app expected "stikfix", got ${JSON.stringify(status.app)}`);
     process.exit(1);
   }
   if (status.token !== undefined) {
@@ -141,7 +141,7 @@ try {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Stickyfix-Token': startup.token,
+      'X-Stikfix-Token': startup.token,
     },
     body: JSON.stringify({
       mode: 'free',

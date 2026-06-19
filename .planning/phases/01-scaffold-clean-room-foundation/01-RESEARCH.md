@@ -18,7 +18,7 @@
 - **D-05:** Build the host with **`tsc`** (not esbuild) to `dist/host/` as ESM — host runtime is Node built-ins only this phase.
 - **D-06:** Host this phase is a **stub** — `index.ts` that parses `--root` via `util.parseArgs` and prints a startup line. Real server is Phase 2.
 - **D-07:** Commit **pre-sized PNG icons** at 16/32/48/128 under `public/` (e.g. `public/icon/16.png`) and reference them in `wxt.config.ts` manifest. **Do NOT** use `@wxt-dev/auto-icons`/`sharp`.
-- **D-08:** Establish **`sfx-*` / `stickyfix`** identifier namespace now. Never reuse `__opc_*`, `opencode`, `JodusNodus`.
+- **D-08:** Establish **`sfx-*` / `stikfix`** identifier namespace now. Never reuse `__opc_*`, `opencode`, `JodusNodus`.
 - **D-09:** Wire a **clean-room grep audit** into `npm run check`: grep the tree for `__opc_`, `opencode`, `JodusNodus` (case-insensitive) and fail non-zero on any match.
 - **D-10:** `strict: true`; extension tsconfig sets `types: ["chrome"]` explicitly (TS6 default is `[]`); `moduleResolution: "bundler"`. Host: separate `tsconfig.host.json` with `module: "NodeNext"`, `moduleResolution: "nodenext"`, `types: ["node"]`.
 - **D-11:** Host smoke test = spawn the host stub against a temp `--root`, assert it starts and prints expected startup fields, exit 0.
@@ -29,7 +29,7 @@
 
 ### Deferred Ideas (OUT OF SCOPE)
 
-- Publishing `stickyfix-host` as an npm `bin` — v2 (FUT-04).
+- Publishing `stikfix-host` as an npm `bin` — v2 (FUT-04).
 - esbuild for host bundling — only if `tsc` output/startup proves insufficient.
 - CI workflow (GitHub Actions) — not in BUILD-* scope.
 </user_constraints>
@@ -50,7 +50,7 @@
 
 ## Summary
 
-This phase bootstraps the entire stickyfix repository from nothing to a buildable, loadable scaffold. The primary challenges are: (1) correctly wiring WXT's vanilla TypeScript scaffold with manually committed pre-sized icons instead of the `@wxt-dev/auto-icons` plugin; (2) setting up a two-tsconfig arrangement that satisfies both TS 6's `types: []` default and WXT's Vite-based resolution; (3) building a minimal host stub with `tsc` as ESM to `dist/host/`; (4) implementing a cross-platform (Windows-safe) clean-room grep gate in Node.js; and (5) writing a spawn-based smoke test that asserts the stub starts correctly.
+This phase bootstraps the entire stikfix repository from nothing to a buildable, loadable scaffold. The primary challenges are: (1) correctly wiring WXT's vanilla TypeScript scaffold with manually committed pre-sized icons instead of the `@wxt-dev/auto-icons` plugin; (2) setting up a two-tsconfig arrangement that satisfies both TS 6's `types: []` default and WXT's Vite-based resolution; (3) building a minimal host stub with `tsc` as ESM to `dist/host/`; (4) implementing a cross-platform (Windows-safe) clean-room grep gate in Node.js; and (5) writing a spawn-based smoke test that asserts the stub starts correctly.
 
 Everything in this phase is structural — no annotation features, no HTTP server, no UI. The output is a repo where `npm install && npm run build` produces a loadable Chrome extension and a runnable Node stub, `npm run check` passes including clean-room audit, and `npm run host -- --root <dir>` prints a startup line.
 
@@ -151,12 +151,12 @@ npm run check
 ### Recommended Project Structure
 
 ```
-stickyfix/                          # repo root = WXT project root
+stikfix/                          # repo root = WXT project root
 ├── package.json                    # type:"module", single-root scripts
-├── wxt.config.ts                   # WXT config: name:"stickyfix", manifest.icons
+├── wxt.config.ts                   # WXT config: name:"stikfix", manifest.icons
 ├── tsconfig.json                   # { "extends": ".wxt/tsconfig.json" } only
 ├── tsconfig.host.json              # NodeNext + types:["node"] for host/src/
-├── .gitignore                      # .output/, dist/, node_modules/, .wxt/, .stickyfix-token
+├── .gitignore                      # .output/, dist/, node_modules/, .wxt/, .stikfix-token
 ├── LICENSE                         # MIT (already committed)
 ├── PRD.md                          # (already committed)
 ├── notes/.gitkeep                  # (already committed)
@@ -164,7 +164,7 @@ stickyfix/                          # repo root = WXT project root
 │   ├── background.ts               # defineBackground({ type:'module', main(){} })
 │   └── popup/
 │       ├── index.html              # minimal HTML, <script type="module" src="./main.ts">
-│       └── main.ts                 # placeholder: document.querySelector('#app').textContent='stickyfix'
+│       └── main.ts                 # placeholder: document.querySelector('#app').textContent='stikfix'
 ├── public/
 │   └── icon/
 │       ├── 16.png                  # pre-sized PNG (committed)
@@ -201,7 +201,7 @@ import { defineConfig } from 'wxt';
 
 export default defineConfig({
   manifest: {
-    name: 'stickyfix',
+    name: 'stikfix',
     description: 'Pin sticky notes on any page — your AI reads them.',
     version: '0.1.0',
     icons: {
@@ -284,7 +284,7 @@ export default defineBackground({
   type: 'module',
   main() {
     // Phase 1: placeholder — Phase 3 adds host discovery, routing, messaging
-    console.log('stickyfix background loaded');
+    console.log('stikfix background loaded');
   },
 });
 ```
@@ -298,7 +298,7 @@ export default defineBackground({
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>stickyfix</title>
+    <title>stikfix</title>
   </head>
   <body>
     <div id="sfx-popup-root"></div>
@@ -311,7 +311,7 @@ export default defineBackground({
 ```typescript
 // Phase 1: placeholder shell — Phase 3 adds host list + token entry + Review Mode toggle
 const root = document.querySelector<HTMLDivElement>('#sfx-popup-root')!;
-root.textContent = 'stickyfix — loading...';
+root.textContent = 'stikfix — loading...';
 ```
 
 ### Pattern 4: Host Stub with util.parseArgs
@@ -333,14 +333,14 @@ const { values } = parseArgs({
 });
 
 if (!values.root) {
-  console.error('stickyfix-host: --root is required');
+  console.error('stikfix-host: --root is required');
   process.exit(1);
 }
 
 // Phase 1 stub — Phase 2 replaces this with the real HTTP server
 const projectName = values.name ?? require('node:path').basename(values.root);
 console.log(JSON.stringify({
-  app: 'stickyfix',
+  app: 'stikfix',
   name: projectName,
   root: values.root,
   port: null,       // Phase 2: real port after server binds
@@ -422,8 +422,8 @@ try {
     process.exit(1);
   }
   const parsed = JSON.parse(result.stdout.trim());
-  if (parsed.app !== 'stickyfix') {
-    console.error(`smoke test: expected app:"stickyfix", got: ${JSON.stringify(parsed.app)}`);
+  if (parsed.app !== 'stikfix') {
+    console.error(`smoke test: expected app:"stikfix", got: ${JSON.stringify(parsed.app)}`);
     process.exit(1);
   }
   if (parsed.root !== tmpRoot) {
@@ -445,7 +445,7 @@ try {
 
 ```json
 {
-  "name": "stickyfix",
+  "name": "stikfix",
   "version": "0.1.0",
   "description": "Pin sticky notes on any page — your AI reads them.",
   "private": true,
@@ -491,7 +491,7 @@ node_modules/
 .wxt/
 
 # Host token (per-project, never commit)
-.stickyfix-token
+.stikfix-token
 
 # OS
 .DS_Store
@@ -585,7 +585,7 @@ Verified patterns from official sources:
 export default defineBackground({
   type: 'module',
   main() {
-    console.log('stickyfix background loaded');
+    console.log('stikfix background loaded');
   },
 });
 ```
@@ -599,7 +599,7 @@ export default defineBackground({
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>stickyfix</title>
+    <title>stikfix</title>
   </head>
   <body>
     <div id="sfx-popup-root"></div>
@@ -615,7 +615,7 @@ import { defineConfig } from 'wxt';
 
 export default defineConfig({
   manifest: {
-    name: 'stickyfix',
+    name: 'stikfix',
     icons: {
       16: '/icon/16.png',
       32: '/icon/32.png',
@@ -788,15 +788,15 @@ const { values } = parseArgs({
 | V4 Access Control | No | No endpoints this phase |
 | V5 Input Validation | Minimal | `parseArgs` validates CLI args; `--root` is printed not executed |
 | V6 Cryptography | No | No crypto this phase |
-| V14 Configuration | Yes | No secrets in committed files; .stickyfix-token in .gitignore |
+| V14 Configuration | Yes | No secrets in committed files; .stikfix-token in .gitignore |
 
 ### Phase 1 Security Invariants
 
 | Invariant | Implementation |
 |-----------|----------------|
 | No GPL code in repo | Clean-room grep gate (`scripts/clean-room-check.mjs`) wired into `npm run check` |
-| No secrets committed | `.stickyfix-token` in `.gitignore`; no tokens in Phase 1 code |
-| `sfx-*` namespace | All DOM ids, package name, host id use `stickyfix`/`sfx-` prefix — enforced by grep gate |
+| No secrets committed | `.stikfix-token` in `.gitignore`; no tokens in Phase 1 code |
+| `sfx-*` namespace | All DOM ids, package name, host id use `stikfix`/`sfx-` prefix — enforced by grep gate |
 | MIT LICENSE committed | Already in repo; must remain unchanged |
 
 ### Known Threat Patterns for Scaffold Phase

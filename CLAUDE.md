@@ -2,7 +2,7 @@
 
 ## Project
 
-**stickyfix**
+**stikfix**
 
 A Chrome extension (MV3) + a tiny localhost host that let a developer pin **sticky notes** onto any web page — free-floating or anchored to a specific DOM element — and have each note written as a **markdown file** into the project's `notes/` folder, so an AI coding agent can read them, fix them, and iterate. It replaces the painful screenshot-paste-describe ping-pong of UI review with a durable, file-based, iterative review loop. Product-agnostic: works on any web page in Chrome.
 

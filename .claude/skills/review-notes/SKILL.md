@@ -1,7 +1,7 @@
 ---
 name: review-notes
 description: |
-  Process unread stickyfix review notes in the notes/ directory. Use when the
+  Process unread stikfix review notes in the notes/ directory. Use when the
   user says "read my notes", "process review notes", "fix sticky notes", "run
   review-notes", or "what notes do I have". Reads each unread *.md note in
   serial order, applies the requested code fix, then sets status:resolved and

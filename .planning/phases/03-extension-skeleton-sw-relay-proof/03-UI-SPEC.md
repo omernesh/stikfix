@@ -17,7 +17,7 @@ created: 2026-05-31
 **Purpose:** discover/manage hosts, enter tokens, toggle Review Mode for the active tab.
 
 **Layout (vanilla DOM, ~320px wide):**
-- Header: `stickyfix` wordmark + a small connection summary ("2 hosts").
+- Header: `stikfix` wordmark + a small connection summary ("2 hosts").
 - **Host list** — one row per discovered host:
   - Project `name` (bold) + bound `port` + a connection dot (green = reachable, grey = stale).
   - A **token input** (type=password-ish, monospace) pre-filled if stored; edits persist to `chrome.storage.local` on blur/change. A shared-token hint when one token covers multiple hosts.

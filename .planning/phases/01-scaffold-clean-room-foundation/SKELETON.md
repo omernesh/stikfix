@@ -1,4 +1,4 @@
-# Walking Skeleton — stickyfix
+# Walking Skeleton — stikfix
 
 **Phase:** 1
 **Generated:** 2026-05-31
@@ -22,7 +22,7 @@ This proves the WXT/Vite extension build, the tsc NodeNext host build, and the c
 | Host CLI | `node:util` `parseArgs` (no commander/yargs) | STACK.md; 5-flag CLI; stdlib, zero deps; `strict:false` + `multiple:true --origin` for HOST-13 |
 | Language config | TypeScript 6.0.3, `strict:true`; split tsconfigs — extension `types:["chrome"]` + `moduleResolution:bundler`, host `types:["node"]` + `moduleResolution:nodenext` | D-10; TS6 defaults `types:[]` so each must be explicit |
 | Icons | Four committed pre-sized PNGs (16/32/48/128) under `public/icon/`, referenced via `manifest.icons` | D-07; bans `@wxt-dev/auto-icons`/`sharp` (native binary, Windows/offline-CI risk) and `sips` (macOS-only) |
-| Clean-room enforcement | Node ESM grep gate (`scripts/clean-room-check.mjs`) wired into `npm run check`; `sfx-*`/`stickyfix` namespace from commit one | D-08, D-09; structural BUILD-04 mechanism, runs every check, not a pre-release checklist |
+| Clean-room enforcement | Node ESM grep gate (`scripts/clean-room-check.mjs`) wired into `npm run check`; `sfx-*`/`stikfix` namespace from commit one | D-08, D-09; structural BUILD-04 mechanism, runs every check, not a pre-release checklist |
 | Verification | `npm run check` = tsc(ext) + tsc(host) + clean-room grep + spawn-and-assert host smoke test; no third-party test framework this phase | D-02, D-11; all command-based, cross-platform Node |
 | Deployment / run | Local: `npm run build` then load-unpacked in Chrome; `npm run host -- --root <dir>` for the host | Local-only tool by design (NG1); no cloud target |
 | Directory layout | `entrypoints/{background.ts, popup/}`, `public/icon/*`, `host/src/`, `scripts/*.mjs`, split `tsconfig*.json` | RESEARCH Recommended Project Structure; WXT-idiomatic + Windows-safe |
@@ -43,7 +43,7 @@ This proves the WXT/Vite extension build, the tsc NodeNext host build, and the c
 - Extension permissions, host discovery, `chrome.storage.local` state, on-demand injection, SW relay — **Phase 3**
 - Any note UI, FAB, post-it, capture utilities, `.md` write — **Phase 4+**
 - `@medv/finder`, `interactjs`, `esbuild`, `@wxt-dev/auto-icons` — installed/used in later phases, not Phase 1
-- CI workflow (GitHub Actions), `stickyfix-host` npm `bin` — deferred (out of BUILD-* scope / v2 FUT-04)
+- CI workflow (GitHub Actions), `stikfix-host` npm `bin` — deferred (out of BUILD-* scope / v2 FUT-04)
 
 ## Subsequent Slice Plan
 

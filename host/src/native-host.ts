@@ -1,11 +1,11 @@
 /**
- * stickyfix native-messaging host entry point.
+ * stikfix native-messaging host entry point.
  *
  * Chrome spawns this process via the registered native-messaging manifest
- * (com.stickyfix.host). It responds to GET_TOKEN with { type:'TOKEN', ... }
+ * (com.stikfix.host). It responds to GET_TOKEN with { type:'TOKEN', ... }
  * from disk-backed files, then exits (sendNativeMessage one-shot — Pitfall 3).
  *
- * ONB-02: Reads the token from <root>/.stickyfix-token and delivers it to the SW.
+ * ONB-02: Reads the token from <root>/.stikfix-token and delivers it to the SW.
  * ONB-04: Chrome spawns this on demand; no persistent process or HTTP server.
  *
  * Security:
@@ -30,9 +30,9 @@ export { validateChosenFolder };
 // Config + token/port resolution
 // ---------------------------------------------------------------------------
 
-const CONFIG_PATH = join(homedir(), '.config', 'stickyfix', 'config.json');
+const CONFIG_PATH = join(homedir(), '.config', 'stikfix', 'config.json');
 
-interface StickyFixConfig {
+interface StikFixConfig {
   root: string;
   name: string;
   notesDir: string;
@@ -88,19 +88,19 @@ export async function handlePickFolder(
  * WITHOUT triggering a config read + process.exit on import.
  */
 export function main(): void {
-  let cfg: StickyFixConfig;
+  let cfg: StikFixConfig;
   try {
-    cfg = JSON.parse(readFileSync(CONFIG_PATH, 'utf8')) as StickyFixConfig;
+    cfg = JSON.parse(readFileSync(CONFIG_PATH, 'utf8')) as StikFixConfig;
   } catch {
     // Config missing — respond with a structured error so the SW gets {ok:false}
     // rather than Chrome reporting "native host exited unexpectedly"
-    sendNativeMessage({ type: 'ERROR', error: 'Config not found. Run: npx stickyfix init' });
+    sendNativeMessage({ type: 'ERROR', error: 'Config not found. Run: npx stikfix init' });
     process.exit(1);
   }
 
   // NOTE: the token (and optional port) are read LAZILY inside the GET_TOKEN
   // branch below — NOT upfront. PICK_FOLDER does not need the token, so reading
-  // it here would wrongly fail the folder dialog whenever .stickyfix-token is
+  // it here would wrongly fail the folder dialog whenever .stikfix-token is
   // absent (e.g. host never started). Config is the only upfront requirement.
   readNativeMessages((msg) => {
     const m = msg as { type?: string; origin?: string };
@@ -109,22 +109,22 @@ export function main(): void {
       // Token is required ONLY for GET_TOKEN — read it lazily here.
       let token: string;
       try {
-        token = readFileSync(join(cfg.root, '.stickyfix-token'), 'utf8').trim();
+        token = readFileSync(join(cfg.root, '.stikfix-token'), 'utf8').trim();
       } catch {
-        sendNativeMessage({ type: 'ERROR', error: '.stickyfix-token not found. Start the host first.' });
+        sendNativeMessage({ type: 'ERROR', error: '.stikfix-token not found. Start the host first.' });
         process.exit(1);
       }
 
       // Port is optional — read if present; SW falls back to port scan (A5 fallback)
       let port: number | undefined;
       try {
-        const raw = readFileSync(join(cfg.root, '.stickyfix-port'), 'utf8').trim();
+        const raw = readFileSync(join(cfg.root, '.stikfix-port'), 'utf8').trim();
         const parsed = parseInt(raw, 10);
         if (!isNaN(parsed)) {
           port = parsed;
         }
       } catch {
-        // .stickyfix-port absent is OK — SW re-probes (A5)
+        // .stikfix-port absent is OK — SW re-probes (A5)
       }
 
       // Send token + port (if known) + host identity, then exit (one-shot)
@@ -156,7 +156,7 @@ export function main(): void {
 }
 
 // Run only when invoked as the entry point (esbuild CJS bundle), never on import.
-// In the esbuild CJS bundle (stickyfix-native.cjs), `require`/`module` are CJS
+// In the esbuild CJS bundle (stikfix-native.cjs), `require`/`module` are CJS
 // scope locals and `require.main === module` is true when run directly. The
 // node:test compile path emits ESM where these are undefined at runtime — the
 // `typeof` guards keep main() from running on import there.

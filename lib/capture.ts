@@ -1,5 +1,5 @@
 /**
- * Capture utilities for stickyfix.
+ * Capture utilities for stikfix.
  *
  * computeCropCoords — pure, node:test-safe (no DOM/chrome at module level).
  * waitTwoRafs, cropToRect, captureTab — browser-only, exercised in 04-03.

@@ -36,7 +36,7 @@ metrics:
 
 # Phase 03 Plan 02: Service Worker — Discovery, Relay, Routing, Self-ID Probe
 
-**One-liner:** Complete MV3 service worker implementing the SW-as-sole-HTTP-client boundary: discovery+reconcile, message router with 8x return-true async branches, SEND_ANNOTATION relay fetch with X-Stickyfix-Token, GET_ROUTE step-3 page self-id probe, ENTER_REVIEW content-script injection, EXIT_REVIEW unmount, and SFX_SET_ROUTE one-time mapping persistence.
+**One-liner:** Complete MV3 service worker implementing the SW-as-sole-HTTP-client boundary: discovery+reconcile, message router with 8x return-true async branches, SEND_ANNOTATION relay fetch with X-Stikfix-Token, GET_ROUTE step-3 page self-id probe, ENTER_REVIEW content-script injection, EXIT_REVIEW unmount, and SFX_SET_ROUTE one-time mapping persistence.
 
 ## Tasks Completed
 
@@ -121,7 +121,7 @@ if (!resp.ok && resp.error.startsWith('unmapped:')) {
 | Every async onMessage branch returns true | PASS | 8 `return true` statements (6 message types + consistent) |
 | `refreshHosts()` persists via `sfxRegistry.setValue()` | PASS | Line 78 |
 | SEND_ANNOTATION derives origin from `chrome.tabs.get(tabId).url` | PASS | Lines 270-274 |
-| X-Stickyfix-Token header in relay fetch | PASS | Line 297 |
+| X-Stikfix-Token header in relay fetch | PASS | Line 297 |
 | Sole localhost fetcher (no 127.0.0.1 fetch outside background.ts) | PASS | grep entrypoints/ → only background.ts |
 | Host-down / 401 / unmapped-origin return {ok:false,error} | PASS | All error paths wrapped |
 | MANUAL-CHROME: dummy Send writes .md on HTTPS-origin page | PENDING | Human-UAT required (Phase 3 UAT gate) |
@@ -169,5 +169,5 @@ None — no new network endpoints, auth paths, or trust-boundary surfaces beyond
 - Sole localhost fetcher grep: CONFIRMED (no 127.0.0.1 outside background.ts in entrypoints/)
 - `return true` count: 8 (covers all 6 message types + SFX_SET_ROUTE)
 - `sfxRegistry.setValue` in refreshHosts: CONFIRMED line 78
-- `X-Stickyfix-Token` in relay fetch: CONFIRMED line 297
+- `X-Stikfix-Token` in relay fetch: CONFIRMED line 297
 - origin from `chrome.tabs.get(tabId).url`: CONFIRMED (not from msg body)

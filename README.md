@@ -1,13 +1,13 @@
 <div align="center">
 
-<img src="public/icon/128.png" alt="stickyfix" width="96" height="96" />
+<img src="public/icon/128.png" alt="stikfix" width="96" height="96" />
 
-# stickyfix
+# stikfix
 
 **Stick a note on any web page. Your AI coding agent reads it and fixes it. That's the whole loop.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![npm](https://img.shields.io/npm/v/stickyfix.svg)](https://www.npmjs.com/package/stickyfix)
+[![npm](https://img.shields.io/npm/v/stikfix.svg)](https://www.npmjs.com/package/stikfix)
 [![Chrome MV3](https://img.shields.io/badge/Chrome-MV3-blue.svg)](#load-the-extension)
 
 </div>
@@ -20,7 +20,7 @@ You spot something off in your UI — a button that's 4px too low, a heading tha
 
 That ping-pong is slow, lossy, and maddening — and it throws away everything the browser already knows about the element you're pointing at.
 
-**stickyfix kills the ping-pong.** You drop a note *directly on the thing*, and it lands on disk as a precise, context-rich markdown file in your project's `notes/` folder — which your AI agent can just read, fix, and mark done. A durable, file-based review loop instead of ephemeral chat.
+**stikfix kills the ping-pong.** You drop a note *directly on the thing*, and it lands on disk as a precise, context-rich markdown file in your project's `notes/` folder — which your AI agent can just read, fix, and mark done. A durable, file-based review loop instead of ephemeral chat.
 
 No cloud. No accounts. No sign-up. Everything stays on `127.0.0.1` — **your code and your notes never leave your machine.**
 
@@ -36,17 +36,17 @@ No cloud. No accounts. No sign-up. Everything stays on `127.0.0.1` — **your co
 ### 1. Install the host (one command)
 
 ```bash
-npx stickyfix init --root /path/to/your/project
+npx stikfix init --root /path/to/your/project
 ```
 
 This turnkey installer:
 
 - registers the secure native-messaging host for **Chrome and Edge** (user-level, no admin rights),
 - writes a small config pointing at your project,
-- creates a **"Stickyfix Host" launcher on your Desktop** so you can start the backend with a double-click — no terminal babysitting,
+- creates a **"Stikfix Host" launcher on your Desktop** so you can start the backend with a double-click — no terminal babysitting,
 - prints your stable **extension ID** (you never copy-paste a token).
 
-> **Keep it current:** re-run `npx --yes stickyfix@latest init --root /path/to/your/project` anytime to update the host.
+> **Keep it current:** re-run `npx --yes stikfix@latest init --root /path/to/your/project` anytime to update the host.
 
 ### 2. Load the extension
 
@@ -60,11 +60,11 @@ The loaded ID matches what the installer printed — nothing to type. (Building 
 
 ### 3. Start the backend
 
-Double-click the **Stickyfix Host** launcher on your Desktop. That's it — no commands, and double-clicking again is safe (it won't launch a second copy). The host listens on a port in the `39240–39260` range; the extension discovers it automatically.
+Double-click the **Stikfix Host** launcher on your Desktop. That's it — no commands, and double-clicking again is safe (it won't launch a second copy). The host listens on a port in the `39240–39260` range; the extension discovers it automatically.
 
 ### 4. Pair in one click
 
-Open the stickyfix popup in your toolbar and hit **Pair with host**. The token is handed over automatically through the OS native-messaging channel — you never see it, never paste it. Pair once and it stays paired, even after restarts.
+Open the stikfix popup in your toolbar and hit **Pair with host**. The token is handed over automatically through the OS native-messaging channel — you never see it, never paste it. Pair once and it stays paired, even after restarts.
 
 ### 5. Drop a note
 
@@ -74,13 +74,13 @@ Open your app, click **Enter Review Mode**, and start dropping notes. The first 
 
 - **Free notes** — a draggable post-it you can drop anywhere on the page. Captures URL, title, timestamp, viewport, and a screenshot.
 - **Element notes** — click any element and the note auto-captures a robust unique CSS selector ([`@medv/finder`](https://github.com/antonmedv/finder)), curated computed styles, truncated `outerHTML`, bounding box, `data-*`, accessibility role/label, the best-effort **React component name**, and an **auto element-highlight screenshot** showing exactly which element you meant.
-- **Region / marquee capture** — the camera tool dims the page, gives you a crosshair, and lets you drag a rectangle. stickyfix hides its own UI, captures, and crops the screenshot DPR-correctly. Stack multiple per note; each is a deletable thumbnail.
+- **Region / marquee capture** — the camera tool dims the page, gives you a crosshair, and lets you drag a rectangle. stikfix hides its own UI, captures, and crops the screenshot DPR-correctly. Stack multiple per note; each is a deletable thumbnail.
 - **Persistent on-page pins** — notes stay visible as pins on the page across reloads. View, edit, and delete them in place — backed by host-side CRUD over the localhost relay. Overlapping pins fan out automatically so dense pages stay readable.
 - **Two-way status, on the page** — pins reflect the loop: **unread** (yellow), **flagged** (amber — the agent needs you to clarify, with its question on hover), **resolved** (green ✓ — fixed, with the agent's reply on hover). Resolved notes stay visible so you can verify the fix; archived (`read`) notes disappear.
 - **Notes panel** — a chip-toggled list of every note: counts by status, filter chips, text search, and click-to-jump that scrolls right to the pin. Flip **All pages** to browse every note across the project, not just the current page.
 - **Live updates** — while Review Mode is on, pins and the panel refresh on their own (~4s, only when the tab is visible) as the agent writes replies and resolves notes. No manual reload.
 - **Per-origin project routing** — the first note on a new site opens an OS folder picker; after that, every tab routes to the right project's `notes/` folder automatically. No per-note picking.
-- **Cross-browser host** — one `npx stickyfix init` registers Chrome and Edge in a single pass.
+- **Cross-browser host** — one `npx stikfix init` registers Chrome and Edge in a single pass.
 - **The `review-notes` AI skill** — the portable agent half of the loop (see below).
 
 ## How notes reach your AI
@@ -93,7 +93,7 @@ The **review-notes** skill is the agent half of the loop. It works through your 
 
 ```bash
 mkdir -p .claude/skills/review-notes
-cp /path/to/stickyfix/skill/SKILL.md .claude/skills/review-notes/SKILL.md
+cp /path/to/stikfix/skill/SKILL.md .claude/skills/review-notes/SKILL.md
 ```
 
 **Any other folder-reading agent (Cursor, Codex, etc.):** point it at [`skill/SKILL.md`](skill/SKILL.md) — it's plain markdown, no Claude-specific bits. For example: *"follow the instructions in skill/SKILL.md."*
@@ -117,7 +117,7 @@ Run it on a clean directory and it just says "no unread notes." Safe to fire any
 
 ## Demo
 
-![stickyfix demo](docs/demo-placeholder.png)
+![stikfix demo](docs/demo-placeholder.png)
 
 *Recorded walkthrough coming soon — the placeholder above will be replaced with a GIF of the full drop-a-note → "read my notes" loop.*
 
@@ -134,7 +134,7 @@ Full packaging details, manifest locations, and the Firefox/Safari paths are in 
 
 ## Security
 
-stickyfix is built localhost-first on purpose:
+stikfix is built localhost-first on purpose:
 
 - **`127.0.0.1` only.** The host binds to localhost and nothing else — never `0.0.0.0`, not reachable from your network.
 - **Authorized writes only.** Every `POST /annotation` is token-checked. The token is delivered to the extension over the OS native-messaging channel during pairing — it never travels over the web and you never handle it.
@@ -157,12 +157,12 @@ npm run check        # full gate: tsc, clean-room check, host smoke test, all te
 Useful scripts:
 
 - `npm run dev` — WXT dev server with HMR for the extension.
-- `npm run host -- --root /path/to/project --origin http://localhost:3000` — start the host directly from a terminal (the Desktop launcher is the easy path; this is the manual one). On Windows PowerShell, use the equals form (`--root=C:\path`) or set `STICKYFIX_ROOT` / `STICKYFIX_ORIGINS` env vars, since npm 11.x swallows unknown `--flags`.
+- `npm run host -- --root /path/to/project --origin http://localhost:3000` — start the host directly from a terminal (the Desktop launcher is the easy path; this is the manual one). On Windows PowerShell, use the equals form (`--root=C:\path`) or set `STIKFIX_ROOT` / `STIKFIX_ORIGINS` env vars, since npm 11.x swallows unknown `--flags`.
 
-**Removing stickyfix:**
+**Removing stikfix:**
 
 ```bash
-npx stickyfix uninstall
+npx stikfix uninstall
 ```
 
 This removes the native-messaging manifest, the desktop launcher, and the local config — no leftovers.
@@ -170,7 +170,7 @@ This removes the native-messaging manifest, the desktop launcher, and the local 
 ### Architecture (one-liner)
 
 ```
-[Chrome/Edge Extension (MV3)]  --POST /annotation-->  [stickyfix host (localhost)]  --writes-->  notes/NNNN-<ts>.md
+[Chrome/Edge Extension (MV3)]  --POST /annotation-->  [stikfix host (localhost)]  --writes-->  notes/NNNN-<ts>.md
         you annotate                token-authed, 127.0.0.1 only                      your AI agent reads these
 ```
 

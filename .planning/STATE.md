@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-05-31)
 Phase: 09 (turnkey-onboarding-cross-browser-distribution) — COMPLETE (verification PASS 5/5, 2026-06-07)
 Plan: 5 of 5 complete
 Status: v1.0 milestone code-complete and verified across all 9 phases
-Next: release/distribution — npm publish stickyfix-host + Chrome Web Store listing (outside code scope; see 09-VERIFICATION.md non-blocking notes), then tag v1.0
+Next: release/distribution — npm publish stikfix-host + Chrome Web Store listing (outside code scope; see 09-VERIFICATION.md non-blocking notes), then tag v1.0
 Last activity: 2026-06-07
 
 Progress: [██████████] 100%
@@ -130,7 +130,7 @@ None yet.
 | v2 | Firefox/Safari port | v2 scope | Requirements |
 | v2 | Full-page scrolling screenshot | v2 scope | Requirements |
 | v2 | Shadow DOM deep traversal | v2 scope | Requirements |
-| v2 | npm publish stickyfix-host | v2 scope | Requirements |
+| v2 | npm publish stikfix-host | v2 scope | Requirements |
 | v1.x | Thumbnail lightbox preview | v1.x | Research |
 | v1.x | Keyboard shortcuts for tool switching | v1.x | Research |
 | v1.x | same-origin self-id via meta tag | v1.x | Research |

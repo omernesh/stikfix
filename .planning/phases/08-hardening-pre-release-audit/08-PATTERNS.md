@@ -35,7 +35,7 @@
 **Pure-lib invariant header to copy** (`lib/capture.ts:1-12`):
 ```typescript
 /**
- * Capture utilities for stickyfix.
+ * Capture utilities for stikfix.
  *
  * computeCropCoords — pure, node:test-safe (no DOM/chrome at module level).
  * ...
@@ -150,7 +150,7 @@ Add new `describe` block(s) with their own `before`/`after` calling `buildFixtur
 ```typescript
 const res = await fetch(`${fixture.baseUrl}/annotation`, {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json', 'X-Stickyfix-Token': TEST_TOKEN },
+  headers: { 'Content-Type': 'application/json', 'X-Stikfix-Token': TEST_TOKEN },
   body: JSON.stringify({ mode: 'free', comment: '…',
     page: { url: 'http://localhost:5173/test', title: 'Test Page' },
     viewport: { width: 1280, height: 800, devicePixelRatio: 1 } }),
@@ -167,7 +167,7 @@ it('PUT /annotation/<serial> with >12MB body is rejected (HOST-11/T-06-03)', asy
   try {
     const res = await fetch(`${fixture.baseUrl}/annotation/0001`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'X-Stickyfix-Token': TEST_TOKEN },
+      headers: { 'Content-Type': 'application/json', 'X-Stikfix-Token': TEST_TOKEN },
       body: bigBody,
     });
     status = res.status;
@@ -294,7 +294,7 @@ Zero top-level `chrome`/`document`/`window`; import tests via `'../<module>.js'`
 ### Booted-host fixture (applies to the host test extension)
 **Source:** `host/test/server.test.ts:24-63`
 **Apply to:** the D-02 concurrency block and the D-04 POST-boundary block.
-Reuse `TEST_TOKEN`, `buildFixture`, `listenFixture`, `closeFixture`; token via `X-Stickyfix-Token` header.
+Reuse `TEST_TOKEN`, `buildFixture`, `listenFixture`, `closeFixture`; token via `X-Stikfix-Token` header.
 
 ### ECONNRESET tolerance for oversize bodies
 **Source:** `host/test/server.test.ts:477-502`

@@ -94,9 +94,9 @@ WXT compiles `styles.css` into `content-scripts/review.css` and marks it as a `w
 
 ## HUMAN-UAT Items (for Phase 3 UAT gate)
 
-The following require a live Chrome environment with a running stickyfix host:
+The following require a live Chrome environment with a running stikfix host:
 
-1. **SC-3 — Relay proof (HTTPS-origin):** On an HTTPS-origin page, toggle Review Mode in the popup. The chip should appear (draggable). Click Send — the host's notesDir should gain a `0001-*.md` file with `comment: stickyfix relay proof`. Chip shows `sent ✓ 0001-*.md`. This proves CS→SW→host end-to-end.
+1. **SC-3 — Relay proof (HTTPS-origin):** On an HTTPS-origin page, toggle Review Mode in the popup. The chip should appear (draggable). Click Send — the host's notesDir should gain a `0001-*.md` file with `comment: stikfix relay proof`. Chip shows `sent ✓ 0001-*.md`. This proves CS→SW→host end-to-end.
 
 2. **SC-5 — One-time origin dropdown:** On a tab whose origin isn't in `sfxOriginMap` or any host's `origins[]`, the chip shows a project dropdown. Select a project → chip transitions to `→ name · notesDir` label. Reopen on same origin → dropdown never reappears (persisted via SFX_SET_ROUTE).
 
@@ -104,7 +104,7 @@ The following require a live Chrome environment with a running stickyfix host:
 
 4. **EXT-11 — Drag + Exit:** Drag the chip to all four viewport corners; confirm it clamps and doesn't leave the screen. Click × → chip unmounts and popup shows "Enter Review Mode" again.
 
-5. **EXT-02 — Runtime injection only:** Confirm no `content_scripts` entries in `chrome://extensions` → stickyfix → Details → Permissions. The chip appears only after clicking the toggle — never on other pages.
+5. **EXT-02 — Runtime injection only:** Confirm no `content_scripts` entries in `chrome://extensions` → stikfix → Details → Permissions. The chip appears only after clicking the toggle — never on other pages.
 
 ## Deviations from Plan
 
@@ -126,7 +126,7 @@ The following require a live Chrome environment with a running stickyfix host:
 
 ## Known Stubs
 
-- **Stub Send is intentionally a stub** — it sends a fixed `comment: 'stickyfix relay proof'` payload. The full note-capture flow (FAB, element picker, region capture) is Phase 4/5/6.
+- **Stub Send is intentionally a stub** — it sends a fixed `comment: 'stikfix relay proof'` payload. The full note-capture flow (FAB, element picker, region capture) is Phase 4/5/6.
 - **Connection dots** — the chip's status dot is hardcoded green. True host-reachability probing from the chip is a Phase 6 UX item.
 - **Drag position ephemeral** — chip position resets to top-right on every mount. Persisted position is a Phase 6 item.
 

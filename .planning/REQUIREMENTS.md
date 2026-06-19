@@ -1,4 +1,4 @@
-# Requirements: stickyfix
+# Requirements: stikfix
 
 **Defined:** 2026-05-31
 **Core Value:** A note dropped on a page reliably becomes a precise, context-rich `.md` file on disk in the right project's `notes/` folder — never silently lost.
@@ -20,16 +20,16 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **HOST-01**: Host starts via `npm run host -- --root <dir>` and prints project name, bound port, declared origins, token, and absolute notes dir
 - [x] **HOST-02**: Host binds `127.0.0.1` only and is not reachable from another LAN host
 - [x] **HOST-03**: Host picks a free port in range 39240–39260 (or honors `--port`)
-- [x] **HOST-04**: `GET /status` returns `{ app: "stickyfix", version, name, root, notesDir, origins }` with no token required
-- [x] **HOST-05**: `POST /annotation` requires a valid `X-Stickyfix-Token`; missing/wrong token returns 401
+- [x] **HOST-04**: `GET /status` returns `{ app: "stikfix", version, name, root, notesDir, origins }` with no token required
+- [x] **HOST-05**: `POST /annotation` requires a valid `X-Stikfix-Token`; missing/wrong token returns 401
 - [x] **HOST-06**: Host assigns a zero-padded running serial (`0001`) via an in-process mutex so concurrent POSTs never collide
 - [x] **HOST-07**: Host writes `<serial>-<YYYYMMDD-HHmmss>.md` with YAML frontmatter + comment body
 - [x] **HOST-08**: Host decodes already-cropped PNG data-URLs and writes them next to the `.md` as `<base>+<N>.png`, recording paths in frontmatter and body
 - [x] **HOST-09**: Writes are confined inside `--root`; path traversal is rejected; `--notes-dir` must resolve inside `--root`
-- [x] **HOST-10**: CORS echoes the request `Origin` and allows the `X-Stickyfix-Token` header for `POST`/`OPTIONS`
+- [x] **HOST-10**: CORS echoes the request `Origin` and allows the `X-Stikfix-Token` header for `POST`/`OPTIONS`
 - [x] **HOST-11**: Body size cap of 12 MB; larger payloads rejected with 413
-- [x] **HOST-12**: Notes dir is created if missing with a `.gitkeep`; token also written to gitignored `<root>/.stickyfix-token`
-- [x] **HOST-13**: Host accepts `--origin` (repeatable), `--name`, `--notes-dir`, `--token` (else `STICKYFIX_TOKEN` env, else random UUID) via `util.parseArgs`
+- [x] **HOST-12**: Notes dir is created if missing with a `.gitkeep`; token also written to gitignored `<root>/.stikfix-token`
+- [x] **HOST-13**: Host accepts `--origin` (repeatable), `--name`, `--notes-dir`, `--token` (else `STIKFIX_TOKEN` env, else random UUID) via `util.parseArgs`
 - [x] **HOST-14**: `GET /annotations?url=<page-url>` returns the notes whose frontmatter `url` path-matches (query string ignored), each with serial, mode, status, selector, rect, text, and screenshot paths read from `.md` frontmatter; token-gated
 - [x] **HOST-15**: `PUT /annotation/<serial>` overwrites the body of the existing note in place (resolves serial → `<serial>-*.md`, preserves frontmatter + screenshots, re-marks status `unread`); path-confined, token-gated, 12 MB cap
 - [x] **HOST-16**: `DELETE /annotation/<serial>` removes the note `.md` and its `+N.png` screenshots; path-confined, token-gated; 404 if serial not found
@@ -43,7 +43,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **EXT-05**: All localhost fetches route through the service worker (not the content script) to satisfy Chrome LNA/CORS
 - [x] **EXT-06**: Each note routes by the active tab's origin to the advertising host with zero per-note picks
 - [x] **EXT-07**: Unknown origin prompts a one-time host dropdown; the `origin → host` mapping persists and is never re-asked
-- [x] **EXT-08**: Same-origin clashes are resolved by page self-id (`<meta name="stickyfix-project">` / `window.__stickyfix_project`) preferred over the origin map
+- [x] **EXT-08**: Same-origin clashes are resolved by page self-id (`<meta name="stikfix-project">` / `window.__stikfix_project`) preferred over the origin map
 - [x] **EXT-09**: Registry, per-host tokens, `origin → host` map, and prefs persist in `chrome.storage.local` and survive Chrome restart + service-worker recycling
 - [x] **EXT-10**: On wake the worker re-discovers hosts and re-binds by project name+origin (not port) when a host restarts on a different port
 - [x] **EXT-11**: A draggable, viewport-clamped connection chip (`z-index: 2147483647`) shows connection state + target project/notes dir with an Exit button
@@ -72,7 +72,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **CAM-01**: A 📷 camera tool is available on every note (free and element)
 - [x] **CAM-02**: Activating it dims the page with a scrim and switches the cursor to a crosshair
 - [x] **CAM-03**: The user drags a rectangle (via interact.js); sub-threshold (<~6px) drag or `Esc` cancels without capturing
-- [x] **CAM-04**: On release, stickyfix hides its own UI, captures the visible tab, crops to the dragged rect (DPR-corrected), and restores the UI
+- [x] **CAM-04**: On release, stikfix hides its own UI, captures the visible tab, crops to the dragged rect (DPR-corrected), and restores the UI
 - [x] **CAM-05**: Each crop attaches as a deletable (`×`) thumbnail; multiple captures stack and increment `+2`, `+3`
 - [x] **CAM-06**: Crops are sent as already-cropped PNG data-URLs; the host writes them as `<base>+<N>.png` and records paths in the `.md`
 
@@ -129,7 +129,7 @@ Deferred to future release. Tracked but not in current roadmap.
 - **FUT-01**: Firefox/Safari port (keep code port-friendly, don't build) — *may be promoted by ONB-06 (Phase 9)*
 - **FUT-02**: Full-page (scrolling) screenshot capture
 - **FUT-03**: Shadow-DOM deep traversal for element capture
-- **FUT-04**: Publish `stickyfix-host` as an npm `bin`
+- **FUT-04**: Publish `stikfix-host` as an npm `bin`
 - **FUT-05**: Lightbox preview on thumbnail click (optional nicety)
 
 ## Out of Scope

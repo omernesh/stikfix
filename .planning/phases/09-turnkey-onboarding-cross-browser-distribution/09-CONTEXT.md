@@ -19,7 +19,7 @@ does NOT add new note-taking capabilities (those are done in Phases 1–8).
 ## Implementation Decisions
 
 ### Install mechanism (ONB-01)
-- **D-01:** Cross-platform **`npx stickyfix init` bootstrapper** — one command, no
+- **D-01:** Cross-platform **`npx stikfix init` bootstrapper** — one command, no
   per-OS native installer to build/sign/maintain, reuses the Node toolchain a
   developer already has. This is ONB-01's "single bootstrap command" (not a
   Windows-only double-click installer). The bootstrapper: installs/links the host,
@@ -88,7 +88,7 @@ as-is, extended, or replaced. It is the central research question for this phase
   zero-dep ethos, cross-platform constraint, host-per-project + auto-route.
 
 ### Security model (MUST preserve — sacred invariants)
-- `host/src/security.ts` — `checkToken` (timing-safe `X-Stickyfix-Token`), path
+- `host/src/security.ts` — `checkToken` (timing-safe `X-Stikfix-Token`), path
   confinement, 12 MB body cap.
 - `host/src/server.ts` / `host/src/index.ts` — `127.0.0.1`-only bind, port scan
   39240–39260, CORS, token-gated routes.
@@ -129,7 +129,7 @@ No external (non-repo) specs — requirements fully captured above.
 ### Integration Points
 - New: native-messaging host manifest registration (bootstrapper) + a native-
   messaging client in the SW (`entrypoints/background.ts`).
-- New: `npx stickyfix init` CLI entry (host side) — install, register manifest,
+- New: `npx stikfix init` CLI entry (host side) — install, register manifest,
   print extension-load guidance.
 - Changed: token acquisition path in the SW moves from manual popup entry to
   native-messaging handoff (popup token field may become a fallback/diagnostic).

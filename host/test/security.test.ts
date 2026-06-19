@@ -10,7 +10,7 @@ import { checkToken, readBody, isInsideDir } from '../src/security.js';
 
 describe('checkToken', () => {
   function makeReq(token?: string): { headers: Record<string, string | undefined> } {
-    return { headers: token !== undefined ? { 'x-stickyfix-token': token } : {} };
+    return { headers: token !== undefined ? { 'x-stikfix-token': token } : {} };
   }
 
   test('missing header returns false', () => {

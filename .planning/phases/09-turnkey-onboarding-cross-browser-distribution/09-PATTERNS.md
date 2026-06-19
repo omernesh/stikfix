@@ -10,7 +10,7 @@
 
 | New/Modified File | Role | Data Flow | Closest Analog | Match Quality |
 |-------------------|------|-----------|----------------|---------------|
-| `bin/stickyfix.ts` | utility (CLI entry) | request-response | `host/src/index.ts` | role-match |
+| `bin/stikfix.ts` | utility (CLI entry) | request-response | `host/src/index.ts` | role-match |
 | `host/src/native-host.ts` | service (stdio host) | event-driven | `host/src/server.ts` + `host/src/index.ts` | role-match |
 | `host/src/bootstrap/register.ts` | utility (manifest writer) | file-I/O | `host/src/config.ts` | role-match |
 | `host/src/native-msg.ts` | utility (framing) | streaming | `host/src/security.ts` | partial-match |
@@ -24,7 +24,7 @@
 
 ## Pattern Assignments
 
-### `bin/stickyfix.ts` (CLI entry, request-response)
+### `bin/stikfix.ts` (CLI entry, request-response)
 
 **Analog:** `host/src/index.ts`
 
@@ -52,10 +52,10 @@ const { values: rawValues } = parseArgs({
 });
 ```
 
-**New pattern for bin/stickyfix.ts** — add `allowPositionals: true` and a `subcommand` dispatch:
+**New pattern for bin/stikfix.ts** — add `allowPositionals: true` and a `subcommand` dispatch:
 ```typescript
-// bin/stickyfix.ts — bootstrapper entry for npx stickyfix init / uninstall
-// Compiled to dist/host/stickyfix-init.cjs via esbuild (CJS for shebang compat)
+// bin/stikfix.ts — bootstrapper entry for npx stikfix init / uninstall
+// Compiled to dist/host/stikfix-init.cjs via esbuild (CJS for shebang compat)
 // #!/usr/bin/env node  ← shebang added by esbuild or prepended manually
 
 import { parseArgs } from 'node:util';
@@ -75,7 +75,7 @@ if (subcommand === 'init') {
 } else if (subcommand === 'uninstall') {
   // call unregisterNativeHost(...)
 } else {
-  console.error('Usage: npx stickyfix <init|uninstall> [--root <dir>] [--extension-id <id>]');
+  console.error('Usage: npx stikfix <init|uninstall> [--root <dir>] [--extension-id <id>]');
   process.exit(1);
 }
 ```
@@ -83,7 +83,7 @@ if (subcommand === 'init') {
 **Error-exit pattern** (`host/src/index.ts` lines 38–41):
 ```typescript
 if (!values['root']) {
-  console.error('stickyfix-host: --root is required');
+  console.error('stikfix-host: --root is required');
   process.exit(1);
 }
 ```
@@ -101,11 +101,11 @@ import { join } from 'node:path';
 import { homedir } from 'node:os';
 
 // Read config written by bootstrapper — same shape as writeTokenFile writes root
-const configPath = join(homedir(), '.config', 'stickyfix', 'config.json');
+const configPath = join(homedir(), '.config', 'stikfix', 'config.json');
 const cfg = JSON.parse(readFileSync(configPath, 'utf8'));
 
 // Read token file written by HTTP host on startup (writeTokenFile pattern)
-const token = readFileSync(join(cfg.root, '.stickyfix-token'), 'utf8').trim();
+const token = readFileSync(join(cfg.root, '.stikfix-token'), 'utf8').trim();
 ```
 
 **Stdio framing pattern** (new — no exact analog; copy from RESEARCH.md Pattern 2):
@@ -155,7 +155,7 @@ readNativeMessages((msg) => {
 });
 ```
 
-**No HTTP server started** — this entry point MUST NOT call `createHostServer` or `bindServer`. It is a separate bundle (`stickyfix-native.cjs`) from the HTTP host (`index.js`).
+**No HTTP server started** — this entry point MUST NOT call `createHostServer` or `bindServer`. It is a separate bundle (`stikfix-native.cjs`) from the HTTP host (`index.js`).
 
 ---
 
@@ -186,7 +186,7 @@ export function ensureNotesDir(notesDir: string): void {
 **writeTokenFile pattern for owner-only file** (lines 176–182):
 ```typescript
 export function writeTokenFile(root: string, token: string): void {
-  const tokenPath = join(root, '.stickyfix-token');
+  const tokenPath = join(root, '.stikfix-token');
   if (existsSync(tokenPath)) {
     rmSync(tokenPath, { force: true });
   }
@@ -206,7 +206,7 @@ function nativeManifestDir(): string {
     case 'linux':
       return join(homedir(), '.config', 'google-chrome', 'NativeMessagingHosts');
     case 'win32':
-      return join(homedir(), '.local', 'share', 'stickyfix'); // manifest file only; registry key written separately
+      return join(homedir(), '.local', 'share', 'stikfix'); // manifest file only; registry key written separately
     default:
       throw new Error(`Unsupported platform: ${process.platform}`);
   }
@@ -219,7 +219,7 @@ import { execFileSync } from 'node:child_process';
 
 execFileSync('reg', [
   'ADD',
-  'HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\com.stickyfix.host',
+  'HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\com.stikfix.host',
   '/ve', '/t', 'REG_SZ',
   '/d', manifestPath,
   '/f',
@@ -227,7 +227,7 @@ execFileSync('reg', [
 // Also register for Edge (drop-in):
 execFileSync('reg', [
   'ADD',
-  'HKCU\\Software\\Microsoft\\Edge\\NativeMessagingHosts\\com.stickyfix.host',
+  'HKCU\\Software\\Microsoft\\Edge\\NativeMessagingHosts\\com.stikfix.host',
   '/ve', '/t', 'REG_SZ',
   '/d', manifestPath,
   '/f',
@@ -341,7 +341,7 @@ case SFX_MSG.REFRESH_HOSTS:
 async function handlePairNative(): Promise<{ ok: true } | { ok: false; error: string }> {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendNativeMessage(
-      'com.stickyfix.host',
+      'com.stikfix.host',
       { type: 'GET_TOKEN' },
       async (response) => {
         if (chrome.runtime.lastError) {
@@ -376,7 +376,7 @@ async function handlePairNative(): Promise<{ ok: true } | { ok: false; error: st
 async function handlePickFolder(origin: string): Promise<{ ok: true; folder: string } | { ok: false; error: string }> {
   return new Promise((resolve) => {
     chrome.runtime.sendNativeMessage(
-      'com.stickyfix.host',
+      'com.stikfix.host',
       { type: 'PICK_FOLDER', origin },
       (response) => {
         if (chrome.runtime.lastError) {
@@ -476,7 +476,7 @@ describe('bindServer — port scan (WR-06)', () => {
 - Manifest JSON has required fields: `name`, `description`, `path`, `type: "stdio"`, `allowed_origins`
 - `path` in manifest is absolute (`path.isAbsolute(manifestPath)`)
 - Uninstall deletes the manifest file; on Windows: `reg query` returns error after unregister
-- Config file (`~/.config/stickyfix/config.json`) written with correct `{ root, name }` shape
+- Config file (`~/.config/stikfix/config.json`) written with correct `{ root, name }` shape
 
 ---
 
@@ -485,7 +485,7 @@ describe('bindServer — port scan (WR-06)', () => {
 ### Host imports (Node built-ins only)
 
 **Source:** `host/src/config.ts` lines 12–17, `host/src/security.ts` lines 8–10
-**Apply to:** `bin/stickyfix.ts`, `host/src/native-host.ts`, `host/src/bootstrap/register.ts`, `host/src/folder-picker.ts`
+**Apply to:** `bin/stikfix.ts`, `host/src/native-host.ts`, `host/src/bootstrap/register.ts`, `host/src/folder-picker.ts`
 
 ```typescript
 // ALL host-side files: Node builtins + yaml only. No npm packages. No WXT/Chrome imports.
@@ -500,11 +500,11 @@ import { randomUUID, timingSafeEqual } from 'node:crypto';
 ### Error handling (host-side)
 
 **Source:** `host/src/index.ts` lines 38–41; `host/src/server.ts` lines 88–94
-**Apply to:** `bin/stickyfix.ts`, `host/src/native-host.ts`, `host/src/bootstrap/register.ts`
+**Apply to:** `bin/stikfix.ts`, `host/src/native-host.ts`, `host/src/bootstrap/register.ts`
 
 ```typescript
 // CLI-level: print to stderr + exit(1)
-console.error('stickyfix: <descriptive message>');
+console.error('stikfix: <descriptive message>');
 process.exit(1);
 
 // Function-level: throw typed error with optional statusCode
@@ -531,19 +531,19 @@ if (!isInsideDir(expectedRoot, candidatePath)) {
 **Apply to:** `host/src/native-host.ts` (reads the file; HTTP host writes it)
 
 ```typescript
-// The HTTP host writes <root>/.stickyfix-token with mode 0o600 on startup.
+// The HTTP host writes <root>/.stikfix-token with mode 0o600 on startup.
 // The native host reads it synchronously (fast, startup path).
-const token = readFileSync(join(root, '.stickyfix-token'), 'utf8').trim();
+const token = readFileSync(join(root, '.stikfix-token'), 'utf8').trim();
 ```
 
 ### Startup JSON line (used by tests + native host)
 
 **Source:** `host/src/index.ts` lines 64–73
-**Apply to:** `host/src/native-host.ts` MAY write a `.stickyfix-port` file alongside `.stickyfix-token` for the native host to read (per RESEARCH.md Open Question 2):
+**Apply to:** `host/src/native-host.ts` MAY write a `.stikfix-port` file alongside `.stikfix-token` for the native host to read (per RESEARCH.md Open Question 2):
 
 ```typescript
 // In host/src/index.ts — add one line after writeTokenFile:
-// writeFileSync(join(cfg.root, '.stickyfix-port'), String(boundPort), { encoding: 'utf8', mode: 0o600 });
+// writeFileSync(join(cfg.root, '.stikfix-port'), String(boundPort), { encoding: 'utf8', mode: 0o600 });
 ```
 
 ### SW async handler pattern (MV3 mandatory)

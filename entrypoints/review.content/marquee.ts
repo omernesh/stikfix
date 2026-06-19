@@ -1,5 +1,5 @@
 /**
- * stickyfix marquee mode — shadow-root scrim + interact.js drag-to-draw
+ * stikfix marquee mode — shadow-root scrim + interact.js drag-to-draw
  *
  * enterMarqueeMode — creates a full-viewport scrim inside the shadow-root
  * container, wires an interact.js draggable on the scrim for rubber-band

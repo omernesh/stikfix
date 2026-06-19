@@ -1,6 +1,6 @@
 # store/
 
-Store submission assets for stickyfix. All copy in this folder is ready to paste into the respective developer consoles.
+Store submission assets for stikfix. All copy in this folder is ready to paste into the respective developer consoles.
 
 ## Contents
 
@@ -20,9 +20,9 @@ Store submission assets for stickyfix. All copy in this folder is ready to paste
 
 - **Chrome Web Store Developer Console:** https://chrome.google.com/webstore/devconsole
 - **Firefox AMO Developer Hub:** https://addons.mozilla.org/developers/
-- **npm package:** https://www.npmjs.com/package/stickyfix
-- **Repository:** https://github.com/omernesh/stickyfix
-- **Privacy policy public URL:** https://github.com/omernesh/stickyfix/blob/main/store/privacy-policy.md
+- **npm package:** https://www.npmjs.com/package/stikfix
+- **Repository:** https://github.com/omernesh/stikfix
+- **Privacy policy public URL:** https://github.com/omernesh/stikfix/blob/main/store/privacy-policy.md
 
 ## Version
 

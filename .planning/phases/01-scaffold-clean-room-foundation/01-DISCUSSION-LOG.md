@@ -81,7 +81,7 @@
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| Spawn host on tmp root, assert startup/status | Asserts app==stickyfix, exit 0 | ✓ |
+| Spawn host on tmp root, assert startup/status | Asserts app==stikfix, exit 0 | ✓ |
 | No smoke test | tsc-only check | |
 
 **Auto choice:** Spawn-and-assert smoke test (recommended; satisfies BUILD-05).

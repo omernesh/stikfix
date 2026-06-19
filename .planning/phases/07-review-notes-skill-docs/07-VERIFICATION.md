@@ -12,7 +12,7 @@ human_verification:
 
 # Phase 7: review-notes Skill + Docs — Verification Report
 
-**Phase Goal:** Any AI coding agent can install the review-notes skill, run it against a notes/ dir, and have it process unread notes in serial order — renaming each to *.read.md — while the README gives a developer everything needed to install and use stickyfix in under 5 minutes.
+**Phase Goal:** Any AI coding agent can install the review-notes skill, run it against a notes/ dir, and have it process unread notes in serial order — renaming each to *.read.md — while the README gives a developer everything needed to install and use stikfix in under 5 minutes.
 
 **Verified:** 2026-06-03
 **Status:** human_needed

@@ -1,4 +1,4 @@
-# stickyfix
+# stikfix
 
 ## What This Is
 
@@ -13,9 +13,9 @@ A note dropped on a page reliably becomes a precise, context-rich `.md` file on 
 ### Validated
 
 - ✓ Cross-platform build (Windows/macOS/Linux) — no macOS-only steps — Phase 1 (`npm run build`/`npm run check` green on Windows; no sips/Bun)
-- ✓ MIT clean-room foundation established — `sfx-*`/`stickyfix` namespace + automated grep gate from commit one — Phase 1 (BUILD-04)
+- ✓ MIT clean-room foundation established — `sfx-*`/`stikfix` namespace + automated grep gate from commit one — Phase 1 (BUILD-04)
 - ✓ Localhost host writes notes to disk — `127.0.0.1`-only HTTP server, token auth, serial mutex, safe `.md`+`.png` writes inside `--root`, CORS, 12MB cap — Phase 2 (HOST-01..13; 48 tests)
-- ✓ Token auth on the host (`X-Stickyfix-Token`); host binds `127.0.0.1` only — Phase 2 (HOST-02, HOST-05; owner-only token file)
+- ✓ Token auth on the host (`X-Stikfix-Token`); host binds `127.0.0.1` only — Phase 2 (HOST-02, HOST-05; owner-only token file)
 
 ### Active
 
@@ -45,7 +45,7 @@ A note dropped on a page reliably becomes a precise, context-rich `.md` file on 
 ## Context
 
 - Conceived while iterating on a React admin panel (`chatlytics.ai`), but deliberately product-agnostic.
-- Today's loop forces the developer to be both the rendering pipeline and the context-transfer mechanism: screenshot → paste → describe-which-element → AI guesses → repeat. stickyfix removes the human from that pipe by capturing exact element context (selector, computed styles, outerHTML, bbox, screenshot) at click time.
+- Today's loop forces the developer to be both the rendering pipeline and the context-transfer mechanism: screenshot → paste → describe-which-element → AI guesses → repeat. stikfix removes the human from that pipe by capturing exact element context (selector, computed styles, outerHTML, bbox, screenshot) at click time.
 - MV3 extensions are sandboxed and cannot write to arbitrary filesystem paths; the File System Access API needs per-session re-grants. A localhost host owns the notes dir, assigns serials atomically, validates paths, and writes files. This is the chosen architecture (path "A").
 - Developer's primary OS is **Windows** — the build must succeed there with no macOS-only steps.
 - Architecture was derived by **studying** the GPL-3.0 project `JodusNodus/opencode-chrome-annotation` for ideas only. This is a clean-room MIT build (see Key Decisions and PRD §13): architectural facts may be reused; no code/comments/identifiers/file structure/text may be copied.
@@ -69,7 +69,7 @@ A note dropped on a page reliably becomes a precise, context-rich `.md` file on 
 | Host-per-project + auto-route by tab origin | Concurrent reviews with zero per-note picks; notes stay in each project's own repo | — Pending |
 | Crop screenshots extension-side (canvas) | Keeps host near-zero-dep; DPR-correct crop done before POST | — Pending |
 | `chrome.storage.local` for all settings | Survives Chrome restart + MV3 service-worker recycling; never in worker memory; re-bind by name+origin not port | — Pending |
-| Token auth via `X-Stickyfix-Token` header | We write files to disk — any local page guessing the port could otherwise write notes | — Pending |
+| Token auth via `X-Stikfix-Token` header | We write files to disk — any local page guessing the port could otherwise write notes | — Pending |
 | Serial + timestamp filenames; `.read.md` rename marker | Chronological order + unique key; rename is the idempotent "processed" signal for the skill | — Pending |
 | Only `/status` + `/annotation` endpoints | Drop upstream's OpenCode session-binding endpoints (`/sessions`,`/claim`,`/unclaim`) we don't need | — Pending |
 

@@ -41,11 +41,11 @@ created: 2026-06-05
 
 | Requirement | Validatable Behavior | Test Type | Automated Command | Manual? |
 |-------------|----------------------|-----------|-------------------|---------|
-| ONB-01 | `npx stickyfix init` runs cross-platform; registers native-messaging manifest at the correct per-OS path; writes/links the host | unit (manifest writer, path resolver) + manual (real npx run) | `npm run check` (path/manifest unit tests) | partial |
+| ONB-01 | `npx stikfix init` runs cross-platform; registers native-messaging manifest at the correct per-OS path; writes/links the host | unit (manifest writer, path resolver) + manual (real npx run) | `npm run check` (path/manifest unit tests) | partial |
 | ONB-02 | SW obtains token over `chrome.runtime.connectNative` (native messaging) — no token field in happy path | unit (native-msg handler pure logic) + manual (live pairing) | `npm run check` | partial |
 | ONB-03 | Pairing channel is not web-reachable: a scripted arbitrary web origin cannot obtain the token or write a note (SC-3 security proof) | unit (security: native-msg `allowed_origins` gate) + manual (hostile-origin probe) | `npm run check` (host security tests) | partial |
 | ONB-04 | First note on unmapped origin → OS folder dialog (`execFile`, arg-array, no shell); origin→folder persisted + reused | unit (dialog arg builder, no-shell-interpolation assertion; origin→folder map reconcile) | `npm run check` | partial |
-| ONB-05 | `npx stickyfix uninstall` removes native-messaging manifest + registry keys + host files; no orphan process/config | unit (uninstall path enumerator) + manual (real uninstall) | `npm run check` | partial |
+| ONB-05 | `npx stikfix uninstall` removes native-messaging manifest + registry keys + host files; no orphan process/config | unit (uninstall path enumerator) + manual (real uninstall) | `npm run check` | partial |
 | ONB-06 | Documented Edge (now) + Firefox/Safari packaging path exists (docs only, no build) | doc assertion (file exists, sections present) | `test -f docs/*` grep | doc |
 
 ---
@@ -65,7 +65,7 @@ created: 2026-06-05
 
 | Behavior | Requirement | Why Manual | Test Instructions |
 |----------|-------------|------------|-------------------|
-| Real `npx stickyfix init` on a clean machine reaches "note on disk" in one step | ONB-01 | Requires a real browser + OS native-messaging registration | Run `npx stickyfix init`, load the extension, drop a note, confirm `.md` on disk |
+| Real `npx stikfix init` on a clean machine reaches "note on disk" in one step | ONB-01 | Requires a real browser + OS native-messaging registration | Run `npx stikfix init`, load the extension, drop a note, confirm `.md` on disk |
 | Click-to-pair with no token copy-paste | ONB-02 | Requires live SW ↔ native host stdio channel | Click extension icon on a fresh profile; confirm token auto-populates, a Send succeeds |
 | Hostile web origin cannot pair or write | ONB-03 | Requires a scripted page attempting `connectNative`/HTTP from a non-extension origin | From a normal web page console, attempt to reach the native host / POST a note; confirm both fail |
 | Clean uninstall leaves nothing behind | ONB-05 | Requires inspecting real OS registry/dirs + process list | Run uninstall; confirm manifest/keys/host gone, no orphan node process |

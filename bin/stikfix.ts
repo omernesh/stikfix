@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * stickyfix bootstrapper CLI — npx stickyfix init / uninstall
+ * stikfix bootstrapper CLI — npx stikfix init / uninstall
  *
  * ONB-01: One-command, cross-platform setup for the native host.
  *
- * Compiled to dist/host/bin/stickyfix.js by tsconfig.host.json, then
- * bundled to dist/host/stickyfix-init.cjs by esbuild (npm run build:host-bin).
+ * Compiled to dist/host/bin/stikfix.js by tsconfig.host.json, then
+ * bundled to dist/host/stikfix-init.cjs by esbuild (npm run build:host-bin).
  *
  * Node builtins only — no WXT, no Chrome imports.
  */
@@ -50,7 +50,7 @@ const [subcommand] = positionals;
 function resolveBrowser(raw: unknown): TargetBrowser {
   if (raw === undefined) return 'chrome';
   if (typeof raw !== 'string' || !['chrome', 'firefox'].includes(raw.toLowerCase())) {
-    console.error(`stickyfix: unknown --browser "${String(raw)}" (expected chrome or firefox)`);
+    console.error(`stikfix: unknown --browser "${String(raw)}" (expected chrome or firefox)`);
     process.exit(1);
   }
   return raw.toLowerCase() === 'firefox' ? 'firefox' : 'chrome';
@@ -60,7 +60,7 @@ function resolveBrowser(raw: unknown): TargetBrowser {
 // Config path
 // ---------------------------------------------------------------------------
 
-const CONFIG_DIR = join(homedir(), '.config', 'stickyfix');
+const CONFIG_DIR = join(homedir(), '.config', 'stikfix');
 const CONFIG_PATH = join(CONFIG_DIR, 'config.json');
 
 // ---------------------------------------------------------------------------
@@ -74,8 +74,8 @@ if (subcommand === 'init') {
   const rawBrowser = values['browser'];
 
   if (!rawRoot || typeof rawRoot !== 'string') {
-    console.error('stickyfix init: --root is required');
-    console.error('Usage: npx stickyfix init --root <project-dir> [--browser <chrome|firefox>] [--extension-id <id>] [--port <port>]');
+    console.error('stikfix init: --root is required');
+    console.error('Usage: npx stikfix init --root <project-dir> [--browser <chrome|firefox>] [--extension-id <id>] [--port <port>]');
     process.exit(1);
   }
 
@@ -111,12 +111,12 @@ if (subcommand === 'init') {
   // Absolute path to the native host bundle — must be absolute (Pitfall 4)
   // The native host bundle is produced by esbuild alongside this file.
   // In esbuild CJS output, __dirname is the directory of the bundle file.
-  const hostBinPath = resolve(join(__dirname, 'stickyfix-native.cjs'));
+  const hostBinPath = resolve(join(__dirname, 'stikfix-native.cjs'));
 
   try {
     registerNativeHost({ extensionId, hostBinPath, browser });
   } catch (err) {
-    console.error('stickyfix init: failed to register native host:', String(err));
+    console.error('stikfix init: failed to register native host:', String(err));
     process.exit(1);
   }
 
@@ -127,7 +127,7 @@ if (subcommand === 'init') {
   // Find the launcher icon — resolve relative to the dist/host dir (go up two
   // levels to the project / installed-package root). On Windows a .lnk
   // IconLocation needs a real .ico (a .png renders unreliably as a shortcut
-  // icon), so prefer the multi-size stickyfix.ico there; elsewhere the .desktop
+  // icon), so prefer the multi-size stikfix.ico there; elsewhere the .desktop
   // Icon= takes the 128px PNG.
   const projectRoot = resolve(join(__dirname, '..', '..'));
 
@@ -144,8 +144,8 @@ if (subcommand === 'init') {
     : chromeOutputDir;
 
   const icoCandidates = [
-    join(projectRoot, 'public', 'icon', 'stickyfix.ico'),
-    join(browserOutputDir, 'icon', 'stickyfix.ico'),
+    join(projectRoot, 'public', 'icon', 'stikfix.ico'),
+    join(browserOutputDir, 'icon', 'stikfix.ico'),
   ];
   const pngCandidates = [
     join(browserOutputDir, 'icon', '128.png'),
@@ -173,7 +173,7 @@ if (subcommand === 'init') {
   // ---------------------------------------------------------------------------
 
   console.log('');
-  console.log('stickyfix: native host registered successfully.');
+  console.log('stikfix: native host registered successfully.');
   console.log('');
   console.log('  Extension ID: ' + extensionId);
   console.log('  Root:         ' + root);
@@ -203,10 +203,10 @@ if (subcommand === 'init') {
   console.log('  2. Start the backend — double-click the desktop launcher:');
 
   if (process.platform === 'win32') {
-    const lnkPath = join(homedir(), 'Desktop', 'Stickyfix Host.lnk');
+    const lnkPath = join(homedir(), 'Desktop', 'Stikfix Host.lnk');
     const batchPath = launcherResult.written.find((p) => p.endsWith('.bat')) ?? '';
     if (existsSync(lnkPath)) {
-      console.log('       Desktop shortcut: "Stickyfix Host" (icon on your Desktop)');
+      console.log('       Desktop shortcut: "Stikfix Host" (icon on your Desktop)');
     } else if (batchPath) {
       console.log('       Batch file: ' + batchPath);
       console.log('       (Desktop shortcut creation is in progress or was skipped — use the batch file above)');
@@ -228,7 +228,7 @@ if (subcommand === 'init') {
   console.log('  Extension ID: ' + extensionId);
   console.log('');
   console.log('To keep the host up-to-date:');
-  console.log('  npx --yes stickyfix@latest init --root ' + root);
+  console.log('  npx --yes stikfix@latest init --root ' + root);
 
 // ---------------------------------------------------------------------------
 // uninstall subcommand
@@ -239,13 +239,13 @@ if (subcommand === 'init') {
   try {
     unregisterNativeHost({ browser });
   } catch (err) {
-    console.error('stickyfix uninstall: error removing native-host manifest:', String(err));
+    console.error('stikfix uninstall: error removing native-host manifest:', String(err));
     // Continue to remove config file even if manifest removal failed
   }
 
   rmSync(CONFIG_PATH, { force: true });
 
-  console.log('stickyfix: native host unregistered.');
+  console.log('stikfix: native host unregistered.');
   console.log('  manifest removed');
   console.log('  launcher files removed');
   console.log('  config removed');
@@ -255,7 +255,7 @@ if (subcommand === 'init') {
 // ---------------------------------------------------------------------------
 
 } else {
-  console.error('Usage: npx stickyfix <init|uninstall> [--root <dir>] [--browser <chrome|firefox>] [--extension-id <id>] [--port <port>]');
+  console.error('Usage: npx stikfix <init|uninstall> [--root <dir>] [--browser <chrome|firefox>] [--extension-id <id>] [--port <port>]');
   console.error('');
   console.error('  init        Register the native host and write config');
   console.error('  uninstall   Remove the native host manifest, launchers, and config');

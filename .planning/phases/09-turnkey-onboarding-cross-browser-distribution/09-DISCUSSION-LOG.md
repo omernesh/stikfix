@@ -13,7 +13,7 @@
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| npx bootstrapper | `npx stickyfix init` one command; cross-platform; reuses dev's Node; no per-OS installer | ✓ |
+| npx bootstrapper | `npx stikfix init` one command; cross-platform; reuses dev's Node; no per-OS installer | ✓ |
 | pkg/SEA single binary | Self-contained host binary per OS; no Node needed; bigger build matrix | |
 | Per-OS native installers | .exe/.pkg/.deb double-click; best UX, most build/sign overhead | |
 

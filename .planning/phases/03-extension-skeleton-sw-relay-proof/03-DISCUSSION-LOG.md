@@ -34,7 +34,7 @@ Selected: functional chip now (shadow-root, draggable, clamped, z-index max, pro
 Selected: request `<all_urls>` per-origin at Review-Mode entry (no blanket all-urls).
 
 ## Dummy Relay Payload
-Selected: minimal valid §9.1 free-note payload ("stickyfix relay proof") → stub .md on disk, proving CS→SW→host on an HTTPS-origin page.
+Selected: minimal valid §9.1 free-note payload ("stikfix relay proof") → stub .md on disk, proving CS→SW→host on an HTTPS-origin page.
 
 ## Claude's Discretion
 - Message-type names, popup DOM, chip drag impl (interact.js vs pointer events), probe timeout, dropdown rendering.

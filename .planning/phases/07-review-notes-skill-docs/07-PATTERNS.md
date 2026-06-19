@@ -94,7 +94,7 @@ when-to-use: |
 ---
 name: review-notes
 description: |
-  Process unread stickyfix review notes in the notes/ directory. Use when the
+  Process unread stikfix review notes in the notes/ directory. Use when the
   user says "read my notes", "process review notes", "fix sticky notes", "run
   review-notes", or "what notes do I have". Reads each unread *.md note,
   applies the requested code fix, then renames it *.read.md. Idempotent —
@@ -119,7 +119,7 @@ The notes directory defaults to ./notes relative to the project root.
 - Product description (lines 1-13): tagline + the 5-step flow description (lines 2-11)
 - Architecture one-liner diagram (lines 47-51)
 - Windows PowerShell host-start variants (lines 22-38) — CRITICAL for developer's platform; regression if lost
-- `STICKYFIX_ORIGINS` env var note (line 39)
+- `STIKFIX_ORIGINS` env var note (line 39)
 - License section (lines 52-56)
 
 **Replace / rewrite:**

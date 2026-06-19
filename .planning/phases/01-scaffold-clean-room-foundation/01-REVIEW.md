@@ -32,7 +32,7 @@ status: issues_found
 
 ## Summary
 
-Reviewed the Phase 1 scaffold for stickyfix: WXT MV3 config, the two tsconfigs, package scripts, the background/popup placeholders, the stub host (`host/src/index.ts`), and the two cross-platform tooling scripts (clean-room audit + host smoke test). I verified the work end-to-end by running `npm run check` (both `tsc` passes, clean-room audit, and smoke test all PASS) and confirming `defineBackground` resolves through WXT's generated `#imports`.
+Reviewed the Phase 1 scaffold for stikfix: WXT MV3 config, the two tsconfigs, package scripts, the background/popup placeholders, the stub host (`host/src/index.ts`), and the two cross-platform tooling scripts (clean-room audit + host smoke test). I verified the work end-to-end by running `npm run check` (both `tsc` passes, clean-room audit, and smoke test all PASS) and confirming `defineBackground` resolves through WXT's generated `#imports`.
 
 Within the intentionally narrow scaffold scope, the extension/tsconfig/host-stub surface is sound and cross-platform-clean (no `sips`/`bash`/Bun, all paths via `node:path`, temp dir via `os.tmpdir()`). No Critical issues.
 

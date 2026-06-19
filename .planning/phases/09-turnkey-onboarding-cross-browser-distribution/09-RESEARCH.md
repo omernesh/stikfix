@@ -11,7 +11,7 @@
 
 ### Locked Decisions
 
-- **D-01:** Cross-platform `npx stickyfix init` bootstrapper — one command, no per-OS native installer. Installs/links the host, registers the native-messaging manifest, and guides loading the extension. MUST stay cross-platform (no `sips`, no Bun, no Windows-only steps).
+- **D-01:** Cross-platform `npx stikfix init` bootstrapper — one command, no per-OS native installer. Installs/links the host, registers the native-messaging manifest, and guides loading the extension. MUST stay cross-platform (no `sips`, no Bun, no Windows-only steps).
 - **D-02:** Native messaging is the pairing channel. The bootstrapper registers a native-messaging host manifest; the SW obtains the token over the OS-level native-messaging channel. No HTTP `/pair` endpoint; no token on a web-reachable surface.
 - **D-03:** Host is native-messaging-spawned on demand — browser launches host via the registered manifest. No persistent tray or OS service. Uninstall = remove manifest + host files, no orphan daemon.
 - **D-04:** Origin→folder mapping via an OS folder dialog on first note. The first note on an unmapped origin makes the native host open a native OS folder dialog; origin→folder persisted and reused silently thereafter.
@@ -33,11 +33,11 @@
 
 | ID | Description | Research Support |
 |----|-------------|------------------|
-| ONB-01 | Turnkey one-step setup (single bootstrap command, cross-platform) installs host + extension without manual repo clone or `npm install` | D-01: `npx stickyfix init` bootstrapper; `bin` field in published package.json; shebang entry point |
+| ONB-01 | Turnkey one-step setup (single bootstrap command, cross-platform) installs host + extension without manual repo clone or `npm install` | D-01: `npx stikfix init` bootstrapper; `bin` field in published package.json; shebang entry point |
 | ONB-02 | User never manually copies/pastes a token — clicking extension icon auto-pairs | D-02: native messaging channel delivers token to SW; popup polls on open |
 | ONB-03 | Auto-pairing preserves security model — arbitrary web origin cannot obtain token | D-02: native messaging is extension-only; web origins structurally cannot call `chrome.runtime.connectNative` |
 | ONB-04 | Host auto-starts / discoverable with no manual terminal step | D-03: native-messaging-spawned on demand; Chrome launches host binary per manifest |
-| ONB-05 | Uninstall is clean — removes host artifacts + native-messaging manifests, no orphan processes | D-03: on-demand lifecycle means no daemon; `npx stickyfix uninstall` removes manifest files + registry keys |
+| ONB-05 | Uninstall is clean — removes host artifacts + native-messaging manifests, no orphan processes | D-03: on-demand lifecycle means no daemon; `npx stikfix uninstall` removes manifest files + registry keys |
 | ONB-06 | Documented packaging path for Edge (Chromium drop-in), Firefox, and Safari | D-05: Edge = Chrome fallback in registry; Firefox = `allowed_extensions`; Safari = App Store bundled app |
 </phase_requirements>
 
@@ -45,13 +45,13 @@
 
 ## Summary
 
-Phase 9 converts stickyfix from a "clone-and-run" developer tool into a turnkey product. The core mechanism is **Chrome native messaging**: a JSON manifest file registered in a per-OS location (Windows registry key, macOS directory, Linux directory) tells Chrome where to find a Node.js script; Chrome spawns that script on demand when the extension calls `chrome.runtime.connectNative` or `chrome.runtime.sendNativeMessage`. The bootstrapper (`npx stickyfix init`) writes the manifest and registers it — one command, no admin rights if using `HKCU` on Windows.
+Phase 9 converts stikfix from a "clone-and-run" developer tool into a turnkey product. The core mechanism is **Chrome native messaging**: a JSON manifest file registered in a per-OS location (Windows registry key, macOS directory, Linux directory) tells Chrome where to find a Node.js script; Chrome spawns that script on demand when the extension calls `chrome.runtime.connectNative` or `chrome.runtime.sendNativeMessage`. The bootstrapper (`npx stikfix init`) writes the manifest and registers it — one command, no admin rights if using `HKCU` on Windows.
 
 The central architectural tension — host-per-project HTTP vs. native messaging as a broker — is resolved decisively by the **1 MB inbound message size cap** on native messaging (host→browser direction). Screenshots routinely reach 3-12 MB. This makes option (a) — native host as broker writing notes over stdio — architecturally unsound for this project. The correct answer is **option (b): native messaging is used only for secure bootstrap/pairing (token + port delivery); the existing per-project HTTP relay is retained for note transport**. This preserves every Phase 2-8 invariant, including the SW-as-sole-HTTP-client boundary, with a minimal addition: one new native-messaging channel used once per session to receive the token.
 
 The "no manual token copy-paste" requirement is fully satisfied because the native channel delivers the token directly to the SW via `chrome.runtime.sendNativeMessage`, which web pages and content scripts cannot call — they can only reach the extension's own background context via `chrome.runtime.sendMessage`, which is a different, extension-internal API. The structural isolation is OS-level, not application-level.
 
-**Primary recommendation:** Implement option (b) — native messaging for pairing only, HTTP for note transport — with a new `host/src/native-host.ts` entry point that reads the token from `<root>/.stickyfix-token` and sends it to the SW, plus a `bin/stickyfix.ts` CLI that installs the host and registers the manifest.
+**Primary recommendation:** Implement option (b) — native messaging for pairing only, HTTP for note transport — with a new `host/src/native-host.ts` entry point that reads the token from `<root>/.stikfix-token` and sends it to the SW, plus a `bin/stikfix.ts` CLI that installs the host and registers the manifest.
 
 ---
 
@@ -85,9 +85,9 @@ The "no manual token copy-paste" requirement is fully satisfied because the nati
 
 **How option (b) works end-to-end:**
 
-1. `npx stickyfix init` registers the native-messaging manifest for a named host (`com.stickyfix.host`), pointing at a wrapper script (`stickyfix-native`) that launches `host/src/native-host.ts` with `--root` from a persisted config file.
-2. On popup open (or on first note attempt), the SW calls `chrome.runtime.sendNativeMessage('com.stickyfix.host', {type:'GET_TOKEN'})`.
-3. The native host reads `<root>/.stickyfix-token` (written by the existing HTTP host on startup — HOST-12) and responds with `{token, port, name, notesDir}`.
+1. `npx stikfix init` registers the native-messaging manifest for a named host (`com.stikfix.host`), pointing at a wrapper script (`stikfix-native`) that launches `host/src/native-host.ts` with `--root` from a persisted config file.
+2. On popup open (or on first note attempt), the SW calls `chrome.runtime.sendNativeMessage('com.stikfix.host', {type:'GET_TOKEN'})`.
+3. The native host reads `<root>/.stikfix-token` (written by the existing HTTP host on startup — HOST-12) and responds with `{token, port, name, notesDir}`.
 4. The SW persists the token to `sfxTokens` and the host entry to `sfxRegistry` — exactly as if the user had typed the token in the popup.
 5. All subsequent note sends use the existing HTTP relay path (unchanged).
 
@@ -98,7 +98,7 @@ The "no manual token copy-paste" requirement is fully satisfied because the nati
 | Invariant | Status after (b) |
 |-----------|-----------------|
 | 127.0.0.1-only bind | Unchanged — HTTP host still binds loopback only |
-| token via `X-Stickyfix-Token` | Unchanged — token delivered by native channel but used in the same header |
+| token via `X-Stikfix-Token` | Unchanged — token delivered by native channel but used in the same header |
 | Origin from `chrome.tabs.get(tabId)` | Unchanged — SW still derives origin from the Chrome tab API, never from message body |
 | SW as sole HTTP client | Unchanged — only the SW fetches 127.0.0.1; the native host never makes HTTP calls |
 | Path confinement on writes | Unchanged — HTTP host still validates paths |
@@ -154,16 +154,16 @@ Phase 9 introduces **no new npm packages**. The existing dependencies were previ
 ### System Architecture Diagram (Option B — Pairing via Native Messaging, Note Transport via HTTP)
 
 ```
-BOOTSTRAP TIME (npx stickyfix init)
+BOOTSTRAP TIME (npx stikfix init)
 ─────────────────────────────────────────────────────────────
-  User runs:  npx stickyfix init --root /path/to/project
+  User runs:  npx stikfix init --root /path/to/project
                         │
-              bin/stickyfix.ts (bootstrapper)
+              bin/stikfix.ts (bootstrapper)
                         │
          ┌──────────────┴──────────────────┐
          │                                 │
   Writes native-messaging              Saves root config
-  manifest JSON to OS location         ~/.config/stickyfix/config.json
+  manifest JSON to OS location         ~/.config/stikfix/config.json
          │                                 │
   Registers manifest pointer           Contains: { root, name }
   (Windows: HKCU registry key)
@@ -176,14 +176,14 @@ BOOTSTRAP TIME (npx stickyfix init)
 PAIRING TIME (popup opens OR first note attempt)
 ─────────────────────────────────────────────────────────────
   SW (background.ts)
-  chrome.runtime.sendNativeMessage('com.stickyfix.host', {type:'GET_TOKEN'})
+  chrome.runtime.sendNativeMessage('com.stikfix.host', {type:'GET_TOKEN'})
          │
-         │  Chrome spawns via manifest → node stickyfix-native-host.cjs
+         │  Chrome spawns via manifest → node stikfix-native-host.cjs
          │
   host/src/native-host.ts
          │
-    Reads ~/.config/stickyfix/config.json → {root}
-    Reads <root>/.stickyfix-token
+    Reads ~/.config/stikfix/config.json → {root}
+    Reads <root>/.stikfix-token
          │
   Responds: { type:'TOKEN', token, port, name, notesDir }
          │
@@ -202,7 +202,7 @@ NOTE TRANSPORT (unchanged from Phases 2-8)
   SW resolves route via resolveRoute(origin, state) [unchanged]
          │
   SW → HTTP POST http://127.0.0.1:<port>/annotation
-         │      header: X-Stickyfix-Token: <token>
+         │      header: X-Stikfix-Token: <token>
          │
   HTTP host writes .md + .png to <notesDir>
          │
@@ -231,13 +231,13 @@ FOLDER-PICKER (first note on unmapped origin, D-04)
 
 ```
 bin/
-├── stickyfix.ts          # npx entry: init / uninstall sub-commands (bootstrapper)
+├── stikfix.ts          # npx entry: init / uninstall sub-commands (bootstrapper)
 host/src/
 ├── native-host.ts        # Separate entry point for native-messaging-spawned process
 │                         # Reads config + token file; responds via stdio protocol
 dist/host/
-├── stickyfix-init.cjs    # Bundled bootstrapper (esbuild → CJS for shebang compat)
-├── stickyfix-native.cjs  # Bundled native host (esbuild → CJS, standalone)
+├── stikfix-init.cjs    # Bundled bootstrapper (esbuild → CJS for shebang compat)
+├── stikfix-native.cjs  # Bundled native host (esbuild → CJS, standalone)
 ```
 
 The native host MUST be a separate bundle from the HTTP host (`host/src/index.ts`). Chrome spawns it on demand via the manifest path; it must not start an HTTP server or listen on a port.
@@ -246,13 +246,13 @@ The native host MUST be a separate bundle from the HTTP host (`host/src/index.ts
 
 **What:** A JSON file at a per-OS registered location declaring the native host name, executable path, and allowed extension origins.
 
-**When to use:** Written once by `npx stickyfix init`, read by Chrome/Edge on every `connectNative` / `sendNativeMessage` call.
+**When to use:** Written once by `npx stikfix init`, read by Chrome/Edge on every `connectNative` / `sendNativeMessage` call.
 
 ```json
 {
-  "name": "com.stickyfix.host",
-  "description": "stickyfix native messaging host",
-  "path": "/home/user/.local/share/stickyfix/stickyfix-native.cjs",
+  "name": "com.stikfix.host",
+  "description": "stikfix native messaging host",
+  "path": "/home/user/.local/share/stikfix/stikfix-native.cjs",
   "type": "stdio",
   "allowed_origins": [
     "chrome-extension://XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/"
@@ -346,8 +346,8 @@ export default defineConfig({
 **Windows** [VERIFIED: developer.chrome.com/docs/extensions/develop/concepts/native-messaging + learn.microsoft.com/microsoft-edge/extensions/developer-guide/native-messaging]:
 
 ```
-Registry key: HKCU\Software\Google\Chrome\NativeMessagingHosts\com.stickyfix.host
-Value (Default): C:\Users\<user>\.local\share\stickyfix\com.stickyfix.host.json
+Registry key: HKCU\Software\Google\Chrome\NativeMessagingHosts\com.stikfix.host
+Value (Default): C:\Users\<user>\.local\share\stikfix\com.stikfix.host.json
 ```
 
 Node.js command (no admin rights for HKCU):
@@ -355,7 +355,7 @@ Node.js command (no admin rights for HKCU):
 import { execFileSync } from 'node:child_process';
 execFileSync('reg', [
   'ADD',
-  'HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\com.stickyfix.host',
+  'HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\com.stikfix.host',
   '/ve', '/t', 'REG_SZ',
   '/d', manifestPath,
   '/f'
@@ -364,12 +364,12 @@ execFileSync('reg', [
 
 **macOS** (user-level, no admin rights) [VERIFIED: developer.chrome.com]:
 ```
-~/Library/Application Support/Google/Chrome/NativeMessagingHosts/com.stickyfix.host.json
+~/Library/Application Support/Google/Chrome/NativeMessagingHosts/com.stikfix.host.json
 ```
 
 **Linux** (user-level) [VERIFIED: developer.chrome.com]:
 ```
-~/.config/google-chrome/NativeMessagingHosts/com.stickyfix.host.json
+~/.config/google-chrome/NativeMessagingHosts/com.stikfix.host.json
 ```
 
 ### Pattern 5: OS Folder-Picker Dialog (D-04)
@@ -449,7 +449,7 @@ async function pickFolder(title: string): Promise<string | null> {
 - **Using `exec()` instead of `execFile()` for OS dialogs:** `exec` spawns a shell and is vulnerable to command injection if any variable is interpolated. Always use `execFile` with a static argument array.
 - **Using `connectNative` for the pairing flow:** `sendNativeMessage` is sufficient and cleaner for a single request/response. `connectNative` creates a persistent process; for a one-shot token fetch, `sendNativeMessage` is correct (Chrome starts the process, gets the response, then the process exits).
 - **Routing note payloads through native messaging:** 1 MB cap makes this unworkable. Notes transport stays HTTP.
-- **Hardcoding the extension ID in source:** The `allowed_origins` value must be set at install time by `npx stickyfix init`. The bootstrapper reads or prompts for the ID; it must not be a constant in the codebase (the published CWS ID differs from the unpacked dev ID unless the `key` field is used).
+- **Hardcoding the extension ID in source:** The `allowed_origins` value must be set at install time by `npx stikfix init`. The bootstrapper reads or prompts for the ID; it must not be a constant in the codebase (the published CWS ID differs from the unpacked dev ID unless the `key` field is used).
 - **Using `shell: true` in execFile options:** Never pass `shell: true` — it degrades `execFile` back to `exec` behavior and reintroduces the injection risk.
 - **Writing the native host's stdout in text mode on Windows:** Use `Buffer` objects for all stdout writes; do not use `process.stdout.write(string)` for the binary length-prefix header.
 
@@ -476,9 +476,9 @@ This is a new feature phase (not rename/refactor), so no existing runtime state 
 | Category | Items Created | Removal Required (uninstall) |
 |----------|--------------|------------------------------|
 | OS-registered state | Native-messaging manifest file at per-OS path | Delete file (macOS/Linux) + delete registry key (Windows) |
-| Stored config | `~/.config/stickyfix/config.json` (bootstrapper writes; native host reads) | Delete file |
+| Stored config | `~/.config/stikfix/config.json` (bootstrapper writes; native host reads) | Delete file |
 | Stored data | `sfxTokens` / `sfxRegistry` in `chrome.storage.local` (populated by pairing) | Chrome uninstall handles this; `uninstall` command is extension-side (no action needed) |
-| Build artifacts | `dist/host/stickyfix-init.cjs`, `dist/host/stickyfix-native.cjs` | Delete on `npm uninstall -g stickyfix` or `npx stickyfix uninstall` |
+| Build artifacts | `dist/host/stikfix-init.cjs`, `dist/host/stikfix-native.cjs` | Delete on `npm uninstall -g stikfix` or `npx stikfix uninstall` |
 
 **Nothing found in existing categories that requires migration** — this phase adds new state only.
 
@@ -489,7 +489,7 @@ This is a new feature phase (not rename/refactor), so no existing runtime state 
 ### Pitfall 1: Extension ID Changes Between Dev and Production
 **What goes wrong:** The native-messaging manifest's `allowed_origins` is set at install time. If the extension ID changes (new unpacked path, Chrome Web Store publish), the native host stops responding with "Access to the specified native messaging host is forbidden."
 **Why it happens:** Unpacked extensions derive ID from directory path unless a `key` field is present in the manifest.
-**How to avoid:** Add a `key` field to `wxt.config.ts manifest`. Generate the key by uploading to the Chrome Developer Dashboard before first publish. Document the two-ID problem (dev ID vs. CWS ID) and make the bootstrapper re-registerable (`npx stickyfix init` can be run again safely).
+**How to avoid:** Add a `key` field to `wxt.config.ts manifest`. Generate the key by uploading to the Chrome Developer Dashboard before first publish. Document the two-ID problem (dev ID vs. CWS ID) and make the bootstrapper re-registerable (`npx stikfix init` can be run again safely).
 **Warning signs:** Native messaging silently fails; Chrome logs "Access to the specified native messaging host is forbidden" in `chrome://extensions` → background service worker → errors.
 
 ### Pitfall 2: Windows stdout Binary Corruption
@@ -502,7 +502,7 @@ This is a new feature phase (not rename/refactor), so no existing runtime state 
 **What goes wrong:** Using `connectNative` for the one-shot token fetch leaves a persistent host process running indefinitely. On macOS/Linux, `process.stdin` stays open; the host never exits.
 **Why it happens:** `connectNative` keeps the process alive until the port is destroyed.
 **How to avoid:** Use `chrome.runtime.sendNativeMessage` for the pairing GET_TOKEN request (one shot, process exits after response). Only use `connectNative` if a persistent session is needed (it isn't for pairing).
-**Warning signs:** Multiple node processes accumulate; memory grows; `ps aux | grep stickyfix-native` shows duplicates.
+**Warning signs:** Multiple node processes accumulate; memory grows; `ps aux | grep stikfix-native` shows duplicates.
 
 ### Pitfall 4: Native Host Path Must Be Absolute on macOS/Linux
 **What goes wrong:** A relative path in the native-messaging manifest works on Windows but silently fails on macOS and Linux.
@@ -513,7 +513,7 @@ This is a new feature phase (not rename/refactor), so no existing runtime state 
 ### Pitfall 5: HKCU vs. HKLM Registry Choice on Windows
 **What goes wrong:** Writing to `HKEY_LOCAL_MACHINE` requires admin/elevated privileges. On machines without admin rights, `reg ADD HKLM\...` fails silently or throws an error, and the host is never registered.
 **Why it happens:** User-level tools run without elevation.
-**How to avoid:** Always register in `HKCU` (user-scope). Chrome checks `HKCU` before `HKLM`. The bootstrapper must write to `HKCU\Software\Google\Chrome\NativeMessagingHosts\com.stickyfix.host`.
+**How to avoid:** Always register in `HKCU` (user-scope). Chrome checks `HKCU` before `HKLM`. The bootstrapper must write to `HKCU\Software\Google\Chrome\NativeMessagingHosts\com.stikfix.host`.
 
 ### Pitfall 6: The 1 MB Native Host → Browser Message Limit
 **What goes wrong:** Any attempt to send note payloads (screenshots) over the native messaging channel results in Chrome silently dropping messages that exceed 1 MB.
@@ -522,9 +522,9 @@ This is a new feature phase (not rename/refactor), so no existing runtime state 
 **Warning signs:** Large payloads are silently dropped; small payloads work; this looks like an intermittent bug.
 
 ### Pitfall 7: The `npx` Cache and Stale Bootstrapper
-**What goes wrong:** `npx stickyfix init` may run a cached version of the package, not the latest one.
+**What goes wrong:** `npx stikfix init` may run a cached version of the package, not the latest one.
 **Why it happens:** npx caches packages in `~/.npm/_npx`.
-**How to avoid:** Document that users should run `npx --yes stickyfix@latest init` to force the latest version. The `package.json` for the published package must have `"preferGlobal": false` and a clean `bin` entry.
+**How to avoid:** Document that users should run `npx --yes stikfix@latest init` to force the latest version. The `package.json` for the published package must have `"preferGlobal": false` and a clean `bin` entry.
 **Warning signs:** `init` completes but doesn't write the expected manifest version.
 
 ### Pitfall 8: OS Dialog Blocks the Native Host Process
@@ -540,7 +540,7 @@ This is a new feature phase (not rename/refactor), so no existing runtime state 
 
 ```typescript
 // Source: npm docs (npx bin entry pattern) + CLAUDE.md constraints
-// bin/stickyfix.ts — compiled to dist/host/stickyfix-init.cjs with esbuild
+// bin/stikfix.ts — compiled to dist/host/stikfix-init.cjs with esbuild
 
 #!/usr/bin/env node
 import { parseArgs } from 'node:util';
@@ -561,7 +561,7 @@ if (subcommand === 'init') {
 } else if (subcommand === 'uninstall') {
   await unregisterNativeHost();
 } else {
-  console.error('Usage: npx stickyfix <init|uninstall> [--root <dir>] [--extension-id <id>]');
+  console.error('Usage: npx stikfix <init|uninstall> [--root <dir>] [--extension-id <id>]');
   process.exit(1);
 }
 ```
@@ -576,17 +576,17 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 // Read config written by bootstrapper
-const configPath = join(os.homedir(), '.config', 'stickyfix', 'config.json');
+const configPath = join(os.homedir(), '.config', 'stikfix', 'config.json');
 const { root, name, notesDir } = JSON.parse(readFileSync(configPath, 'utf8'));
 
 // Read token written by HTTP host on startup (HOST-12)
-const tokenPath = join(root, '.stickyfix-token');
+const tokenPath = join(root, '.stikfix-token');
 const token = readFileSync(tokenPath, 'utf8').trim();
 
 // Respond to GET_TOKEN message and exit
 readNativeMessages((msg) => {
   if (msg.type === 'GET_TOKEN') {
-    const port = readPortFile(root); // reads <root>/.stickyfix-port if present
+    const port = readPortFile(root); // reads <root>/.stikfix-port if present
     sendNativeMessage({ type: 'TOKEN', token, port, name, notesDir });
     process.exit(0);
   }
@@ -605,7 +605,7 @@ readNativeMessages((msg) => {
 // Source: Chrome extensions docs (chrome.runtime.sendNativeMessage)
 // Extends entrypoints/background.ts
 
-const NATIVE_HOST_NAME = 'com.stickyfix.host';
+const NATIVE_HOST_NAME = 'com.stikfix.host';
 
 async function pairWithNativeHost(): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -649,7 +649,7 @@ async function pairWithNativeHost(): Promise<void> {
 | Extension ID varies per machine | Stable ID via `key` field in manifest | Phase 9 | `allowed_origins` can be pre-configured at publish time |
 
 **Deprecated/outdated:**
-- Popup token field: remains as a fallback/diagnostic (for users who want manual control or who can't run `npx stickyfix init`), but is no longer the primary pairing path.
+- Popup token field: remains as a fallback/diagnostic (for users who want manual control or who can't run `npx stikfix init`), but is no longer the primary pairing path.
 
 ---
 
@@ -658,7 +658,7 @@ async function pairWithNativeHost(): Promise<void> {
 | Dependency | Required By | Available | Version | Fallback |
 |------------|------------|-----------|---------|----------|
 | Node.js | Bootstrapper + native host | Yes (v25.8.1 on dev machine) | 25.8.1 | Node 20+ required minimum |
-| npm / npx | Bootstrap via `npx stickyfix init` | Yes (11.9.0) | 11.9.0 | — |
+| npm / npx | Bootstrap via `npx stikfix init` | Yes (11.9.0) | 11.9.0 | — |
 | `reg.exe` | Windows native host registration | Yes (every Windows) | built-in | — |
 | PowerShell | Windows folder dialog | Yes (every Windows 7+) | built-in | Console prompt fallback |
 | `osascript` | macOS folder dialog | n/a (Windows dev) | built-in on macOS | Console prompt fallback |
@@ -677,31 +677,31 @@ async function pairWithNativeHost(): Promise<void> {
 
 Edge is a **complete drop-in** for Chrome native messaging. [VERIFIED: learn.microsoft.com/microsoft-edge/extensions/developer-guide/native-messaging]
 
-- Edge checks Chrome's registry keys as fallback: if `HKCU\Software\Google\Chrome\NativeMessagingHosts\com.stickyfix.host` is present, Edge finds it automatically.
-- Dedicated Edge registration (preferred): `HKCU\Software\Microsoft\Edge\NativeMessagingHosts\com.stickyfix.host`
-- macOS Edge: `~/Library/Application Support/Microsoft Edge/NativeMessagingHosts/com.stickyfix.host.json`
-- Linux Edge: `~/.config/microsoft-edge/NativeMessagingHosts/com.stickyfix.host.json`
+- Edge checks Chrome's registry keys as fallback: if `HKCU\Software\Google\Chrome\NativeMessagingHosts\com.stikfix.host` is present, Edge finds it automatically.
+- Dedicated Edge registration (preferred): `HKCU\Software\Microsoft\Edge\NativeMessagingHosts\com.stikfix.host`
+- macOS Edge: `~/Library/Application Support/Microsoft Edge/NativeMessagingHosts/com.stikfix.host.json`
+- Linux Edge: `~/.config/microsoft-edge/NativeMessagingHosts/com.stikfix.host.json`
 - The `allowed_origins` format is identical: `chrome-extension://<ID>/`
 - Edge Add-ons store uses a different extension ID than Chrome Web Store — both must be listed in `allowed_origins` if the extension is published to both stores.
 - The bootstrapper's `init` command should write BOTH the Chrome and Edge registry keys on Windows to support both browsers from one install.
 
 ### Firefox (Documented Path Only — FUT-01)
 
-Firefox native messaging uses a **different manifest key**: `allowed_extensions` (array of addon IDs like `"stickyfix@stickyfix.dev"`) instead of Chrome's `allowed_origins`. The manifests are **not interchangeable** — a Chrome manifest will cause Firefox to log a warning about the unexpected `allowed_origins` property. [VERIFIED: developer.mozilla.org/docs/Mozilla/Add-ons/WebExtensions/Native_messaging]
+Firefox native messaging uses a **different manifest key**: `allowed_extensions` (array of addon IDs like `"stikfix@stikfix.com"`) instead of Chrome's `allowed_origins`. The manifests are **not interchangeable** — a Chrome manifest will cause Firefox to log a warning about the unexpected `allowed_origins` property. [VERIFIED: developer.mozilla.org/docs/Mozilla/Add-ons/WebExtensions/Native_messaging]
 
 Firefox manifest locations:
-- macOS: `~/Library/Application Support/Mozilla/NativeMessagingHosts/com.stickyfix.host.json`
-- Linux: `~/.mozilla/native-messaging-hosts/com.stickyfix.host.json`
-- Windows: `HKCU\Software\Mozilla\NativeMessagingHosts\com.stickyfix.host`
+- macOS: `~/Library/Application Support/Mozilla/NativeMessagingHosts/com.stikfix.host.json`
+- Linux: `~/.mozilla/native-messaging-hosts/com.stikfix.host.json`
+- Windows: `HKCU\Software\Mozilla\NativeMessagingHosts\com.stikfix.host`
 
 Firefox-specific manifest:
 ```json
 {
-  "name": "com.stickyfix.host",
-  "description": "stickyfix native messaging host",
-  "path": "/path/to/stickyfix-native.cjs",
+  "name": "com.stikfix.host",
+  "description": "stikfix native messaging host",
+  "path": "/path/to/stikfix-native.cjs",
   "type": "stdio",
-  "allowed_extensions": ["stickyfix@stickyfix.dev"]
+  "allowed_extensions": ["stikfix@stikfix.com"]
 }
 ```
 
@@ -739,11 +739,11 @@ Key differences:
 
 | Req ID | Behavior | Test Type | Automated Command | Notes |
 |--------|----------|-----------|-------------------|-------|
-| ONB-01 | `npx stickyfix init` completes without error on Windows/macOS/Linux | Integration | `node dist/host/stickyfix-init.cjs init --root <tmpdir> --extension-id XXXXXXXX` | Run in tmp dir; assert manifest file written + registry key set (Windows) |
+| ONB-01 | `npx stikfix init` completes without error on Windows/macOS/Linux | Integration | `node dist/host/stikfix-init.cjs init --root <tmpdir> --extension-id XXXXXXXX` | Run in tmp dir; assert manifest file written + registry key set (Windows) |
 | ONB-02 | SW auto-pairs without user token input | Manual UAT | (see UAT runbook) | Requires running Chrome; cannot be automated in node:test |
 | ONB-03 | Arbitrary web origin cannot obtain token | Security test | See SC-3 proof below | Automated: curl script from non-extension origin fails |
 | ONB-04 | Host auto-starts via native messaging | Manual UAT | (see UAT runbook) | Requires Chrome + native manifest registered |
-| ONB-05 | Uninstall removes all artifacts | Integration | `node dist/host/stickyfix-init.cjs uninstall && assert no manifest file, no registry key` | Assert file absence + `reg query` returns error |
+| ONB-05 | Uninstall removes all artifacts | Integration | `node dist/host/stikfix-init.cjs uninstall && assert no manifest file, no registry key` | Assert file absence + `reg query` returns error |
 | ONB-06 | Edge works as Chrome drop-in | Manual UAT | Load in Edge + perform one note | Chromium-compatible; smoke test only |
 
 ### SC-3: Security Proof — Arbitrary Web Origin Cannot Obtain Token
@@ -765,7 +765,7 @@ curl -s http://127.0.0.1:39240/pair       # Must return 404
 curl -s http://127.0.0.1:39240/annotation # Must return 401 (no token)
 ```
 
-The token is stored in `<root>/.stickyfix-token` (a file on disk, not on any HTTP endpoint). The native host reads this file and sends it via native messaging — a channel that web origins structurally cannot access.
+The token is stored in `<root>/.stikfix-token` (a file on disk, not on any HTTP endpoint). The native host reads this file and sends it via native messaging — a channel that web origins structurally cannot access.
 
 **Verification checklist for SC-3:**
 - [ ] `GET /token` returns 404 on the HTTP host (no such endpoint)
@@ -788,8 +788,8 @@ The token is stored in `<root>/.stickyfix-token` (a file on disk, not on any HTT
 | A1 | WXT passes the `key` field through to the generated manifest.json verbatim | Standard Stack / Stable Extension ID | Extension ID not stable in dev; bootstrapper must prompt for ID instead |
 | A2 | Node.js Buffer writes to process.stdout do not get `\n`→`\r\n` translation on Windows (binary-safe) | Pattern 2 (stdio protocol) | Silent message corruption on Windows; must use `fs.writeSync(1, buffer)` as fallback |
 | A3 | zenity is commonly available on GNOME Linux desktops | Pattern 5 (folder picker) | Folder picker silently falls back to console prompt on headless Linux; acceptable |
-| A4 | `~/.config/stickyfix/config.json` is a suitable global config location for a developer tool | Architecture | May conflict with XDG base dir conventions on Linux; low risk |
-| A5 | The `<root>/.stickyfix-port` file (read by native host to find the HTTP port) can be written by the HTTP host alongside `.stickyfix-token` | Native host architecture | Native host cannot find port; needs fallback (port scan, same as existing discoverHosts) |
+| A4 | `~/.config/stikfix/config.json` is a suitable global config location for a developer tool | Architecture | May conflict with XDG base dir conventions on Linux; low risk |
+| A5 | The `<root>/.stikfix-port` file (read by native host to find the HTTP port) can be written by the HTTP host alongside `.stikfix-token` | Native host architecture | Native host cannot find port; needs fallback (port scan, same as existing discoverHosts) |
 
 **If A5 is wrong** (most likely): the native host can fall back to the existing `discoverHosts()` port-scan approach. The token is found via the token file; the port is found via probe. This adds ~250ms latency to pairing but works correctly.
 
@@ -799,21 +799,21 @@ The token is stored in `<root>/.stickyfix-token` (a file on disk, not on any HTT
 
 1. **Stable extension ID mechanism**
    - What we know: The `key` field in `manifest.json` pins the extension ID; it requires uploading to Chrome Developer Dashboard to obtain the key
-   - What's unclear: Whether the bootstrapper can auto-detect the extension ID from the loaded extension without user action, or whether the user must paste the ID during `npx stickyfix init`
+   - What's unclear: Whether the bootstrapper can auto-detect the extension ID from the loaded extension without user action, or whether the user must paste the ID during `npx stikfix init`
    - Recommendation: For v1.0, prompt the user to copy the extension ID from `chrome://extensions` during `init`. Document the `key` field approach for post-publish stabilization. The `init` command stores the ID in the config file.
-   - **RESOLVED:** Plan 09-02 Task 1 + user_setup require the dev ID to be passed via the `--extension-id` flag prompted during `npx stickyfix init` (copied from `chrome://extensions`); the `key` field is left as a commented placeholder in `wxt.config.ts` for post-CWS-publish ID stabilization.
+   - **RESOLVED:** Plan 09-02 Task 1 + user_setup require the dev ID to be passed via the `--extension-id` flag prompted during `npx stikfix init` (copied from `chrome://extensions`); the `key` field is left as a commented placeholder in `wxt.config.ts` for post-CWS-publish ID stabilization.
 
 2. **Port file for native host pairing (A5)**
    - What we know: The HTTP host prints its port on stdout as a JSON line; it does not currently write the port to a file
    - What's unclear: The cleanest way for the native host to learn the HTTP port without running a full port scan
-   - Recommendation: Extend the HTTP host (`host/src/index.ts`) to write `.stickyfix-port` alongside `.stickyfix-token` on startup. One new line in `index.ts`. The native host reads it. If absent, falls back to port scan.
-   - **RESOLVED:** The HTTP host writes `<root>/.stickyfix-port` alongside `.stickyfix-token` on startup (Plan 01 Task 3); the native host reads it in Plan 09-02 Task 1, leaving port undefined (SW re-probes) when the file is absent (A5 fallback).
+   - Recommendation: Extend the HTTP host (`host/src/index.ts`) to write `.stikfix-port` alongside `.stikfix-token` on startup. One new line in `index.ts`. The native host reads it. If absent, falls back to port scan.
+   - **RESOLVED:** The HTTP host writes `<root>/.stikfix-port` alongside `.stikfix-token` on startup (Plan 01 Task 3); the native host reads it in Plan 09-02 Task 1, leaving port undefined (SW re-probes) when the file is absent (A5 fallback).
 
 3. **Multiple roots / projects**
    - What we know: D-04 maps origin→folder; the config file stores `{ root, name }` per project
-   - What's unclear: How the bootstrapper handles a developer with multiple projects (multiple `npx stickyfix init` calls)
-   - Recommendation: The config file stores an array of project roots. The native host dispatches based on the origin (received in the GET_TOKEN message). Alternatively: one native host per project, using different names (`com.stickyfix.host.myproject`). Simplest: single config file, array of projects, native host selects by origin or returns all known tokens.
-   - **RESOLVED:** Single native-host config (`~/.config/stickyfix/config.json`) holds the project token/root data; the exact multi-project protocol (single config with a token/root array vs. per-project named hosts) is Claude's-Discretion per CONTEXT.md — the v1.0 plans implement the single-config path and the array shape can extend it without a manifest change.
+   - What's unclear: How the bootstrapper handles a developer with multiple projects (multiple `npx stikfix init` calls)
+   - Recommendation: The config file stores an array of project roots. The native host dispatches based on the origin (received in the GET_TOKEN message). Alternatively: one native host per project, using different names (`com.stikfix.host.myproject`). Simplest: single config file, array of projects, native host selects by origin or returns all known tokens.
+   - **RESOLVED:** Single native-host config (`~/.config/stikfix/config.json`) holds the project token/root data; the exact multi-project protocol (single config with a token/root array vs. per-project named hosts) is Claude's-Discretion per CONTEXT.md — the v1.0 plans implement the single-config path and the array shape can extend it without a manifest change.
 
 ---
 

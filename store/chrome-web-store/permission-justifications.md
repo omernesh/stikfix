@@ -9,7 +9,7 @@ purpose: CWS review submission — permission justifications, single purpose, re
 
 ## Single Purpose Statement
 
-stickyfix has a single purpose: to allow a developer to pin contextual sticky notes onto any web page, save those notes as markdown files on the developer's local machine (via a companion localhost host), and display AI-agent replies back on the page as colour-coded status pins — enabling an iterative, file-based UI review loop between the developer and an AI coding agent.
+stikfix has a single purpose: to allow a developer to pin contextual sticky notes onto any web page, save those notes as markdown files on the developer's local machine (via a companion localhost host), and display AI-agent replies back on the page as colour-coded status pins — enabling an iterative, file-based UI review loop between the developer and an AI coding agent.
 
 ---
 
@@ -41,7 +41,7 @@ Needed to detect URL changes inside single-page applications. When the user navi
 
 ### `nativeMessaging`
 
-Needed to communicate with the `com.stickyfix.host` companion host, which is installed separately on the user's machine via `npx stickyfix init`. The extension uses the Native Messaging API to exchange an authentication token with the host at pairing time (so the token never travels over a network) and to trigger folder-picker dialogs on the host. All note writes use the HTTP relay on 127.0.0.1; native messaging is used for the secure pairing channel and for OS-level interactions (folder picker).
+Needed to communicate with the `com.stikfix.host` companion host, which is installed separately on the user's machine via `npx stikfix init`. The extension uses the Native Messaging API to exchange an authentication token with the host at pairing time (so the token never travels over a network) and to trigger folder-picker dialogs on the host. All note writes use the HTTP relay on 127.0.0.1; native messaging is used for the secure pairing channel and for OS-level interactions (folder picker).
 
 ### `host_permissions`: `http://127.0.0.1/*`
 
@@ -53,7 +53,7 @@ Required for the same purpose as `http://127.0.0.1/*` — some host implementati
 
 ### `optional_host_permissions`: `<all_urls>`
 
-Needed to inject the Review Mode content script into any web page the user chooses to review. This permission is **not** requested at install time. It is requested on demand the first time the user clicks "Enter Review Mode" — Chrome shows a runtime permission prompt. The user can decline; if declined, Review Mode will not function on that page. No access to page content occurs without this permission being explicitly granted by the user. The permission is necessary because stickyfix is a developer tool intended to work on any URL (the developer's own app, staging environments, etc.) — a fixed list of host patterns is not feasible.
+Needed to inject the Review Mode content script into any web page the user chooses to review. This permission is **not** requested at install time. It is requested on demand the first time the user clicks "Enter Review Mode" — Chrome shows a runtime permission prompt. The user can decline; if declined, Review Mode will not function on that page. No access to page content occurs without this permission being explicitly granted by the user. The permission is necessary because stikfix is a developer tool intended to work on any URL (the developer's own app, staging environments, etc.) — a fixed list of host patterns is not feasible.
 
 ---
 

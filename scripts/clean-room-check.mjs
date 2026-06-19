@@ -17,7 +17,7 @@
 //   property names; clean-room original), entrypoints/review.content/card.ts,
 //   chip.ts, index.ts, fab.ts, picker.ts, entrypoints/background.ts,
 //   host/src/server.ts, host/src/security.ts. Unusual patterns found and
-//   resolved: (1) __stickyfix_ — our own project namespace, not upstream;
+//   resolved: (1) __stikfix_ — our own project namespace, not upstream;
 //   (2) annot/ANNOT — substring of 'annotation', our own domain term;
 //   (3) CURATED_STYLE_PROPS — standard W3C CSS property names, not upstream.
 //   Result: no new banned tokens required beyond the three original tokens.

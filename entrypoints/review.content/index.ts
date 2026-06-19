@@ -1,5 +1,5 @@
 /**
- * stickyfix review UI content script — runtime-only (NOT in static manifest).
+ * stikfix review UI content script — runtime-only (NOT in static manifest).
  *
  * WXT registration:'runtime' means this file is compiled to
  * content-scripts/review.js but NOT added to the manifest's content_scripts

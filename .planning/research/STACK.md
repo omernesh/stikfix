@@ -220,5 +220,5 @@ function getReactComponentName(el: Element): string | null {
 - React fiber property names (`__reactFiber$`, `__reactInternalInstance$`) — confirmed from React DevTools source + community references (MEDIUM confidence — internal API, not documented officially)
 
 ---
-*Stack research for: MV3 Chrome extension + Node localhost host (stickyfix)*
+*Stack research for: MV3 Chrome extension + Node localhost host (stikfix)*
 *Researched: 2026-05-31*

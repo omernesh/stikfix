@@ -1,5 +1,5 @@
 /**
- * Icon generator — rasterizes public/icon/stickyfix.svg into the extension PNGs
+ * Icon generator — rasterizes public/icon/stikfix.svg into the extension PNGs
  * (16/32/48/128) plus a 256 PNG and a multi-size Windows .ico for the host
  * Desktop launcher shortcut.
  *
@@ -28,7 +28,7 @@ const pngToIco = pngToIcoMod.default ?? pngToIcoMod;
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
 const iconDir = join(root, 'public', 'icon');
-const svg = readFileSync(join(iconDir, 'stickyfix.svg'));
+const svg = readFileSync(join(iconDir, 'stikfix.svg'));
 
 const pngSizes = [16, 32, 48, 128, 256];
 
@@ -48,5 +48,5 @@ for (const size of pngSizes) {
 
 // Windows .ico for the Desktop launcher shortcut (register.ts IconLocation).
 const ico = await pngToIco([buffers[16], buffers[32], buffers[48], buffers[128], buffers[256]]);
-writeFileSync(join(iconDir, 'stickyfix.ico'), ico);
-console.log(`wrote public/icon/stickyfix.ico (${ico.length} bytes)`);
+writeFileSync(join(iconDir, 'stikfix.ico'), ico);
+console.log(`wrote public/icon/stikfix.ico (${ico.length} bytes)`);

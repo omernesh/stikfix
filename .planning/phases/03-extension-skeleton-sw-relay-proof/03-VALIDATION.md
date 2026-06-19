@@ -67,7 +67,7 @@ created: 2026-05-31
 |----------|-------------|------------|-------------------|
 | Popup lists discovered hosts + per-host token entry | EXT-03,04 | Needs the running extension + a live host | With a host running, open the popup on any tab — the host appears with a token field |
 | Review Mode injects chip on demand | EXT-02,11 | Requires Chrome page injection | Toggle Review Mode → connection chip appears, is draggable, shows the routed project + notes dir, Exit removes it |
-| CS→SW→host relay on an HTTPS page | EXT-05 | Cross-origin Chrome behavior (LNA) | On a real HTTPS site, click the chip's stub Send → a stub `.md` ("stickyfix relay proof") appears in the host's notes dir |
+| CS→SW→host relay on an HTTPS page | EXT-05 | Cross-origin Chrome behavior (LNA) | On a real HTTPS site, click the chip's stub Send → a stub `.md` ("stikfix relay proof") appears in the host's notes dir |
 | State survives SW eviction | EXT-09 | Requires SW idle eviction (~5 min or chrome://serviceworker-internals Stop) | Stop the SW, then Send again — still routes correctly (no re-discovery prompt for the mapped origin) |
 | Unknown origin → one-time dropdown | EXT-06,07,08 | Requires an unmapped origin tab | Visit an unmapped origin → dropdown asks once; revisit → never re-asked |
 

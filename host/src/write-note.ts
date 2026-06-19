@@ -1,5 +1,5 @@
 /**
- * Note file writer for stickyfix-host.
+ * Note file writer for stikfix-host.
  * D-09/HOST-07: writes <serial>-<YYYYMMDD-HHmmss>.md with YAML frontmatter
  * D-09/HOST-08: decodes PNG data-URLs to <base>+<N>.png next to the .md
  * D-11: PRD §9.2 note format — frontmatter + comment + element context + screenshots

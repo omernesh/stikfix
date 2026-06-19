@@ -1,5 +1,5 @@
 /**
- * Host discovery — parallel port scan for stickyfix hosts.
+ * Host discovery — parallel port scan for stikfix hosts.
  *
  * Uses fetch only (no chrome/wxt API) so these functions are mockable in
  * node:test and callable from the SW without any extra permissions beyond
@@ -12,7 +12,7 @@ import type { HostEntry } from './types.js';
 // Constants
 // ---------------------------------------------------------------------------
 
-/** All ports in the stickyfix discovery range (39240–39260 inclusive) */
+/** All ports in the stikfix discovery range (39240–39260 inclusive) */
 export const PROBE_PORTS: readonly number[] = Array.from(
   { length: 21 },
   (_, i) => 39240 + i
@@ -27,9 +27,9 @@ export const PROBE_TIMEOUT_MS = 800;
 
 /**
  * Attempt to contact a single port's /status endpoint.
- * Rejects if: timeout, connection refused, non-200, or app !== 'stickyfix'.
+ * Rejects if: timeout, connection refused, non-200, or app !== 'stikfix'.
  *
- * @throws If the port does not respond with a valid stickyfix /status payload.
+ * @throws If the port does not respond with a valid stikfix /status payload.
  */
 export async function probePort(port: number): Promise<HostEntry> {
   const ctrl = new AbortController();
@@ -51,8 +51,8 @@ export async function probePort(port: number): Promise<HostEntry> {
       origins?: string[];
     };
 
-    if (data.app !== 'stickyfix') {
-      throw new Error('not stickyfix');
+    if (data.app !== 'stikfix') {
+      throw new Error('not stikfix');
     }
 
     return {
@@ -72,8 +72,8 @@ export async function probePort(port: number): Promise<HostEntry> {
 // ---------------------------------------------------------------------------
 
 /**
- * Probe all PROBE_PORTS in parallel and collect every stickyfix host found.
- * Non-responders and non-stickyfix ports are silently dropped.
+ * Probe all PROBE_PORTS in parallel and collect every stikfix host found.
+ * Non-responders and non-stikfix ports are silently dropped.
  *
  * @returns Array of HostEntry (may be empty if no hosts are running).
  */

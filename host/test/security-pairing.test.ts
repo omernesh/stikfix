@@ -113,9 +113,9 @@ describe('SC-3 / ONB-03 — token is unreachable over HTTP, gate intact', () => 
     assert.equal(res.status, 200);
     const text = await res.text();
     assert.ok(!text.includes(TEST_TOKEN), '/status body must not contain the token value');
-    // Sanity: it IS the stickyfix status payload (so we proved the right surface)
+    // Sanity: it IS the stikfix status payload (so we proved the right surface)
     const json = JSON.parse(text) as Record<string, unknown>;
-    assert.equal(json.app, 'stickyfix');
+    assert.equal(json.app, 'stikfix');
     assert.ok(!('token' in json), '/status JSON must have no token field');
   });
 
@@ -134,7 +134,7 @@ describe('SC-3 / ONB-03 — token is unreachable over HTTP, gate intact', () => 
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Stickyfix-Token': 'this-is-not-the-token',
+        'X-Stikfix-Token': 'this-is-not-the-token',
       },
       body: JSON.stringify({ mode: 'free', comment: 'x' }),
     });

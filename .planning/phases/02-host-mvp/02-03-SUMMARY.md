@@ -43,7 +43,7 @@ metrics:
 - `npm run build`: PASS (wxt build + tsc -p tsconfig.host.json, exit 0)
 - `node scripts/host-smoke-test.mjs`: PASS — all 5 assertions pass
   - startup.port in 39240-39260
-  - GET /status: 200, app:'stickyfix', no token field
+  - GET /status: 200, app:'stikfix', no token field
   - POST /annotation (no token): 401
   - POST /annotation (token): 200, ok:true, .md file exists on disk
   - child.kill in finally, script exits 0

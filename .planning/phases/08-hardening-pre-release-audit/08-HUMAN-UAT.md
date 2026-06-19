@@ -14,7 +14,7 @@ updated: 2026-06-05
 > `.planning/phases/08-hardening-pre-release-audit/08-UAT.md`
 > (5 failure paths + D-05 regression + D-04 pre-flight + D-02a multi-Send).
 > Run the extension built by this session against the running UAT host
-> (`--root D:/docker/stickyfix-uat`, port 39240).
+> (`--root D:/docker/stikfix-uat`, port 39240).
 
 ## Tests
 

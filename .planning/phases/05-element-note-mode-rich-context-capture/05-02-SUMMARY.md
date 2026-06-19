@@ -100,7 +100,7 @@ The following ELEM-01 runtime behaviors are **NOT yet verified** and are deferre
 - [ ] Esc exits cleanly (no card), cursor resets, button resting, focus returns to 🎯 button
 - [ ] Second 🎯 click toggles pick mode off (no card)
 - [ ] Clicking a page element exits pick mode cleanly with no console error (card wiring lands in Plan 03)
-- [ ] No stickyfix console errors during hover/Esc/click
+- [ ] No stikfix console errors during hover/Esc/click
 
 **Rationale for deferral:** A bare picker without the card (Plan 03) cannot demonstrate the full element-note loop; one consolidated Chrome session after Plan 03 verifies pick-mode + card together with less rebuild/reload churn. This mirrors Phase 4's deferred-manual handling (04-VALIDATION.md Tests 1 & 5, 🟡M).
 

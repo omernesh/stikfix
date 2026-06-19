@@ -1,13 +1,13 @@
 /**
- * stickyfix-host CLI entry point.
+ * stikfix-host CLI entry point.
  * D-08/HOST-01/HOST-02/HOST-03: bind 127.0.0.1 only; honor --port or scan 39240-39260
- * D-07/HOST-12: writeTokenFile to <root>/.stickyfix-token
+ * D-07/HOST-12: writeTokenFile to <root>/.stikfix-token
  * Startup JSON line: {app,name,root,port,token,notesDir,origins}
  * Pattern 1: bind-or-fail loop (EADDRINUSE -> retry next port)
  * WR-06: bindServer/tryListen extracted to bind.ts; removeAllListeners between attempts
  * Pitfall 2: server runs indefinitely (smoke test uses spawn+readline, not spawnSync)
- * FIX-SI: single-instance guard — probeExistingHost (probe.ts) reads .stickyfix-port + probes /status
- * FIX-TP: token persistence — reuse .stickyfix-token across restarts if no explicit token
+ * FIX-SI: single-instance guard — probeExistingHost (probe.ts) reads .stikfix-port + probes /status
+ * FIX-TP: token persistence — reuse .stikfix-token across restarts if no explicit token
  */
 
 import { writeFileSync, readFileSync, existsSync } from 'node:fs';
@@ -35,13 +35,13 @@ const { values: rawValues } = parseArgs({
   strict: false,
 });
 
-// Apply three-tier env resolution (flag > STICKYFIX_* > npm_config_*) so that
+// Apply three-tier env resolution (flag > STIKFIX_* > npm_config_*) so that
 // `npm run host -- --root <dir>` works in Windows PowerShell, where npm 11.x
 // intercepts unknown flags and re-exposes them as npm_config_<key> env vars.
 const values = resolveConfigValues(rawValues as Record<string, unknown>);
 
 if (!values['root']) {
-  console.error('stickyfix-host: --root is required');
+  console.error('stikfix-host: --root is required');
   process.exit(1);
 }
 
@@ -56,7 +56,7 @@ ensureNotesDir(cfg.notesDir);
 // FIX-SI: Single-instance guard — BEFORE any file mutation
 // ---------------------------------------------------------------------------
 
-const portFilePath = join(cfg.root, '.stickyfix-port');
+const portFilePath = join(cfg.root, '.stikfix-port');
 if (existsSync(portFilePath)) {
   const portStr = readFileSync(portFilePath, 'utf8').trim();
   const existingPort = Number(portStr);
@@ -64,7 +64,7 @@ if (existsSync(portFilePath)) {
     const live = await probeExistingHost(cfg.root, existingPort);
     if (live !== null) {
       console.log(
-        `stickyfix-host: already running for ${cfg.root} on port ${live.port} — not starting a second instance.`
+        `stikfix-host: already running for ${cfg.root} on port ${live.port} — not starting a second instance.`
       );
       process.exit(0);
     }
@@ -76,16 +76,16 @@ if (existsSync(portFilePath)) {
 // FIX-TP: Token persistence — reuse existing token if no explicit token given
 // ---------------------------------------------------------------------------
 
-// An "explicit" token is one supplied via --token / STICKYFIX_TOKEN / npm_config_token.
+// An "explicit" token is one supplied via --token / STIKFIX_TOKEN / npm_config_token.
 // resolveConfig already resolved these; if none was supplied, randomUUID() was called.
 // We detect the "no explicit token" case by checking the raw resolved values BEFORE
 // randomUUID was applied.
 const rawToken =
   (values['token'] as string | undefined) ??
-  (process.env['STICKYFIX_TOKEN']) ??
+  (process.env['STIKFIX_TOKEN']) ??
   (process.env['npm_config_token']);
 
-const tokenFilePath = join(cfg.root, '.stickyfix-token');
+const tokenFilePath = join(cfg.root, '.stikfix-token');
 let finalToken = cfg.token;
 
 if (!rawToken) {
@@ -118,11 +118,11 @@ if (addr.address !== BIND_HOST) {
 
 // Publish bound port to disk so the native host can read it without a port scan
 // (RESEARCH Open Question 2 / A5). Mode 0o600 alongside existing token file.
-writeFileSync(join(cfg.root, '.stickyfix-port'), String(boundPort), { encoding: 'utf8', mode: 0o600 });
+writeFileSync(join(cfg.root, '.stikfix-port'), String(boundPort), { encoding: 'utf8', mode: 0o600 });
 
 // Startup JSON line — read by smoke test via readline (Pattern 12)
 console.log(JSON.stringify({
-  app: 'stickyfix',
+  app: 'stikfix',
   name: cfg.name,
   root: cfg.root,
   port: boundPort,

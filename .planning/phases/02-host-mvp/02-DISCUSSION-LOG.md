@@ -22,10 +22,10 @@ Selected: in-process promise-queue; scan notesDir for max `NNNN` incl `*.read.md
 Selected: manual stream read, hard 12 MB cap → 413; malformed JSON → 400.
 
 ## CORS + Token Transport
-Selected: echo Origin in ACAO, allow `X-Stickyfix-Token`, methods GET/POST/OPTIONS; token required only on POST /annotation (401), `/status` open.
+Selected: echo Origin in ACAO, allow `X-Stikfix-Token`, methods GET/POST/OPTIONS; token required only on POST /annotation (401), `/status` open.
 
 ## Token Lifecycle
-Selected: `--token` → `STICKYFIX_TOKEN` env → `crypto.randomUUID()`; print on startup; write gitignored `<root>/.stickyfix-token`.
+Selected: `--token` → `STIKFIX_TOKEN` env → `crypto.randomUUID()`; print on startup; write gitignored `<root>/.stikfix-token`.
 
 ## Port Discovery
 Selected: honor `--port` if free, else first free in 39240–39260; bind 127.0.0.1 only.

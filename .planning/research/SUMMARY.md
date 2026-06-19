@@ -1,13 +1,13 @@
 # Project Research Summary
 
-**Project:** stickyfix
+**Project:** stikfix
 **Domain:** Chrome MV3 extension + localhost Node host -- developer-facing, AI-agent-oriented on-page annotation tool
 **Researched:** 2026-05-31
 **Confidence:** HIGH
 
 ## Executive Summary
 
-stickyfix is a local-first developer tool built from two halves: a Chrome MV3 extension that injects a shadow-DOM annotation UI on demand, and a per-project Node HTTP host that owns the filesystem contract. Notes dropped on any live web page become ordered, context-rich markdown files in the project's `notes/` directory, readable by any AI coding agent that can open files. The product sits in a sparse competitive category -- no existing tool combines durable file-on-disk output, rich element context (React fiber, computed styles, outerHTML, dataset, aria), a serial read/unread queue, and multi-project routing into a single zero-account, zero-cloud package. The closest precedent, `JodusNodus/opencode-chrome-annotation`, is GPL-3.0; stickyfix is a clean-room MIT build that replaces its fragile selector heuristic with `@medv/finder` and its OpenCode-specific transport with a generic localhost HTTP contract.
+stikfix is a local-first developer tool built from two halves: a Chrome MV3 extension that injects a shadow-DOM annotation UI on demand, and a per-project Node HTTP host that owns the filesystem contract. Notes dropped on any live web page become ordered, context-rich markdown files in the project's `notes/` directory, readable by any AI coding agent that can open files. The product sits in a sparse competitive category -- no existing tool combines durable file-on-disk output, rich element context (React fiber, computed styles, outerHTML, dataset, aria), a serial read/unread queue, and multi-project routing into a single zero-account, zero-cloud package. The closest precedent, `JodusNodus/opencode-chrome-annotation`, is GPL-3.0; stikfix is a clean-room MIT build that replaces its fragile selector heuristic with `@medv/finder` and its OpenCode-specific transport with a generic localhost HTTP contract.
 
 The single most important architectural finding is that Chrome 142's Local Network Access policy (LNA) and the MV3 content-script CORS model together prohibit content scripts from fetching `127.0.0.1` directly. All localhost communication must flow through the service worker, which holds `host_permissions` and is exempt from both LNA and page-origin CORS. This shapes the entire message topology: content script is UI-only, service worker is the sole HTTP client, and `captureVisibleTab` is also called from the service worker (it requires the `tabs` permission the content script does not have). Establishing this boundary early -- and proving it with a dummy POST relay in M3 -- prevents the most likely late-breaking architectural breakage.
 
@@ -41,7 +41,7 @@ The host is zero-runtime-dependency except for **`yaml` (eemeli) 2.9.x** for fro
 - Review Mode toggle with host discovery and connection chip -- the entry gate to everything
 - Free-floating note (draggable FAB -> post-it -> Send -> `.md` on disk)
 - Element picker with `@medv/finder` selector, hover highlight
-- Token auth (`X-Stickyfix-Token`) and visible error toasts on every failure -- no silent drops
+- Token auth (`X-Stikfix-Token`) and visible error toasts on every failure -- no silent drops
 - Serial file naming (`NNNN-YYYYMMDD-HHmmss.md`) and `.read.md` rename marker
 - Multi-project routing by tab origin with `chrome.storage.local` persistence
 - Auto element-highlight screenshot on element Send (DPR-correct crop, own UI hidden first)
@@ -58,8 +58,8 @@ The host is zero-runtime-dependency except for **`yaml` (eemeli) 2.9.x** for fro
 **Defer to v1.x:**
 - Keyboard shortcuts for tool switching
 - Thumbnail lightbox preview in post-it
-- `<meta name="stickyfix-project">` same-origin collision self-id
-- `npm publish` for `stickyfix-host`
+- `<meta name="stikfix-project">` same-origin collision self-id
+- `npm publish` for `stikfix-host`
 
 **Defer to v2+:**
 - Firefox port (validate Chrome user base first)
@@ -74,7 +74,7 @@ The system has three layers: (1) the Chrome extension (service worker + content 
 1. **Service Worker** (`background.ts`) -- host discovery, origin routing, `chrome.storage.local` R/W, all localhost `fetch()`, `captureVisibleTab`
 2. **Content Script** (`review.content/`) -- shadow-DOM UI (chip, FAB, post-it, picker, camera), canvas crop, message relay to SW
 3. **Popup** (`popup/`) -- token entry, host list, Review Mode toggle, one-time origin->project picker
-4. **stickyfix-host** (`host/`) -- HTTP server, token validation, serial mutex, `.md` + `.png` write, path safety
+4. **stikfix-host** (`host/`) -- HTTP server, token validation, serial mutex, `.md` + `.png` write, path safety
 5. **review-notes skill** (`skill/`) -- glob `notes/*.md`, exclude `.read.md`, sort by serial, process, rename
 
 **Canonical message flow:**
@@ -99,7 +99,7 @@ The system has three layers: (1) the Chrome extension (service worker + content 
 
 6. **Serial assignment race under concurrent POSTs** -- Implement a single in-process promise-queue mutex in the host (a `let queue = Promise.resolve()` chain). Serial scan + file write happen inside the chained task. No file locking -- brittle on Windows. Establish in M2 with a concurrent-POST stress test.
 
-7. **GPL->MIT clean-room hygiene** -- This is a Phase 1 invariant, not a pre-release checklist. Use `sfx-*` / `stickyfix-*` identifiers throughout. Use `@medv/finder` (not any heuristic resembling the upstream's `:nth-of-type / <=5 levels / <=2 classes` logic). Write from the PRD spec only; no developer reads the upstream source. Audit with a grep for `__opc_`, `opencode`, `JodusNodus` before any public release.
+7. **GPL->MIT clean-room hygiene** -- This is a Phase 1 invariant, not a pre-release checklist. Use `sfx-*` / `stikfix-*` identifiers throughout. Use `@medv/finder` (not any heuristic resembling the upstream's `:nth-of-type / <=5 levels / <=2 classes` logic). Write from the PRD spec only; no developer reads the upstream source. Audit with a grep for `__opc_`, `opencode`, `JodusNodus` before any public release.
 
 ---
 

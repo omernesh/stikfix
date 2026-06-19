@@ -15,23 +15,23 @@
 
 **D-02 — Message Protocol:** Explicit typed messages between content script ↔ SW: at minimum `ENTER_REVIEW` / `EXIT_REVIEW`, `GET_ROUTE`, `SEND_ANNOTATION`, and discovery refresh. Responses carry `{ok,...}` / `{ok:false,error}`.
 
-**D-03 — Host Discovery:** SW probes all of ports 39240–39260 on `127.0.0.1` in parallel via `GET /status`, collecting every responder with `{app:'stickyfix'}`. Runs on Review-Mode entry and on SW wake. Short per-probe timeout.
+**D-03 — Host Discovery:** SW probes all of ports 39240–39260 on `127.0.0.1` in parallel via `GET /status`, collecting every responder with `{app:'stikfix'}`. Runs on Review-Mode entry and on SW wake. Short per-probe timeout.
 
 **D-04 — No Static content_scripts:** Inject review UI with `chrome.scripting.executeScript` only when Review Mode is entered. Manifest: `permissions: [activeTab, scripting, storage, tabs]`, `host_permissions: [http://127.0.0.1/*, http://localhost/*]`, `optional_host_permissions: [<all_urls>]` requested on demand per-origin.
 
 **D-05 — Storage Schema:** Everything in `chrome.storage.local`. Stored: host registry (last-seen port/name/origins), per-host tokens, origin→host map, prefs. SW re-reads storage at start of every handler. Reconcile by project `name` + origin (not port) on wake.
 
-**D-06 — Routing Resolution Order:** (1) discovered host advertising this origin; (2) persisted origin→host mapping; (3) page self-id (`<meta name="stickyfix-project">` / `window.__stickyfix_project`); (4) one-time dropdown + persist. Never per-note after that.
+**D-06 — Routing Resolution Order:** (1) discovered host advertising this origin; (2) persisted origin→host mapping; (3) page self-id (`<meta name="stikfix-project">` / `window.__stikfix_project`); (4) one-time dropdown + persist. Never per-note after that.
 
 **D-07 — Vanilla Popup:** No framework. Lists every discovered host with project name + connection state + per-host token field + Enter/Exit Review Mode toggle. Token edits persist to `chrome.storage.local`.
 
 **D-08 — Connection Chip in Shadow DOM:** WXT `createShadowRootUi`, `z-index: 2147483647`, top-right default, draggable + viewport-clamped (pointer events), shows project + notes dir, Exit button, stub Send. Genuine post-it styling deferred to Phase 6.
 
-**D-09 — Dummy Relay Payload:** Stub Send constructs a minimal valid §9.1 free-note payload (`mode:'free'`, fixed `comment:"stickyfix relay proof"`, real `page.url/title`, `viewport`) so host writes a stub `.md`. Must be on an HTTPS-origin page.
+**D-09 — Dummy Relay Payload:** Stub Send constructs a minimal valid §9.1 free-note payload (`mode:'free'`, fixed `comment:"stikfix relay proof"`, real `page.url/title`, `viewport`) so host writes a stub `.md`. Must be on an HTTPS-origin page.
 
 ### Claude's Discretion
 
-Exact message-type names/casing, popup DOM structure, chip drag implementation (interact.js vs pointer events — interact.js is the eventual choice but a lightweight pointer-events chip is acceptable here), per-probe timeout value, and how the one-time dropdown is rendered — left to the planner. Keep `sfx-*`/`stickyfix` namespace.
+Exact message-type names/casing, popup DOM structure, chip drag implementation (interact.js vs pointer events — interact.js is the eventual choice but a lightweight pointer-events chip is acceptable here), per-probe timeout value, and how the one-time dropdown is rendered — left to the planner. Keep `sfx-*`/`stikfix` namespace.
 
 ### Deferred Ideas (OUT OF SCOPE)
 
@@ -63,7 +63,7 @@ Exact message-type names/casing, popup DOM structure, chip drag implementation (
 
 ## Summary
 
-Phase 3 proves the hardest architectural seam in stickyfix: the service worker is the only HTTP client speaking to localhost hosts, and every architectural decision cascades from this. The phase wires background discovery, popup UI, on-demand content-script injection via WXT's `registration:'runtime'` pattern, a shadow-root connection chip, chrome.storage.local-backed persistence, multi-host routing, and ends with a dummy `SEND_ANNOTATION` round-trip that produces a visible `.md` file on disk.
+Phase 3 proves the hardest architectural seam in stikfix: the service worker is the only HTTP client speaking to localhost hosts, and every architectural decision cascades from this. The phase wires background discovery, popup UI, on-demand content-script injection via WXT's `registration:'runtime'` pattern, a shadow-root connection chip, chrome.storage.local-backed persistence, multi-host routing, and ends with a dummy `SEND_ANNOTATION` round-trip that produces a visible `.md` file on disk.
 
 The most critical technical decision — already locked — is correct: the SW's extension-context origin means Chrome's LNA restrictions do not apply to it, while they do apply to content scripts running in the injected page's origin. The content-script-to-SW message relay is therefore non-negotiable and is the key integration seam this phase proves.
 
@@ -162,7 +162,7 @@ SERVICE WORKER (background.ts)
         `http://127.0.0.1:${host.port}/annotation`,
         { method:'POST',
           headers:{'Content-Type':'application/json',
-                   'X-Stickyfix-Token': host.token},
+                   'X-Stikfix-Token': host.token},
           body: JSON.stringify(msg.payload)
         }
       );
@@ -193,7 +193,7 @@ CONTENT SCRIPT (review.content/index.ts)
   → Chip shows: "Saved: 0001-YYYYMMDD-HHmmss.md"
                                       ↓
 HOST (http://127.0.0.1:392xx)
-  POST /annotation → validate X-Stickyfix-Token
+  POST /annotation → validate X-Stikfix-Token
                    → withSerialLock(getNextSerial + writeNote)
                    → {ok:true, file:'0001-…md', serial:1}
 ```
@@ -201,7 +201,7 @@ HOST (http://127.0.0.1:392xx)
 ### Recommended Project Structure (Phase 3 additions)
 
 ```
-stickyfix/
+stikfix/
 ├── entrypoints/
 │   ├── background.ts            # SW: extend with discovery, routing, relay
 │   ├── popup/
@@ -232,7 +232,7 @@ import { defineConfig } from 'wxt';
 
 export default defineConfig({
   manifest: {
-    name: 'stickyfix',
+    name: 'stikfix',
     description: 'Pin sticky notes on any page — your AI reads them.',
     version: '0.1.0',
     icons: {
@@ -385,7 +385,7 @@ async function handleSendAnnotation(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Stickyfix-Token': host.token,
+      'X-Stikfix-Token': host.token,
     },
     body: JSON.stringify(msg.payload),
   });
@@ -404,7 +404,7 @@ async function handleSendAnnotation(
 
 ### Pattern 5: Host Discovery — Parallel Port Scan (EXT-04)
 
-**What:** Probe all 21 ports in parallel with `Promise.allSettled`, short `AbortController` timeout, collect `/status` responders with `{app:'stickyfix'}`.
+**What:** Probe all 21 ports in parallel with `Promise.allSettled`, short `AbortController` timeout, collect `/status` responders with `{app:'stikfix'}`.
 
 ```typescript
 // lib/discovery.ts — pure fetch, no Chrome API needed
@@ -436,7 +436,7 @@ async function probePort(port: number): Promise<HostEntry> {
       signal: ctrl.signal,
     });
     const data = await resp.json();
-    if (data.app !== 'stickyfix') throw new Error('not stickyfix');
+    if (data.app !== 'stikfix') throw new Error('not stikfix');
     return {
       name: data.name,
       port,
@@ -566,7 +566,7 @@ export function resolveRoute(
 }
 ```
 
-**Step 3 Implementation Detail (EXT-08):** Reading `<meta name="stickyfix-project">` or `window.__stickyfix_project` requires an injected script because the SW cannot see the page DOM. The flow is:
+**Step 3 Implementation Detail (EXT-08):** Reading `<meta name="stikfix-project">` or `window.__stikfix_project` requires an injected script because the SW cannot see the page DOM. The flow is:
 
 1. `GET_ROUTE` message from content script → SW calls `resolveRoute` (steps 1 & 2)
 2. If null: SW calls `browser.scripting.executeScript({ target:{tabId}, func: readPageSelfId })` to run a small inline function in the page and return the meta/window value
@@ -576,9 +576,9 @@ export function resolveRoute(
 ```typescript
 // inline probe function — runs in isolated world
 function readPageSelfId(): string | null {
-  const meta = document.querySelector('meta[name="stickyfix-project"]');
+  const meta = document.querySelector('meta[name="stikfix-project"]');
   if (meta) return meta.getAttribute('content');
-  return (window as any).__stickyfix_project ?? null;
+  return (window as any).__stikfix_project ?? null;
 }
 
 // In SW handler:
@@ -696,7 +696,7 @@ function makeDraggable(el: HTMLElement) {
 async function sendDummy() {
   const payload: AnnotationPayload = {
     mode: 'free',
-    comment: 'stickyfix relay proof',    // distinctive — easy to spot/delete
+    comment: 'stikfix relay proof',    // distinctive — easy to spot/delete
     page: {
       url: window.location.href,
       title: document.title,
@@ -833,7 +833,7 @@ async function sendDummy() {
 // Source: PRD §9.1 — annotation payload shape
 const dummyPayload: AnnotationPayload = {
   mode: 'free',
-  comment: 'stickyfix relay proof',
+  comment: 'stikfix relay proof',
   page: {
     url: window.location.href,
     title: document.title,
@@ -872,7 +872,7 @@ import { defineConfig } from 'wxt';
 
 export default defineConfig({
   manifest: {
-    name: 'stickyfix',
+    name: 'stikfix',
     description: 'Pin sticky notes on any page — your AI reads them.',
     version: '0.1.0',
     icons: { 16: '/icon/16.png', 32: '/icon/32.png', 48: '/icon/48.png', 128: '/icon/128.png' },
@@ -943,7 +943,7 @@ The 5 Success Criteria (SW host list, token persist/survive restart, HTTPS-origi
 | WXT | Extension build | ✓ | 0.20.26 (in devDeps) | — |
 | TypeScript | Type checking | ✓ | 6.0.3 (in devDeps) | — |
 | Chrome/Chromium | Manual extension testing | ✓ (assumed — dev machine) | 142+ required for LNA behavior | — |
-| stickyfix-host | Relay proof (Success Criterion 3) | ✓ (Phase 2 complete) | Phase 2 | — |
+| stikfix-host | Relay proof (Success Criterion 3) | ✓ (Phase 2 complete) | Phase 2 | — |
 
 **Missing dependencies with no fallback:** None.
 
@@ -996,7 +996,7 @@ The 5 Success Criteria (SW host list, token persist/survive restart, HTTPS-origi
 
 | ASVS Category | Applies | Standard Control |
 |---------------|---------|-----------------|
-| V2 Authentication | Partial (token auth in host, not in extension itself) | `X-Stickyfix-Token` header — host validates; already implemented in Phase 2 |
+| V2 Authentication | Partial (token auth in host, not in extension itself) | `X-Stikfix-Token` header — host validates; already implemented in Phase 2 |
 | V3 Session Management | No (no sessions — tokens are long-lived per-host credentials) | — |
 | V4 Access Control | Yes (SW is only HTTP client; popup is only token entry point) | Architecture enforces — no direct content-script fetch |
 | V5 Input Validation | Yes (extension sends structured payloads) | Payload shape validated by host's guard (server.ts lines 107–118) |
@@ -1012,7 +1012,7 @@ The 5 Success Criteria (SW host list, token persist/survive restart, HTTPS-origi
 | Malicious page sending SEND_ANNOTATION | Tampering | Content scripts from other extensions can't send to our SW; page JS can't send chrome.runtime.sendMessage to another extension |
 | LNA block workaround via CORS host bypass | Elevation of Privilege | Blocked by architecture — SW relay is the only path |
 
-**GPL clean-room:** All extension code is written from this PRD spec and WXT docs. No upstream (`JodusNodus/opencode-chrome-annotation`) code is copied. Identifier namespace `sfx-*` / `stickyfix` maintains separation. This is a Phase 1 invariant carried forward.
+**GPL clean-room:** All extension code is written from this PRD spec and WXT docs. No upstream (`JodusNodus/opencode-chrome-annotation`) code is copied. Identifier namespace `sfx-*` / `stikfix` maintains separation. This is a Phase 1 invariant carried forward.
 
 ---
 

@@ -7,10 +7,10 @@ dependency_graph:
   requires:
     - host/src/native-msg.ts (09-01: sendNativeMessage, readNativeMessages)
     - host/src/bootstrap/register.ts (09-01: registerNativeHost, unregisterNativeHost)
-    - host/src/index.ts (09-01: writes .stickyfix-port on startup)
+    - host/src/index.ts (09-01: writes .stikfix-port on startup)
   provides:
-    - bin/stickyfix.ts → dist/host/stickyfix-init.cjs (npx stickyfix init|uninstall — no --extension-id required)
-    - host/src/native-host.ts → dist/host/stickyfix-native.cjs (GET_TOKEN responder)
+    - bin/stikfix.ts → dist/host/stikfix-init.cjs (npx stikfix init|uninstall — no --extension-id required)
+    - host/src/native-host.ts → dist/host/stikfix-native.cjs (GET_TOKEN responder)
     - host/src/extension-id.ts (deriveExtensionId, STABLE_EXTENSION_ID, MANIFEST_PUBLIC_KEY)
     - host/src/bootstrap/register.ts createLauncherFiles() (bat+lnk/command/sh+desktop per OS)
     - entrypoints/background.ts handlePairNative (SW pairing handler)
@@ -36,7 +36,7 @@ tech_stack:
     - desktop launcher via execFile(powershell,[argArray]) — NEVER exec, NEVER shell interpolation
 key_files:
   created:
-    - bin/stickyfix.ts
+    - bin/stikfix.ts
     - host/src/native-host.ts
     - host/src/extension-id.ts
     - host/src/probe.ts (FIX-SI: probeExistingHost — single-instance guard)
@@ -60,8 +60,8 @@ decisions:
   - "FIX-SI: probeExistingHost extracted to host/src/probe.ts (not inline in index.ts) so tests can import it without triggering the top-level CLI parse/exit code"
   - "FIX-SI: probe timeout is 700 ms (bounded); resolves null on ECONNREFUSED, timeout, non-200, app mismatch, or root mismatch — only a 200 with matching app+root is a live instance"
   - "FIX-TP: token persistence implemented at index.ts level (not inside resolveConfig) so existing config.ts unit tests remain green without modification"
-  - "FIX-TP: rawToken check uses the values object AFTER resolveConfigValues (flag > STICKYFIX_TOKEN > npm_config_token); if none of those are set, existing .stickyfix-token is reused"
-  - "bin/stickyfix.ts uses __dirname (available in esbuild CJS output) for absolute stickyfix-native.cjs path — avoids fragile relative paths (Pitfall 4)"
+  - "FIX-TP: rawToken check uses the values object AFTER resolveConfigValues (flag > STIKFIX_TOKEN > npm_config_token); if none of those are set, existing .stikfix-token is reused"
+  - "bin/stikfix.ts uses __dirname (available in esbuild CJS output) for absolute stikfix-native.cjs path — avoids fragile relative paths (Pitfall 4)"
   - "handlePairNative returns {ok:true,name} to let popup show host name in state 3 text"
   - "Popup state machine is button-driven (no auto-fire on open) per UI-SPEC rationale: auto-fire creates flash of 'Pairing…' → 'Failed' on machines without native host registered"
   - "State 4 builds DOM nodes for error text (not innerHTML) — safe with host-provided error strings"
@@ -79,13 +79,13 @@ metrics:
 
 # Phase 09 Plan 02: Turnkey Pairing Slice Summary
 
-**One-liner:** Bootstrapper CLI (`npx stickyfix init`, no `--extension-id` required) + stable manifest key (deterministic ID `ccdfmbhdcafhmnnnfjpbhgebfkfgjgca`) + double-click desktop launcher (bat+lnk/command/sh+desktop) + native-messaging host (GET_TOKEN one-shot) + SW pairing handler + popup state machine — full token-delivery path with zero manual terminal steps post-init. Robustness follow-up: double-click relaunch is a safe no-op (single-instance guard probes /status before any file mutation); token persists across restarts so the extension stays paired.
+**One-liner:** Bootstrapper CLI (`npx stikfix init`, no `--extension-id` required) + stable manifest key (deterministic ID `ccdfmbhdcafhmnnnfjpbhgebfkfgjgca`) + double-click desktop launcher (bat+lnk/command/sh+desktop) + native-messaging host (GET_TOKEN one-shot) + SW pairing handler + popup state machine — full token-delivery path with zero manual terminal steps post-init. Robustness follow-up: double-click relaunch is a safe no-op (single-instance guard probes /status before any file mutation); token persists across restarts so the extension stays paired.
 
 ## Tasks Completed
 
 | # | Task | Commit | Status |
 |---|------|--------|--------|
-| 1 | bin/stickyfix.ts bootstrapper CLI + host/src/native-host.ts + esbuild bundles + package.json bin | 00b0fa1 | Done |
+| 1 | bin/stikfix.ts bootstrapper CLI + host/src/native-host.ts + esbuild bundles + package.json bin | 00b0fa1 | Done |
 | 2 | nativeMessaging manifest perm + SW handlePairNative + PAIR_NATIVE message case | 498d2a7 | Done |
 | 3 | popup pairing banner — index.html + main.ts state machine + popup.css (09-UI-SPEC states 1-5) | be90044 | Done |
 | 4 | Live pairing UAT | — | CHECKPOINT — awaiting human |
@@ -103,8 +103,8 @@ metrics:
 - `connectNative`/`sendNativeMessage` in content scripts: **0 hits** (ONB-03 grep clean)
 - `handleSendAnnotation` origin-from-tab invariant: **preserved**
 - `createHostServer`/`bindServer`/`.listen(` in native-host.ts: **0 hits** (T-09-07)
-- esbuild bundles: `stickyfix-init.cjs` (14.8kb), `stickyfix-native.cjs` (2.5kb)
-- Private key NOT staged/committed: `git status` shows `.keys/stickyfix-extension.pem` untracked
+- esbuild bundles: `stikfix-init.cjs` (14.8kb), `stikfix-native.cjs` (2.5kb)
+- Private key NOT staged/committed: `git status` shows `.keys/stikfix-extension.pem` untracked
 
 ## Enhancement 1: Stable Extension ID
 
@@ -115,19 +115,19 @@ metrics:
 2. Public key (base64 SPKI/DER) committed to `wxt.config.ts` as `key` field and to `.keys/manifest-key.txt`
 3. Chrome derives the same extension ID from the key regardless of load path or machine
 4. `deriveExtensionId(publicKeyBase64)` in `host/src/extension-id.ts` re-derives the ID locally (sha256 first 16 bytes → hex nibbles → a-p alphabet)
-5. `npx stickyfix init` now defaults `allowed_origins` to this stable ID with no `--extension-id` flag required
+5. `npx stikfix init` now defaults `allowed_origins` to this stable ID with no `--extension-id` flag required
 6. `--extension-id <id>` remains as an optional override (back-compat for CWS publish with a different ID)
-7. Private key stored at `.keys/stickyfix-extension.pem` (gitignored, needed only for CWS publish to keep the same ID)
+7. Private key stored at `.keys/stikfix-extension.pem` (gitignored, needed only for CWS publish to keep the same ID)
 
 ## Enhancement 2: Desktop Backend Launcher
 
-**What was created by `npx stickyfix init`:**
+**What was created by `npx stikfix init`:**
 
 | Platform | Primary launcher | Desktop shortcut |
 |----------|-----------------|-----------------|
-| Windows | `~/.local/share/stickyfix/stickyfix-host.bat` | `~/Desktop/Stickyfix Host.lnk` (icon = built 128px PNG) |
-| macOS | `~/.config/stickyfix/stickyfix-host.command` (chmod 755) | User drags to Dock |
-| Linux | `~/.config/stickyfix/stickyfix-host.sh` (chmod 755) | `~/.local/share/applications/stickyfix-host.desktop` |
+| Windows | `~/.local/share/stikfix/stikfix-host.bat` | `~/Desktop/Stikfix Host.lnk` (icon = built 128px PNG) |
+| macOS | `~/.config/stikfix/stikfix-host.command` (chmod 755) | User drags to Dock |
+| Linux | `~/.config/stikfix/stikfix-host.sh` (chmod 755) | `~/.local/share/applications/stikfix-host.desktop` |
 
 **Security:** Windows `.lnk` created via `execFile('powershell.exe', ['-NoProfile','-NonInteractive','-Command', psScript])` — mirrors `folder-picker.ts` exactly. All paths are developer-controlled constants; no user-supplied values are interpolated into the PowerShell script body. If `.lnk` creation fails (non-fatal), the batch file alone is the fallback.
 
@@ -143,9 +143,9 @@ metrics:
    Extension ID (stable, no copy needed): ccdfmbhdcafhmnnnfjpbhgebfkfgjgca
 
 2. Start the backend — double-click the desktop launcher:
-     Windows: "Stickyfix Host" icon on Desktop (or stickyfix-host.bat)
-     macOS:   stickyfix-host.command (double-click in Finder)
-     Linux:   Stickyfix Host (Applications menu) or stickyfix-host.sh
+     Windows: "Stikfix Host" icon on Desktop (or stikfix-host.bat)
+     macOS:   stikfix-host.command (double-click in Finder)
+     Linux:   Stikfix Host (Applications menu) or stikfix-host.sh
 
 3. Open the extension popup and click "Pair with host".
    The token is delivered automatically — no copy-paste needed.
@@ -159,7 +159,7 @@ metrics:
 - **Found during:** Task 1 tsc
 - **Issue:** `values['extension-id']` has type `string | boolean` — passing directly to `registerNativeHost({ extensionId })` caused TS2345
 - **Fix:** Added `typeof rawExtId !== 'string'` guard before use; extracted `const extensionId: string = rawExtId` after narrowing
-- **Files modified:** bin/stickyfix.ts
+- **Files modified:** bin/stikfix.ts
 - **Commit:** 00b0fa1
 
 **2. [Rule 3 - Blocking] esbuild node_modules path separator fails on Windows CMD**
@@ -172,14 +172,14 @@ metrics:
 ### Robustness Follow-up (wave-3 — double-click / relaunch)
 
 **R1: [FIX-SI] Single-instance guard**
-- **Problem:** Double-clicking the desktop launcher started a second host instance on the next free port and overwrote `.stickyfix-port` and `.stickyfix-token`, breaking the extension's pairing.
-- **Fix:** In `index.ts`, before any file mutation, read `.stickyfix-port` (if present) and probe `GET /status` on that port via `node:http` with a 700 ms bounded timeout. If the response is HTTP 200 with `app === 'stickyfix'` and a matching `root`, print a human-readable message and `process.exit(0)` — no clobber. Stale/closed ports fall through to normal startup.
+- **Problem:** Double-clicking the desktop launcher started a second host instance on the next free port and overwrote `.stikfix-port` and `.stikfix-token`, breaking the extension's pairing.
+- **Fix:** In `index.ts`, before any file mutation, read `.stikfix-port` (if present) and probe `GET /status` on that port via `node:http` with a 700 ms bounded timeout. If the response is HTTP 200 with `app === 'stikfix'` and a matching `root`, print a human-readable message and `process.exit(0)` — no clobber. Stale/closed ports fall through to normal startup.
 - **Extracted to:** `host/src/probe.ts` (separate module so tests can import without triggering CLI parse/exit).
 - **Commit:** a4ccaae
 
 **R2: [FIX-TP] Token persistence**
-- **Problem:** `resolveConfig` called `randomUUID()` on every launch, so restarting the host regenerated `.stickyfix-token` and the extension lost its pairing.
-- **Fix:** After `resolveConfig`, check whether a `rawToken` was explicitly supplied (via `--token` / `STICKYFIX_TOKEN` / `npm_config_token`). If not, read the existing `.stickyfix-token` and reuse it as `finalToken`. Fresh roots still get a new UUID; explicit flags always win.
+- **Problem:** `resolveConfig` called `randomUUID()` on every launch, so restarting the host regenerated `.stikfix-token` and the extension lost its pairing.
+- **Fix:** After `resolveConfig`, check whether a `rawToken` was explicitly supplied (via `--token` / `STIKFIX_TOKEN` / `npm_config_token`). If not, read the existing `.stikfix-token` and reuse it as `finalToken`. Fresh roots still get a new UUID; explicit flags always win.
 - **Commit:** a4ccaae
 
 ### Post-UAT Enhancements (wave-2 gap closure)
@@ -187,13 +187,13 @@ metrics:
 **E1: [SC-1/SC-4 Gap] --extension-id was required, now optional**
 - Wave-2 UAT found SC-1 violated: user had to copy extension ID manually from chrome://extensions
 - Fix: generate RSA keypair, add `key` to manifest, derive stable ID, default init to it
-- Files: wxt.config.ts, host/src/extension-id.ts, .keys/*, .gitignore, bin/stickyfix.ts
+- Files: wxt.config.ts, host/src/extension-id.ts, .keys/*, .gitignore, bin/stikfix.ts
 - Commits: bf09283
 
 **E2: [SC-4 Gap] Backend required manual terminal step to start**
 - Wave-2 UAT found SC-4 violated: user had to run `npm run host` in a terminal
 - Fix: createLauncherFiles() writes OS-appropriate double-click launchers; init output now shows terminal-free next-steps
-- Files: host/src/bootstrap/register.ts, bin/stickyfix.ts, host/test/bootstrapper.test.ts
+- Files: host/src/bootstrap/register.ts, bin/stikfix.ts, host/test/bootstrapper.test.ts
 - Commits: aa3910b
 
 ## Known Stubs
@@ -218,16 +218,16 @@ No new threat surface beyond plan's `<threat_model>`. Launcher creation mitigati
 
 | Check | Result |
 |-------|--------|
-| bin/stickyfix.ts exists | FOUND |
+| bin/stikfix.ts exists | FOUND |
 | host/src/native-host.ts exists | FOUND |
 | host/src/extension-id.ts exists | FOUND |
 | host/src/probe.ts exists (FIX-SI) | FOUND |
 | host/test/robustness.test.ts exists (FIX-SI + FIX-TP) | FOUND |
 | .keys/manifest-key.txt exists | FOUND |
 | .keys/extension-id.txt contains ccdfmbhdcafhmnnnfjpbhgebfkfgjgca | FOUND |
-| .keys/stickyfix-extension.pem NOT staged | CONFIRMED (untracked, gitignored) |
-| dist/host/stickyfix-init.cjs exists | FOUND |
-| dist/host/stickyfix-native.cjs exists | FOUND |
+| .keys/stikfix-extension.pem NOT staged | CONFIRMED (untracked, gitignored) |
+| dist/host/stikfix-init.cjs exists | FOUND |
+| dist/host/stikfix-native.cjs exists | FOUND |
 | manifest.json key field present | PASS |
 | manifest.json nativeMessaging present | PASS |
 | commit 00b0fa1 (Task 1) | FOUND |

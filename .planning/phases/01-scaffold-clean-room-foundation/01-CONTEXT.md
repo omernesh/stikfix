@@ -32,14 +32,14 @@ Out of scope (later phases): host HTTP server/endpoints (Phase 2), extension rou
 - **D-07:** Commit **pre-sized PNG icons** at 16/32/48/128 under `public/` (e.g. `public/icon/16.png` …) and reference them in `wxt.config.ts` manifest. **Do NOT** use `@wxt-dev/auto-icons`/`sharp` — STACK.md flags it as a Windows native-binary CI risk. (BUILD-03)
 
 ### Clean-Room Enforcement (hard invariant from commit one)
-- **D-08:** Establish the **`sfx-*` / `stickyfix`** identifier namespace now (DOM ids `sfx-*`, package name `stickyfix`, host id `stickyfix`). Never reuse upstream identifiers (`__opc_*`, `opencode`, `JodusNodus`).
+- **D-08:** Establish the **`sfx-*` / `stikfix`** identifier namespace now (DOM ids `sfx-*`, package name `stikfix`, host id `stikfix`). Never reuse upstream identifiers (`__opc_*`, `opencode`, `JodusNodus`).
 - **D-09:** Wire a **clean-room grep audit** into `npm run check` (or a `clean-room` script it calls): grep the tree for `__opc_`, `opencode`, `JodusNodus` (case-insensitive) and fail non-zero on any match. This is the structural mechanism that makes BUILD-04 verifiable on every run, not a one-time manual check.
 
 ### TypeScript Config
 - **D-10:** `strict: true`; for the extension tsconfig set **`types: ["chrome"]`** explicitly (TS6 no longer infers `@types/*`) and `moduleResolution: "bundler"` (WXT/Vite). For the host, a separate `tsconfig.host.json` with `module: "NodeNext"`, `moduleResolution: "nodenext"`, `types: ["node"]`. (STACK.md TS6 breaking-changes note.)
 
 ### Smoke Test (for `npm run check`)
-- **D-11:** Host smoke test = spawn the host stub against a temp `--root`, read its stdout startup line (and, once Phase 2 lands, GET `/status` and assert `app === "stickyfix"`), assert exit/health, return 0. This phase: assert the stub starts and prints expected fields.
+- **D-11:** Host smoke test = spawn the host stub against a temp `--root`, read its stdout startup line (and, once Phase 2 lands, GET `/status` and assert `app === "stikfix"`), assert exit/health, return 0. This phase: assert the stub starts and prints expected fields.
 
 ### Claude's Discretion
 - Exact directory nesting under `entrypoints/`, the hyperscript helper choice (if any), tsconfig `target`/`lib` levels, and the precise icon file paths are left to the planner — keep them WXT-idiomatic and Windows-safe.
@@ -88,7 +88,7 @@ Out of scope (later phases): host HTTP server/endpoints (Phase 2), extension rou
 <deferred>
 ## Deferred Ideas
 
-- Publishing `stickyfix-host` as an npm `bin` — v2 (FUT-04).
+- Publishing `stikfix-host` as an npm `bin` — v2 (FUT-04).
 - esbuild for host bundling — only if `tsc` output/startup proves insufficient.
 - CI workflow (GitHub Actions) to run `npm run check` on push — valuable but not in BUILD-* scope; note for a later hardening/infra pass.
 

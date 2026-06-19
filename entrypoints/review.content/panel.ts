@@ -1,5 +1,5 @@
 /**
- * stickyfix Notes Panel — Phase C (Review Loop v2)
+ * stikfix Notes Panel — Phase C (Review Loop v2)
  *
  * Exports: mountPanel, togglePanel, refreshPanel, teardownPanel, isPanelOpen
  *

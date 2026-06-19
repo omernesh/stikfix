@@ -1,5 +1,5 @@
 /**
- * Marquee rect utilities for stickyfix region capture.
+ * Marquee rect utilities for stikfix region capture.
  *
  * buildMarqueeRect + isBelowThreshold + MARQUEE_MIN_PX — pure, node:test-safe.
  * Takes raw coordinate numbers (CSS viewport coords from interact.js events).

@@ -1,12 +1,12 @@
 /**
- * Config resolution for stickyfix-host.
- * D-07: token resolution order --token -> STICKYFIX_TOKEN -> crypto.randomUUID()
+ * Config resolution for stikfix-host.
+ * D-07: token resolution order --token -> STIKFIX_TOKEN -> crypto.randomUUID()
  * D-09: ensureNotesDir creates notesDir + .gitkeep (HOST-12)
  * D-10: resolveConfig rejects notesDir outside root (HOST-09)
  * Pattern 11: VERSION read from package.json at runtime via import.meta.url
  * Windows-PowerShell compat: npm 11.x on Windows strips unknown flags and exposes
  *   them as process.env.npm_config_<key>. resolveConfig accepts all three sources
- *   with precedence: parsed flag > STICKYFIX_* env > npm_config_* env.
+ *   with precedence: parsed flag > STIKFIX_* env > npm_config_* env.
  */
 
 import { readFileSync, mkdirSync, writeFileSync, existsSync, rmSync } from 'node:fs';
@@ -33,7 +33,7 @@ export const VERSION: string = _pkg.version;
  *
  * Precedence (first defined wins) per key:
  *   1. Real parsed flag  (values.root, values.origin, …)         — git bash / macOS / Linux
- *   2. STICKYFIX_* env   (STICKYFIX_ROOT, STICKYFIX_ORIGINS, …) — explicit env override
+ *   2. STIKFIX_* env   (STIKFIX_ROOT, STIKFIX_ORIGINS, …) — explicit env override
  *   3. npm_config_* env  (npm_config_root, npm_config_origin, …) — npm-on-Windows PowerShell
  *
  * Callers must not assume root is present — resolveConfig validates below.
@@ -45,7 +45,7 @@ export function resolveConfigValues(
   // root
   const root =
     (values['root'] as string | undefined) ??
-    env['STICKYFIX_ROOT'] ??
+    env['STIKFIX_ROOT'] ??
     env['npm_config_root'];
 
   // origin / origins — flag: string[] (multiple:true); env: comma-separated string
@@ -55,7 +55,7 @@ export function resolveConfigValues(
     origins = originFlag;
   } else {
     const originsEnv =
-      env['STICKYFIX_ORIGINS'] ??
+      env['STIKFIX_ORIGINS'] ??
       env['npm_config_origin'];
     if (originsEnv !== undefined && originsEnv !== '') {
       origins = originsEnv.split(',').map((s) => s.trim()).filter(Boolean);
@@ -65,25 +65,25 @@ export function resolveConfigValues(
   // name
   const name =
     (values['name'] as string | undefined) ??
-    env['STICKYFIX_NAME'] ??
+    env['STIKFIX_NAME'] ??
     env['npm_config_name'];
 
   // notes-dir
   const notesDir =
     (values['notes-dir'] as string | undefined) ??
-    env['STICKYFIX_NOTES_DIR'] ??
+    env['STIKFIX_NOTES_DIR'] ??
     env['npm_config_notes_dir'];
 
   // port
   const port =
     (values['port'] as string | undefined) ??
-    env['STICKYFIX_PORT'] ??
+    env['STIKFIX_PORT'] ??
     env['npm_config_port'];
 
-  // token — D-07 (STICKYFIX_TOKEN already documented in PRD §8.1)
+  // token — D-07 (STIKFIX_TOKEN already documented in PRD §8.1)
   const token =
     (values['token'] as string | undefined) ??
-    env['STICKYFIX_TOKEN'] ??
+    env['STIKFIX_TOKEN'] ??
     env['npm_config_token'];
 
   return {
@@ -165,7 +165,7 @@ export function ensureNotesDir(notesDir: string): void {
 // ---------------------------------------------------------------------------
 
 /**
- * Write the resolved token to <root>/.stickyfix-token for developer convenience.
+ * Write the resolved token to <root>/.stikfix-token for developer convenience.
  * The file is already gitignored (verified in Phase 1).
  *
  * The token is a credential, so the file is created owner-only (mode 0o600).
@@ -174,7 +174,7 @@ export function ensureNotesDir(notesDir: string): void {
  * Windows they are largely ignored by the filesystem, which is acceptable.
  */
 export function writeTokenFile(root: string, token: string): void {
-  const tokenPath = join(root, '.stickyfix-token');
+  const tokenPath = join(root, '.stikfix-token');
   if (existsSync(tokenPath)) {
     rmSync(tokenPath, { force: true });
   }

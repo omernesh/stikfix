@@ -36,7 +36,7 @@ key-files:
 key-decisions:
   - "Banned pattern strings split into fragments in clean-room-check.mjs source to prevent the gate from self-tripping when it scans its own .mjs file (the scanner is itself a scanned file)"
   - "SKIP_FILENAMES added for PRD.md/README.md/CLAUDE.md/LICENSE — these root-level docs reference the upstream project for attribution/legal notice (same rationale as .planning/ SKIP_DIR per Pitfall 5)"
-  - ".gitignore already complete from plan 01-01 — no changes required in 01-03; .output/, dist/, .wxt/, node_modules/, .stickyfix-token all present"
+  - ".gitignore already complete from plan 01-01 — no changes required in 01-03; .output/, dist/, .wxt/, node_modules/, .stikfix-token all present"
 
 requirements-completed: [BUILD-01, BUILD-04, BUILD-05]
 
@@ -78,7 +78,7 @@ completed: 2026-05-31
 
 - Banned pattern strings are split into concatenated fragments (`'Jodus' + 'Nodus'`) so the gate does not self-trip when scanning its own source file (the .mjs file is within the scanned tree since `scripts/` is first-party source).
 - `SKIP_FILENAMES` added for root-level attribution/legal docs: PRD.md, README.md, CLAUDE.md, LICENSE. These documents reference the upstream GPL-3.0 project by name for attribution purposes — the same reason `.planning/` is in `SKIP_DIRS` (Pitfall 5). The legal obligation to name the upstream does not create a clean-room violation.
-- .gitignore required no changes in this plan — it was finalized in plan 01-01 with all required entries: `.output/`, `dist/`, `.wxt/`, `node_modules/`, `.stickyfix-token`.
+- .gitignore required no changes in this plan — it was finalized in plan 01-01 with all required entries: `.output/`, `dist/`, `.wxt/`, `node_modules/`, `.stikfix-token`.
 
 ## Deviations from Plan
 
@@ -103,7 +103,7 @@ completed: 2026-05-31
 **3. [Deviation] .gitignore required no changes in 01-03**
 
 - **Found during:** Task 2 (read .gitignore before modifying)
-- **Issue:** The .gitignore from plan 01-01 already contained all entries listed in RESEARCH Pattern 8: `.output/`, `dist/`, `.wxt/`, `node_modules/`, `.stickyfix-token`, `.DS_Store`, `Thumbs.db`, editor dirs, and project-specific rules (notes/, private/, .claude/).
+- **Issue:** The .gitignore from plan 01-01 already contained all entries listed in RESEARCH Pattern 8: `.output/`, `dist/`, `.wxt/`, `node_modules/`, `.stikfix-token`, `.DS_Store`, `Thumbs.db`, editor dirs, and project-specific rules (notes/, private/, .claude/).
 - **Outcome:** No changes were needed; Task 2 was a pure verification pass. Documented as a deviation (no-op task) rather than a bug fix.
 
 ---
@@ -122,10 +122,10 @@ completed: 2026-05-31
 1. Run `npm run build` (if not already run). Confirm exit 0.
 2. Open Chrome, navigate to `chrome://extensions`.
 3. Enable "Developer mode" (top-right toggle).
-4. Click "Load unpacked" and select: `D:\docker\stickyfix\.output\chrome-mv3`
-5. Confirm the extension appears as "stickyfix" with NO manifest errors (no red error box).
-6. Confirm the stickyfix icon renders in the extensions list (pin it — confirm a toolbar icon shows).
-7. Clicking the toolbar icon should open the placeholder popup (shows "stickyfix — loading...").
+4. Click "Load unpacked" and select: `D:\docker\stikfix\.output\chrome-mv3`
+5. Confirm the extension appears as "stikfix" with NO manifest errors (no red error box).
+6. Confirm the stikfix icon renders in the extensions list (pin it — confirm a toolbar icon shows).
+7. Clicking the toolbar icon should open the placeholder popup (shows "stikfix — loading...").
 
 **Resume signal:** Type "approved" if the extension loads with no errors and icons render, or describe the manifest error / missing icon you see.
 
@@ -154,16 +154,16 @@ None — no external service configuration required.
 ## Threat Coverage
 
 - T-01-06 mitigated: clean-room-check.mjs runs on every `npm run check`; fail-closed behavior proven via RED+GREEN.
-- T-01-07 mitigated: `.stickyfix-token` and `private/` in .gitignore; no tokens in Phase 1 code.
+- T-01-07 mitigated: `.stikfix-token` and `private/` in .gitignore; no tokens in Phase 1 code.
 - T-01-08 mitigated: SKIP_DIRS limited to build/vendor/research dirs; all first-party source is scanned; RED test proves the gate actually fails on a planted token.
 
 ## Self-Check
 
-- [x] scripts/clean-room-check.mjs exists at D:\docker\stickyfix\scripts\clean-room-check.mjs
+- [x] scripts/clean-room-check.mjs exists at D:\docker\stikfix\scripts\clean-room-check.mjs
 - [x] Commit 3071f23 exists (Task 1: clean-room-check.mjs)
 - [x] npm run build exits 0 (.output/chrome-mv3/manifest.json and dist/host/index.js verified)
 - [x] npm run check exits 0 (all four steps: tsc extension, tsc host, clean-room PASS, smoke test PASS)
-- [x] .gitignore contains .output/, dist/, .wxt/, node_modules/, .stickyfix-token
+- [x] .gitignore contains .output/, dist/, .wxt/, node_modules/, .stikfix-token
 - [x] No probe file remaining in tree (confirmed by GREEN passing)
 
 ## Self-Check: PASSED

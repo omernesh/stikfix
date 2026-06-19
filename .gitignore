@@ -25,7 +25,7 @@ notes/
 
 # Logs / runtime
 *.log
-.stickyfix-token
+.stikfix-token
 .DS_Store
 Thumbs.db
 

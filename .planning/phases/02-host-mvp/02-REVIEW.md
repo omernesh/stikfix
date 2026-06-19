@@ -42,11 +42,11 @@ However, two correctness defects can crash a request into a 500 or leave inconsi
 ### CR-01: `checkToken` throws (500) instead of returning false on multibyte length mismatch
 
 **File:** `host/src/security.ts:26-27`, `host/src/server.ts:75`
-**Issue:** The length guard compares `provided.length !== expectedToken.length`. For JavaScript strings, `.length` is the count of UTF-16 code units, but `Buffer.from(str)` encodes as UTF-8 bytes. A provided token can have the *same* UTF-16 length as the expected token yet a *different* UTF-8 byte length (e.g. a token containing an emoji or accented char). When that happens the length guard passes, but `timingSafeEqual(Buffer.from(provided), Buffer.from(expectedToken))` receives buffers of unequal length and **throws** `RangeError: Input buffers must have the same byte length`. In `handleAnnotation`, `checkToken` is called outside any try/catch (line 75), so the throw propagates to the last-resort `.catch` in `createHostServer` and the client receives a **500** instead of a clean **401**. An attacker can deliberately trigger this to probe behavior, and a legitimate non-ASCII `--token` / `STICKYFIX_TOKEN` makes *all* auth fail with 500.
+**Issue:** The length guard compares `provided.length !== expectedToken.length`. For JavaScript strings, `.length` is the count of UTF-16 code units, but `Buffer.from(str)` encodes as UTF-8 bytes. A provided token can have the *same* UTF-16 length as the expected token yet a *different* UTF-8 byte length (e.g. a token containing an emoji or accented char). When that happens the length guard passes, but `timingSafeEqual(Buffer.from(provided), Buffer.from(expectedToken))` receives buffers of unequal length and **throws** `RangeError: Input buffers must have the same byte length`. In `handleAnnotation`, `checkToken` is called outside any try/catch (line 75), so the throw propagates to the last-resort `.catch` in `createHostServer` and the client receives a **500** instead of a clean **401**. An attacker can deliberately trigger this to probe behavior, and a legitimate non-ASCII `--token` / `STIKFIX_TOKEN` makes *all* auth fail with 500.
 **Fix:** Compare byte lengths, not string lengths, and build the buffers once:
 ```ts
 export function checkToken(req: Pick<IncomingMessage, 'headers'>, expectedToken: string): boolean {
-  const provided = req.headers['x-stickyfix-token'];
+  const provided = req.headers['x-stikfix-token'];
   if (typeof provided !== 'string') return false;
   const a = Buffer.from(provided, 'utf8');
   const b = Buffer.from(expectedToken, 'utf8');
@@ -164,7 +164,7 @@ if (portStr !== undefined) {
 ### IN-05: `setCorsHeaders` falls back to `'*'` when Origin absent, but credentials are header-based
 
 **File:** `host/src/server.ts:27`
-**Issue:** When no `Origin` header is present, `Access-Control-Allow-Origin` is set to `'*'`. This is harmless here because auth is via the `X-Stickyfix-Token` header (not cookies), so `Allow-Origin: *` does not leak credentials. Noting it only to confirm it was considered and is acceptable within the host boundary — not a defect.
+**Issue:** When no `Origin` header is present, `Access-Control-Allow-Origin` is set to `'*'`. This is harmless here because auth is via the `X-Stikfix-Token` header (not cookies), so `Allow-Origin: *` does not leak credentials. Noting it only to confirm it was considered and is acceptable within the host boundary — not a defect.
 **Fix:** None required.
 
 ---

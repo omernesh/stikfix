@@ -1,5 +1,5 @@
 /**
- * stickyfix + FAB component — shadow-root UI
+ * stikfix + FAB component — shadow-root UI
  *
  * Renders a draggable "Add note" floating action button (FREE-01).
  *

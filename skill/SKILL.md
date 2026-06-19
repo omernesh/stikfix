@@ -1,10 +1,10 @@
 # review-notes
 
-Process unread stickyfix review notes in serial order — read each note, apply the
+Process unread stikfix review notes in serial order — read each note, apply the
 requested code fix, then update the note's status so the extension can surface the
 result on the page. This replaces the screenshot-paste-describe ping-pong of UI
 review with a durable, file-based, iterative loop: a developer drops notes on a live
-page, saves them to disk via the stickyfix host, then tells you to "read my notes" —
+page, saves them to disk via the stikfix host, then tells you to "read my notes" —
 you fix the code and write a structured reply back into the note, idempotently,
 without any manual copy-paste.
 
@@ -13,12 +13,12 @@ without any manual copy-paste.
 - The user says "read my notes", "process review notes", "fix sticky notes", "run
   review-notes", or "what notes do I have"
 - There is a `notes/` directory in the project (or an explicit path was given) that
-  may contain unread `.md` note files written by the stickyfix extension
+  may contain unread `.md` note files written by the stikfix extension
 
 ## When NOT to use
 
 - The user wants to view notes without acting on them (read-only inspection)
-- The user has not set up the stickyfix host and extension (no `notes/` directory)
+- The user has not set up the stikfix host and extension (no `notes/` directory)
 - You are operating outside the project repository where notes live
 
 ## Preconditions
@@ -139,7 +139,7 @@ field; only add or update `status`, `reply`, and `fixed_in`.**
 
       The text after the closing `---\n` is the note body. The first non-blank line
       of the body is the developer's instruction — the comment they typed into the
-      stickyfix note UI. Read it as the actionable request.
+      stikfix note UI. Read it as the actionable request.
 
    b. **Read element context (element mode only)**
 
@@ -323,5 +323,5 @@ duplicate `> flagged:` blockquote.
 - **Overwrite existing frontmatter fields** — always parse the YAML block, update
   only `status`, `reply`, and `fixed_in`, and reserialize. Never clobber `id`,
   `created`, `url`, `selector`, or any other field the extension wrote.
-- **Make network or host calls** — this skill is disk-only; do not call the stickyfix
+- **Make network or host calls** — this skill is disk-only; do not call the stikfix
   host HTTP API, do not POST to any endpoint

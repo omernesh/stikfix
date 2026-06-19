@@ -1,4 +1,4 @@
-# Roadmap: stickyfix
+# Roadmap: stikfix
 
 ## Overview
 
@@ -14,7 +14,7 @@ Nine phases deliver a Chrome MV3 extension + localhost host that turns on-page s
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Scaffold & Clean-Room Foundation** - Cross-platform WXT + host build succeeds; sfx-* identifier namespace established; no GPL artifacts (completed 2026-05-31)
-- [x] **Phase 2: Host MVP** - stickyfix-host writes .md + .png files with serial mutex, token auth, path safety, and CORS
+- [x] **Phase 2: Host MVP** - stikfix-host writes .md + .png files with serial mutex, token auth, path safety, and CORS
  (completed 2026-05-31)
 
 - [x] **Phase 3: Extension Skeleton + SW Relay Proof** - Popup, host discovery, chrome.storage.local state, on-demand injection, dummy POST relay proven end-to-end (completed 2026-05-31)
@@ -209,7 +209,7 @@ Plans:
 
 ### Phase 7: review-notes Skill + Docs
 
-**Goal**: Any AI coding agent can install the review-notes skill, run it against a notes/ dir, and have it process unread notes in serial order — renaming each to *.read.md — while the README gives a developer everything needed to install and use stickyfix in under 5 minutes.
+**Goal**: Any AI coding agent can install the review-notes skill, run it against a notes/ dir, and have it process unread notes in serial order — renaming each to *.read.md — while the README gives a developer everything needed to install and use stikfix in under 5 minutes.
 **Mode:** mvp
 **Depends on**: Phase 6
 **Requirements**: SKILL-01, SKILL-02, SKILL-03, SKILL-04, SKILL-05, DOC-01, DOC-02
@@ -268,7 +268,7 @@ Plans:
   4. The host auto-starts / is discoverable with no manual terminal step; uninstall removes host artifacts + native-messaging manifests with no orphan processes or stray config
   5. (stretch) A documented packaging path exists for Edge (Chromium drop-in), Firefox, and Safari
 
-**Design decisions locked** (09-CONTEXT.md): D-01 cross-platform `npx stickyfix init` bootstrapper (no per-OS installer); D-02 native messaging is the pairing channel (no HTTP /pair endpoint); D-03 host is native-messaging-spawned on demand (no tray/service); D-04 origin->folder mapping via OS folder dialog on first note; D-05 Edge supported now + Firefox/Safari documented-only (FUT-01). Architecture: native messaging for pairing ONLY (token + port handoff); the per-project HTTP relay is retained for note transport (the 1 MB native-messaging cap rules out a broker for 12 MB screenshots) — SW-as-sole-HTTP-client invariant preserved.
+**Design decisions locked** (09-CONTEXT.md): D-01 cross-platform `npx stikfix init` bootstrapper (no per-OS installer); D-02 native messaging is the pairing channel (no HTTP /pair endpoint); D-03 host is native-messaging-spawned on demand (no tray/service); D-04 origin->folder mapping via OS folder dialog on first note; D-05 Edge supported now + Firefox/Safari documented-only (FUT-01). Architecture: native messaging for pairing ONLY (token + port handoff); the per-project HTTP relay is retained for note transport (the 1 MB native-messaging cap rules out a broker for 12 MB screenshots) — SW-as-sole-HTTP-client invariant preserved.
 
 **Plans**: 4 plans
 
@@ -276,7 +276,7 @@ Plans:
 
 **Wave 1**
 
-- [x] 09-01-PLAN.md — Foundation: native-msg stdio framing + manifest writer/per-OS paths/registry/uninstall-enumerator + folder-picker arg builder + .stickyfix-port write + node:test (ONB-01/04/05)
+- [x] 09-01-PLAN.md — Foundation: native-msg stdio framing + manifest writer/per-OS paths/registry/uninstall-enumerator + folder-picker arg builder + .stikfix-port write + node:test (ONB-01/04/05)
 - [x] 09-03-PLAN.md — Cross-browser docs: docs/cross-browser.md (Edge now + Firefox/Safari documented-only) + section-check script + README link (ONB-06)
 
 **Wave 2** *(blocked on 09-01)*

@@ -561,7 +561,7 @@ This is a greenfield feature phase (no rename/refactor). Omit runtime state inve
 
 **How to avoid:** Follow the UI-SPEC §Send Interaction In-flight sequence exactly: (1) disable controls → (2) set `display:none` on ALL sfx surfaces (card, chip, FAB, hover overlay if present) → (3) `await waitTwoRafs()` → (4) `await captureTab(tabId)`. The order is strict. The hiding must be synchronous before the `await`.
 
-**Warning signs:** The `+1.png` shows the stickyfix card or chip overlaid on the page.
+**Warning signs:** The `+1.png` shows the stikfix card or chip overlaid on the page.
 
 ### Pitfall 4: React Fiber Walk Throws or Loops
 

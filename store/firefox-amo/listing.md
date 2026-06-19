@@ -1,7 +1,7 @@
 ---
 store: Firefox Add-ons (AMO)
 version: 1.1.1
-gecko_id: stickyfix@stickyfix.dev
+gecko_id: stikfix@stikfix.com
 last_updated: 2026-06-17
 ---
 
@@ -9,7 +9,7 @@ last_updated: 2026-06-17
 
 ## Name
 
-stickyfix
+stikfix
 
 ## Summary
 (AMO calls this field "Summary"; ≤ 250 characters)
@@ -21,11 +21,11 @@ Pin sticky notes on any web page. Your AI reads them, fixes the issues, and repl
 
 Stop describing UI bugs in chat. Drop a note directly on the broken element.
 
-stickyfix turns browser-based UI review into a precise, file-based loop between you and your AI coding agent — no screenshots to paste, no "which button did you mean?", no lost context. Every note lands on disk as a structured markdown file your agent can read, fix, and reply to. The pin on the page updates to show the result.
+stikfix turns browser-based UI review into a precise, file-based loop between you and your AI coding agent — no screenshots to paste, no "which button did you mean?", no lost context. Every note lands on disk as a structured markdown file your agent can read, fix, and reply to. The pin on the page updates to show the result.
 
 HOW IT WORKS
 
-1. Run `npx stickyfix init --root /path/to/your/project` (one time, no admin rights). This registers the companion localhost host via Firefox's Native Messaging API and drops a desktop launcher.
+1. Run `npx stikfix init --root /path/to/your/project` (one time, no admin rights). This registers the companion localhost host via Firefox's Native Messaging API and drops a desktop launcher.
 
 2. Click "Enter Review Mode" on any page. Drop sticky notes — free-floating, or click an element to anchor. Anchored notes auto-capture the CSS selector, computed styles, outerHTML, bounding box, React component name, and an element-highlight screenshot.
 
@@ -47,7 +47,7 @@ FEATURES
 
 WHO IT'S FOR
 
-Developers doing UI review with an AI coding agent (Claude, Cursor, Copilot, or any agent that reads files on disk). If your current workflow involves pasting screenshots into chat and re-describing context, stickyfix replaces that loop with durable, file-based notes your agent can act on directly.
+Developers doing UI review with an AI coding agent (Claude, Cursor, Copilot, or any agent that reads files on disk). If your current workflow involves pasting screenshots into chat and re-describing context, stikfix replaces that loop with durable, file-based notes your agent can act on directly.
 
 SETUP REQUIREMENT
 
@@ -55,7 +55,7 @@ This extension requires a companion localhost host to function.
 
 Install it with one command (Node 20+, no admin rights):
 
-  npx stickyfix init --root /path/to/your/project
+  npx stikfix init --root /path/to/your/project
 
 The host is a small Node.js process that runs entirely on your machine, registered via Firefox's Native Messaging API. No cloud account, no sign-up, no subscription. Everything stays on your machine.
 
@@ -65,7 +65,7 @@ No data leaves your machine. Note content and screenshots are sent only to your 
 
 OPEN SOURCE
 
-MIT licensed. Source: https://github.com/omernesh/stickyfix
+MIT licensed. Source: https://github.com/omernesh/stikfix
 
 ## Categories
 (AMO categories — pick the most relevant)
@@ -84,7 +84,7 @@ MIT
 
 ## Homepage / Support Site
 
-https://github.com/omernesh/stickyfix
+https://github.com/omernesh/stikfix
 
 ## Support Email
 
@@ -92,7 +92,7 @@ omernesher@gmail.com
 
 ## Add-on ID (Gecko)
 
-stickyfix@stickyfix.dev
+stikfix@stikfix.com
 
 ## Source Code Submission Note
 (AMO requires source upload for extensions built with bundlers/minifiers)
@@ -101,13 +101,13 @@ This extension is built with WXT (a Vite-based MV3 framework) and TypeScript. Th
 
 Build instructions:
 1. Node 20+ required.
-2. `git clone https://github.com/omernesh/stickyfix && cd stickyfix`
+2. `git clone https://github.com/omernesh/stikfix && cd stikfix`
 3. `npm install`
 4. `npm run build:firefox`
 5. Output: `.output/firefox-mv*/`
 
 The full source, build scripts, and CI configuration are at:
-https://github.com/omernesh/stickyfix
+https://github.com/omernesh/stikfix
 
 The extension contains no obfuscated code. All dependencies are open source and listed in package.json.
 
@@ -115,14 +115,14 @@ The extension contains no obfuscated code. All dependencies are open source and 
 
 This extension requires a companion native-messaging host to be installed and running before the core functionality is testable. The host is installed via:
 
-  npx stickyfix init --root /tmp/stickyfix-test
+  npx stikfix init --root /tmp/stikfix-test
 
 After running that command, start the host via the desktop launcher it creates, then open any web page, click the extension toolbar button, and click "Enter Review Mode."
 
-Firefox native messaging uses `allowed_extensions` (add-on ID: `stickyfix@stickyfix.dev`) rather than `allowed_origins`. The `npx stickyfix init` command writes the correct Firefox manifest to:
-  - macOS: ~/Library/Application Support/Mozilla/NativeMessagingHosts/com.stickyfix.host.json
-  - Linux: ~/.mozilla/native-messaging-hosts/com.stickyfix.host.json
-  - Windows: HKCU\Software\Mozilla\NativeMessagingHosts\com.stickyfix.host
+Firefox native messaging uses `allowed_extensions` (add-on ID: `stikfix@stikfix.com`) rather than `allowed_origins`. The `npx stikfix init` command writes the correct Firefox manifest to:
+  - macOS: ~/Library/Application Support/Mozilla/NativeMessagingHosts/com.stikfix.host.json
+  - Linux: ~/.mozilla/native-messaging-hosts/com.stikfix.host.json
+  - Windows: HKCU\Software\Mozilla\NativeMessagingHosts\com.stikfix.host
 
 The host communicates exclusively over 127.0.0.1 (port range 39240–39260). No external network requests are made.
 

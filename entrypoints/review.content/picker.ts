@@ -1,5 +1,5 @@
 /**
- * stickyfix picker — pick-mode lifecycle + hover-highlight overlay
+ * stikfix picker — pick-mode lifecycle + hover-highlight overlay
  *
  * Provides enterPickMode / exitPickMode for element-note mode (ELEM-01).
  * Pure DOM/event module — no chrome.* calls.
@@ -50,12 +50,12 @@ export function enterPickMode(
 
   _container = container;
 
-  // Resolve the stickyfix shadow HOST element (the <sfx-review-ui> custom element
+  // Resolve the stikfix shadow HOST element (the <sfx-review-ui> custom element
   // in the PAGE tree). Shadow-DOM event retargeting reports `e.target` as this host
   // for ANY hover/click on our own UI (chip, FAB, card, overlay) — and the host is
   // NOT inside `container` (container lives inside the host's shadow root), so the
   // `container.contains(target)` guard alone misses it. Exclude the host explicitly
-  // so the picker never highlights/picks stickyfix's own UI (T-05-06).
+  // so the picker never highlights/picks stikfix's own UI (T-05-06).
   const rootNode = container.getRootNode();
   const sfxHost: Element | null =
     rootNode instanceof ShadowRoot ? rootNode.host : null;

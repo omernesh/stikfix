@@ -1,5 +1,5 @@
 /**
- * URL-path matching and pin position computation for stickyfix persistent pins.
+ * URL-path matching and pin position computation for stikfix persistent pins.
  *
  * matchesUrlPath + computePinPosition — pure, node:test-safe (no DOM/chrome at module level).
  * Scroll offsets and anchor rects are PASSED AS PARAMETERS by the caller (pin.ts in Plan 04),

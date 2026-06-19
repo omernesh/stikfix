@@ -382,7 +382,7 @@ screenshots: thumbnails.map(t => ({ kind: t.kind, mime: 'image/png', dataUrl: t.
 
 **What:** Three new async handler functions added to `server.ts`; three new `path.match` branches in `createHostServer`. All reuse existing `setCorsHeaders`, `checkToken`, `readBody`, `isInsideDir`.
 
-**CORS extension required:** `setPreflightHeaders` currently allows `'GET, POST, OPTIONS'` and `'Content-Type, X-Stickyfix-Token'`. Must add `PUT, DELETE` to the methods list. [VERIFIED: `server.ts:38`]
+**CORS extension required:** `setPreflightHeaders` currently allows `'GET, POST, OPTIONS'` and `'Content-Type, X-Stikfix-Token'`. Must add `PUT, DELETE` to the methods list. [VERIFIED: `server.ts:38`]
 
 ```typescript
 // Source: server.ts:38 pattern [VERIFIED: live codebase]
@@ -681,7 +681,7 @@ async function handleListAnnotations(tabId: number): Promise<...> {
   if (!host || !host.token) return { ok: false, error: '...' };
   const resp = await fetch(
     `http://127.0.0.1:${host.port}/annotations?url=${encodeURIComponent(tab.url)}`,
-    { headers: { 'X-Stickyfix-Token': host.token } }
+    { headers: { 'X-Stikfix-Token': host.token } }
   );
   // ... parse + return pins
 }
@@ -779,7 +779,7 @@ async function handleListAnnotations(tabId: number): Promise<...> {
 
 **Why it happens:** The `setPreflightHeaders` function hardcodes the methods list.
 
-**How to avoid:** Update `setPreflightHeaders` in `server.ts` to include `PUT, DELETE`. Also add `X-Stickyfix-Token` to `Access-Control-Allow-Headers` (already there, keep it). [VERIFIED: server.ts:38]
+**How to avoid:** Update `setPreflightHeaders` in `server.ts` to include `PUT, DELETE`. Also add `X-Stikfix-Token` to `Access-Control-Allow-Headers` (already there, keep it). [VERIFIED: server.ts:38]
 
 ### Pitfall 5: Serial → File Resolution Failing for `*.read.md` Files
 

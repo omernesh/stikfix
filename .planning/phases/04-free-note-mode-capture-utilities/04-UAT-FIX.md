@@ -81,7 +81,7 @@ restriction: () => ({ left: 0, top: 0, right: window.innerWidth, bottom: window.
 | `npm test` (host — 57 tests) | 56 pass, 0 fail, 1 cancelled* |
 | `npm run build` | Exit 0, `.output/chrome-mv3` regenerated |
 
-*The `WR-06 bindServer port-scan` test was already failing before these changes (port 39240 is occupied by the running stickyfix host on this machine — confirmed by verifying failure is identical on the baseline commit).
+*The `WR-06 bindServer port-scan` test was already failing before these changes (port 39240 is occupied by the running stikfix host on this machine — confirmed by verifying failure is identical on the baseline commit).
 
 ---
 

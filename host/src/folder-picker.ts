@@ -1,5 +1,5 @@
 /**
- * OS native folder-picker dialog for stickyfix (D-04).
+ * OS native folder-picker dialog for stikfix (D-04).
  * Spawns the OS dialog binary via execFile (NEVER exec, NEVER shell:true).
  * Arguments are a static array — no user-supplied strings interpolated into
  * shell command context (T-09-01 / RESEARCH Pattern 5).

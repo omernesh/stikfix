@@ -147,13 +147,13 @@ Node.js is single-threaded but I/O is asynchronous. Both requests enter the seri
 ### Pitfall 7: CORS Preflight Failure for Custom Header from Page Origins
 
 **What goes wrong:**
-`POST /annotation` carries the custom header `X-Stickyfix-Token`. Any cross-origin fetch with a custom header triggers a CORS preflight (`OPTIONS` request). The host must respond to the `OPTIONS` method with the correct CORS headers before the actual `POST` will be sent. Missing or incorrect preflight handling causes the POST to never reach the host — the content script (or service worker) gets a network error, which surfaces as a confusing "host down" toast even when the host is running.
+`POST /annotation` carries the custom header `X-Stikfix-Token`. Any cross-origin fetch with a custom header triggers a CORS preflight (`OPTIONS` request). The host must respond to the `OPTIONS` method with the correct CORS headers before the actual `POST` will be sent. Missing or incorrect preflight handling causes the POST to never reach the host — the content script (or service worker) gets a network error, which surfaces as a confusing "host down" toast even when the host is running.
 
 **Why it happens:**
 The request is cross-origin because the page origin (e.g., `https://app.chatlytics.ai`) differs from `http://127.0.0.1:39242`. Developers test from `localhost:someport` first, where the non-standard port but same hostname may mask the preflight requirement.
 
 **How to avoid:**
-- The host must handle `OPTIONS *` explicitly: respond with `200`, `Access-Control-Allow-Origin: <echo request Origin>`, `Access-Control-Allow-Methods: GET, POST, OPTIONS`, `Access-Control-Allow-Headers: Content-Type, X-Stickyfix-Token`, `Access-Control-Allow-Private-Network: true`, `Access-Control-Max-Age: 86400`.
+- The host must handle `OPTIONS *` explicitly: respond with `200`, `Access-Control-Allow-Origin: <echo request Origin>`, `Access-Control-Allow-Methods: GET, POST, OPTIONS`, `Access-Control-Allow-Headers: Content-Type, X-Stikfix-Token`, `Access-Control-Allow-Private-Network: true`, `Access-Control-Max-Age: 86400`.
 - Test from an HTTPS origin against the localhost host early in M2, not just from another localhost port.
 - `Access-Control-Max-Age: 86400` caches the preflight for 24 h, avoiding a preflight on every note (performance).
 - Because CORS is permissive by design here (token is the real gate), echoing the request `Origin` is correct — don't hardcode a single origin.
@@ -225,7 +225,7 @@ If a malicious page constructs a `comment` or any future field that influences t
 - After resolving any path, assert containment: `const resolved = path.resolve(notesDir, candidate); assert(resolved.startsWith(path.resolve(notesDir) + path.sep), '403')`.
 - In v1 the filename is `${serial}-${timestamp}.md` where serial is an integer and timestamp is `YYYYMMDD-HHmmss` — both are host-derived and validated. Still add the containment assert as a defense-in-depth guard.
 - Write a unit test that passes `../../../etc/passwd` as a candidate path and asserts the server rejects with 400.
-- Do not write outside `notesDir` even for the `.stickyfix-token` convenience file — write that to `--root` not `notesDir`.
+- Do not write outside `notesDir` even for the `.stikfix-token` convenience file — write that to `--root` not `notesDir`.
 
 **Warning signs:**
 - No tests for path safety in M2.
@@ -285,7 +285,7 @@ The reference was built on macOS. Tool and platform assumptions are invisible to
 This is the hard legal boundary, not a coding preference. The GPL-3.0 upstream (`JodusNodus/opencode-chrome-annotation`) was studied as a reference. Any code, comment, identifier name, file name, or UI string copied — even paraphrased closely — from that source into this MIT-licensed codebase makes this deliverable a GPL derivative. The deliverable must then be distributed under GPL-3.0, not MIT. Publishing it as MIT with GPL-derived code is a license violation.
 
 Specific non-obvious copy vectors:
-1. **Identifiers:** the upstream uses `__opc_*` for DOM ids. Using those in this codebase is a copy. Use `sfx-*` or `stickyfix-*` throughout.
+1. **Identifiers:** the upstream uses `__opc_*` for DOM ids. Using those in this codebase is a copy. Use `sfx-*` or `stikfix-*` throughout.
 2. **File structure:** if the upstream has `src/element-capture.ts` and this repo creates the same file name in the same position, that is not a violation by itself — but if the exports, function names, and internal logic mirror the upstream, it becomes one.
 3. **Selector heuristic:** the upstream hand-rolls a fragile id-anchored CSS path heuristic (≤5 levels, `:nth-of-type`, ≤2 classes/level — documented in PRD Appendix A). Reproducing this algorithm in original code might still be considered derivative if the specific parameters and logic are copied. **Use `@medv/finder` (MIT) instead.** This is the documented clean-room separation.
 4. **AI-assisted code generation:** if an AI coding agent was trained on the GPL upstream, its output for this codebase may reproduce code it "learned." This is an emerging unsettled legal area (see the chardet controversy, 2026). Mitigation: write from the PRD spec only, not by prompting with upstream code snippets.
@@ -293,7 +293,7 @@ Specific non-obvious copy vectors:
 
 **How to avoid:**
 - **Two-engineer rule:** the architect who studied the GPL upstream writes the spec (done — that is this PRD). A separate agent/developer writes original code from the spec only, without reading the upstream source. Document this separation.
-- Use **different identifiers** throughout: `stickyfix`, `sfx-`, `SFX_`, `stickyfix-host` — not `opc`, `opencode`, or any upstream names.
+- Use **different identifiers** throughout: `stikfix`, `sfx-`, `SFX_`, `stikfix-host` — not `opc`, `opencode`, or any upstream names.
 - Use **`@medv/finder`** for selectors — this is both cleaner and clean-room separation.
 - **Only drop the OpenCode-binding endpoints** (`/sessions`, `/claim`, `/unclaim`); do not look at their implementation, only note their absence.
 - Treat the PRD Appendix A ("Architecture blueprint") as the complete knowledge transfer — no further reading of the upstream source is needed or permitted.
@@ -344,7 +344,7 @@ Specific non-obvious copy vectors:
 | Mistake | Risk | Prevention |
 |---------|------|------------|
 | Host binding `0.0.0.0` instead of `127.0.0.1` | Any LAN client can write files to the developer's disk | Hardcode `127.0.0.1` in `server.listen()`; assert in smoke test by trying to connect from external IP |
-| Missing token on `POST /annotation` accepted | Any local page that guesses the port writes arbitrary notes | Reject all POST without matching `X-Stickyfix-Token`; 401 with `{ ok: false, error: "unauthorized" }` |
+| Missing token on `POST /annotation` accepted | Any local page that guesses the port writes arbitrary notes | Reject all POST without matching `X-Stikfix-Token`; 401 with `{ ok: false, error: "unauthorized" }` |
 | `path.join` without containment check | Path traversal to write outside notes dir | `path.resolve` + `startsWith(notesDir + sep)` assertion before every write |
 | Body size not capped | OOM on a malformed 500 MB POST body | Reject > 12 MB with 413 before buffering the body |
 | `/status` returns token | Local pages can scrape auth credential | `/status` returns only `{ app, version, name, notesDir, origins }` |

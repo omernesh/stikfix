@@ -14,7 +14,7 @@ Tools analyzed fall into two clusters:
 
 **Cluster B — Developer/AI-agent annotation (local-first):** opencode-chrome-annotation (GPL upstream), Vibe Annotations, AgentEcho, MarkUp. These are single-developer, localhost-first, targeting the AI coding agent workflow. Element context is richer. Output varies: some push directly to agent API (opencode, Vibe via MCP), some export markdown (AgentEcho, MarkUp). None write durable ordered markdown files to the project repo with a read/unread queue.
 
-**stickyfix sits in Cluster B but uniquely combines:** durable file-on-disk contract (not ephemeral push), rich element context capture (React fiber, computed styles, outerHTML), ordered serial queue consumable by any agent, and a shipped AI skill that closes the loop.
+**stikfix sits in Cluster B but uniquely combines:** durable file-on-disk contract (not ephemeral push), rich element context capture (React fiber, computed styles, outerHTML), ordered serial queue consumable by any agent, and a shipped AI skill that closes the loop.
 
 ---
 
@@ -42,7 +42,7 @@ Features that every annotation/feedback tool in the category has. Missing them m
 
 ### Differentiators (Competitive Advantage)
 
-Features that distinguish stickyfix from all comparable tools. These are the reasons the primary user (developer with AI coding agent) chooses this over alternatives.
+Features that distinguish stikfix from all comparable tools. These are the reasons the primary user (developer with AI coding agent) chooses this over alternatives.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
@@ -58,23 +58,23 @@ Features that distinguish stickyfix from all comparable tools. These are the rea
 | **Local-only, zero-account, no telemetry** | Data never leaves the machine. No vendor dependency. No account creation. No subscription risk. Survives internet outages. | LOW | Architecture constraint, not a feature to build — but a strong trust signal for the target user (developer reviewing sensitive internal apps). |
 | **Polished sticky-note aesthetic (genuine paper look)** | Developer tools usually look like developer tools. A visual review tool used for visual tasks benefits from a design-conscious UI — builds trust that the tool takes visual quality seriously. | MEDIUM | Shadow DOM isolation prevents CSS collision with host page. `interact.js` for smooth drag. Mode color-coding (free vs. element). |
 | **dataset + aria + nearestTestId capture** | AI agent can reference `data-testid="bot-selector"` in its fix — matching the codebase's own test identifiers, not a computed selector. | LOW | Low implementation cost, high AI-usefulness. No competitor captures this combination. |
-| **Same-origin collision resolution via `<meta>` self-id** | When two projects run on the same port at different times, the page can self-declare its project via `<meta name="stickyfix-project">`. | LOW | Rare case, but without it the extension has no way to disambiguate. Documented as optional for consuming projects. |
+| **Same-origin collision resolution via `<meta>` self-id** | When two projects run on the same port at different times, the page can self-declare its project via `<meta name="stikfix-project">`. | LOW | Rare case, but without it the extension has no way to disambiguate. Documented as optional for consuming projects. |
 
 ### Anti-Features (Deliberately NOT building in v1)
 
-These are features that appear in competitor tools or are commonly requested, but are explicitly out of scope for stickyfix v1 — either by PRD non-goal or by deliberate design decision.
+These are features that appear in competitor tools or are commonly requested, but are explicitly out of scope for stikfix v1 — either by PRD non-goal or by deliberate design decision.
 
 | Feature | Why Requested | Why NOT building it | Alternative |
 |---------|---------------|---------------------|-------------|
 | **Cloud sync / multi-user / accounts** | Enables team collaboration, sharing notes across machines | Violates G6 (local-only, private, zero-account). Adds backend, auth, hosting cost, vendor dependency. The primary user is a solo developer + AI agent pair. | File-based contract works with git — commit `notes/` to share with teammates. |
-| **PM tool integration (Jira, Linear, Asana)** | Cluster A tools all offer this; expected in "feedback tool" category | Wrong output format for stickyfix's user. The AI agent is the consumer, not a human task manager. Adding Jira integration means maintaining OAuth, webhook listeners, field mapping. Scope explosion. | Notes are `.md` files; trivially scriptable to POST to any tool if needed. |
+| **PM tool integration (Jira, Linear, Asana)** | Cluster A tools all offer this; expected in "feedback tool" category | Wrong output format for stikfix's user. The AI agent is the consumer, not a human task manager. Adding Jira integration means maintaining OAuth, webhook listeners, field mapping. Scope explosion. | Notes are `.md` files; trivially scriptable to POST to any tool if needed. |
 | **Session replay / video recording** | BugHerd and Userback offer video; helps reproduce interaction bugs | High implementation complexity (MediaRecorder API, large file sizes, no disk-write path in MV3). Overkill for the target workflow: developer annotating their own app, not capturing user sessions. | Screenshot + element context + comment is sufficient for developer-to-agent communication. |
 | **Full-page (scrolling) screenshot** | Reviewers want to capture below-the-fold content | PRD NG3. Visible viewport is enough for v1. Full-page capture requires scroll + stitch — complex, fragile across layouts, breaks sticky headers. | Manual region capture (`📷` camera tool) can be used for below-fold content by scrolling first. |
-| **Console log / network request capture** | Marker.io captures this for bug reproduction | Wrong audience. stickyfix targets UI visual review, not runtime error reporting. Console log capture requires injecting a global `console` override — fragile, increases footprint. | Developer has DevTools open. AI agent reads source code, not runtime logs. |
+| **Console log / network request capture** | Marker.io captures this for bug reproduction | Wrong audience. stikfix targets UI visual review, not runtime error reporting. Console log capture requires injecting a global `console` override — fragile, increases footprint. | Developer has DevTools open. AI agent reads source code, not runtime logs. |
 | **Central notes store with project prefixing** | Single folder for all projects seems simpler at first | Rejected in PRD §15. Orphans notes from their repo. The AI skill must know which project's files to read. Multi-project routing requires separate `notes/` dirs. | Host-per-project; each host owns its own `notes/` dir in the project root. |
 | **Firefox / Safari port** | Broader reach | PRD NG4. MV3 APIs differ across browsers; testing matrix doubles. WXT supports multi-browser but adds build complexity and testing burden. Chrome/Chromium covers the primary user's dev workflow. | Keep code port-friendly (no Chrome-isms in business logic); implement later if validated. |
 | **shadow-DOM deep traversal** | Some React apps render into shadow roots | PRD NG5. Correct selector generation inside a shadow root requires recursive `shadowRoot.querySelector` chains that `@medv/finder` doesn't natively support. Best-effort capture; note the limitation in the file. | Note the limitation in element context. Most React apps don't use shadow DOM for app content. |
-| **Real-time collaboration / multi-cursor** | Vercel Comments supports threaded team review | Requires backend, WebSocket, auth. Out of scope for local-only tool. stickyfix is single-developer → AI agent. | Multiple developers can work from the same `notes/` dir via git (async, not real-time). |
+| **Real-time collaboration / multi-cursor** | Vercel Comments supports threaded team review | Requires backend, WebSocket, auth. Out of scope for local-only tool. stikfix is single-developer → AI agent. | Multiple developers can work from the same `notes/` dir via git (async, not real-time). |
 | **Keyboard shortcut to activate tools** | Power users want shortcuts | Not table stakes for v1; adds keybinding conflict risk with host pages. | Click-based UI is sufficient; shortcuts can be added in v1.x once core is stable. |
 | **AI summary / auto-title generation** | Marker.io has AI-powered title rewriting | Requires external API call; introduces latency, cost, privacy concern (note content leaves machine). Violates local-only principle. | The note + element context is already structured; the AI agent reading the file generates its own understanding. |
 | **Annotation on static images / PDFs** | BugHerd supports Figma + PDF feedback | Different use case (design review, not live DOM review). No DOM, no selectors, no element context. | Out of scope; different product category. |
@@ -130,7 +130,7 @@ These are features that appear in competitor tools or are commonly requested, bu
 
 - **Element Note requires Element Picker:** The picker is the UX that produces the element context object. Cannot have element notes without it.
 - **All notes require Host Client:** The POST /annotation to the resolved host is how notes reach disk. Without a reachable host, no note can be saved — the error toast is the only output.
-- **Screenshot capture requires Hide-own-UI:** stickyfix's own overlay (chip, post-it, picker highlight) must be hidden before `captureVisibleTab` or the screenshot shows the tool's UI, not the page. This is a cross-cutting concern affecting both auto-highlight and camera tool.
+- **Screenshot capture requires Hide-own-UI:** stikfix's own overlay (chip, post-it, picker highlight) must be hidden before `captureVisibleTab` or the screenshot shows the tool's UI, not the page. This is a cross-cutting concern affecting both auto-highlight and camera tool.
 - **Camera Tool conflicts with concurrent element picker highlight:** Cannot have both active during a capture pass. The capture sequence is: hide UI → capture → crop → restore UI. Must be a single mutex-guarded operation.
 - **Multi-project routing requires chrome.storage.local persistence:** The origin→host map must survive MV3 service worker recycling. In-memory maps are lost on worker death (happens after ~30s idle).
 - **review-notes skill requires correct file naming:** The skill's glob (`notes/*.md` excluding `*.read.md`) and sort-by-serial logic depend entirely on the `NNNN-<timestamp>` naming convention. Any deviation breaks the skill.
@@ -158,8 +158,8 @@ All of the following are required for the core value proposition ("a note droppe
 
 - [ ] Keyboard shortcuts for Review Mode toggle and tool switching — add when power-user demand is confirmed
 - [ ] Lightbox preview of thumbnail captures in post-it — nice UX, low priority; thumbnails are already visible
-- [ ] `<meta name="stickyfix-project">` page self-identification — add when same-origin collision is reported by users
-- [ ] `npm publish` for `stickyfix-host` — add when install friction is confirmed as a barrier
+- [ ] `<meta name="stikfix-project">` page self-identification — add when same-origin collision is reported by users
+- [ ] `npm publish` for `stikfix-host` — add when install friction is confirmed as a barrier
 
 ### Future Consideration (v2+)
 
@@ -197,7 +197,7 @@ All of the following are required for the core value proposition ("a note droppe
 
 ## Competitor Feature Analysis
 
-| Feature | Marker.io | BugHerd | Vercel Comments | Vibe Annotations | opencode upstream | **stickyfix** |
+| Feature | Marker.io | BugHerd | Vercel Comments | Vibe Annotations | opencode upstream | **stikfix** |
 |---------|-----------|---------|-----------------|-----------------|-------------------|----------------|
 | Click-to-annotate element | Yes | Yes | Yes (click page, not element) | Yes | Yes | Yes |
 | Element hover highlight | Unclear | Yes | No | Yes | Yes | Yes |

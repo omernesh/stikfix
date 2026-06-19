@@ -34,7 +34,7 @@ This phase delivers **Element-Note Mode**: a developer activates a 🎯 element 
 - **D-01:** **Single-shot picker.** Clicking an element **exits pick mode** and immediately opens the **one** pre-filled post-it for that element. No sticky/multi-pick mode, no card queue (consistent with Phase-4 D-02 single-active-card). `Esc` cancels pick mode cleanly with no card. Rationale: writing the note is the point; multi-card state is unneeded complexity this phase.
 
 ### +1 Auto-Highlight Screenshot (ELEM-08)
-- **D-02:** The `+1.png` is the **full visible viewport** with a **highlight box drawn at the element's page-absolute rect** (DevTools-style), NOT an element-crop. Shows *where on the page* the element sits — the review signal. Implementation: `captureTab` (full visible tab via SW) → draw the box onto the canvas at `rect × devicePixelRatio` (reuse the DPR-correct math pattern from `computeCropCoords`) → `+1.png`. The element-crop path (`cropToRect`) is **not** used for the `+1` this phase. Own-UI must be hidden via `waitTwoRafs` before capture (no stickyfix UI, no live hover outline, in the shot).
+- **D-02:** The `+1.png` is the **full visible viewport** with a **highlight box drawn at the element's page-absolute rect** (DevTools-style), NOT an element-crop. Shows *where on the page* the element sits — the review signal. Implementation: `captureTab` (full visible tab via SW) → draw the box onto the canvas at `rect × devicePixelRatio` (reuse the DPR-correct math pattern from `computeCropCoords`) → `+1.png`. The element-crop path (`cropToRect`) is **not** used for the `+1` this phase. Own-UI must be hidden via `waitTwoRafs` before capture (no stikfix UI, no live hover outline, in the shot).
 - **D-02a:** The highlight box is **drawn onto the captured canvas after the shot**, never the live hover outline (the live outline lives in the shadow UI and is hidden before capture). This resolves the "box on element but no own-UI visible" requirement.
 
 ### Pre-Filled Post-It (ELEM-07)
@@ -108,7 +108,7 @@ This phase delivers **Element-Note Mode**: a developer activates a 🎯 element 
 ## Specific Ideas
 
 - `+1.png` = full viewport with a box at the element rect — "where is this on the page" beats a tight crop for UI review (D-02).
-- Highlight box is drawn onto the **captured canvas**, not the live DOM outline — so the shot shows the box but never stickyfix's own UI (D-02a).
+- Highlight box is drawn onto the **captured canvas**, not the live DOM outline — so the shot shows the box but never stikfix's own UI (D-02a).
 - Context summary is a **read-only header**, textarea stays empty — keeps the on-disk `comment` clean while full context lands in the `.md` element section (D-03).
 - One curated style constant (~25 props, layout+box+type/color) is the per-note UI-review signal (D-04).
 - Match `host/src/types.ts` `ElementContext` field names exactly — the host pipeline is already built and waiting.

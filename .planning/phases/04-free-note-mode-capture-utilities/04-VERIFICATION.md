@@ -16,7 +16,7 @@ human_verification:
     why_human: "DOM-level guard (activeCard ref) is verified statically, but the actual UI behavior in the shadow root needs a live session"
   - test: "Send free note end-to-end: writes notes/000N-ts.md"
     expected: "Typing a note and hitting Send (or Ctrl+Enter) calls POST /annotation with mode:free, url, title, viewport, screenshots:[] and a correctly named .md appears in the routed project notes/ dir; success toast names the file"
-    why_human: "Requires a live Chrome extension + running stickyfix host to verify the full round-trip including the notes/ file on disk"
+    why_human: "Requires a live Chrome extension + running stikfix host to verify the full round-trip including the notes/ file on disk"
   - test: "Host-down error toast persistence"
     expected: "When the host is not running, Send shows a persistent error toast that does not auto-dismiss and has a working x dismiss button"
     why_human: "Requires live Chrome extension with host intentionally stopped"
@@ -123,7 +123,7 @@ No blockers. No warning-level anti-patterns.
 
 **Test:** Build + load the unpacked extension. Start a host (`npm run host -- --root <test-dir>`), open any HTTPS page, enter Review Mode. From DevTools, invoke: hide shadow-root UI; `await waitTwoRafs()`; `const url = await captureTab(tabId)`; `const cropped = await cropToRect(url, {x:0,y:0,width:200,height:120}, window.devicePixelRatio)`; restore UI. Open the captured dataURL in a new tab.
 
-**Expected:** captureTab resolves to a data:image/png;base64 string via the SW; the captured image shows real page pixels at device resolution with NO stickyfix UI visible (chip/FAB absent — double-rAF flush worked); cropToRect returns a correctly sized DPR-correct crop; a free note sent in the same session writes `screenshots: []`.
+**Expected:** captureTab resolves to a data:image/png;base64 string via the SW; the captured image shows real page pixels at device resolution with NO stikfix UI visible (chip/FAB absent — double-rAF flush worked); cropToRect returns a correctly sized DPR-correct crop; a free note sent in the same session writes `screenshots: []`.
 
 **Why human:** Requires a live Chrome session with the extension loaded and a running host. Cannot be verified by static analysis or node:test.
 
@@ -153,7 +153,7 @@ No blockers. No warning-level anti-patterns.
 
 #### 5. Host-Down Error Toast Persistence
 
-**Test:** Stop the stickyfix host, then hit Send on an open card.
+**Test:** Stop the stikfix host, then hit Send on an open card.
 
 **Expected:** A persistent error toast appears that does not auto-dismiss; the × button removes it; the card stays open with Send/Cancel re-enabled.
 

@@ -15,9 +15,9 @@
 - **D-02** Test framework: `node:test` + `node:assert` (zero new dep). Add `test` script, fold into `npm run check`.
 - **D-03** Serial mutex: in-process promise-queue. Scan `notesDir` for `NNNN-*.md` **including `*.read.md`**; `max(serial)+1`; zero-pad to 4. Two concurrent POSTs must yield `0001`/`0002` with no collision.
 - **D-04** Body: stream with 12 MB hard cap → 413; `JSON.parse` → 400 on malformed.
-- **D-05** Routes: `GET /status` (no token), `POST /annotation` (token required), `OPTIONS *` (CORS preflight). CORS: echo request `Origin` in `Access-Control-Allow-Origin`; allow `GET,POST,OPTIONS`; allow `X-Stickyfix-Token` header.
-- **D-06** Token transport: `X-Stickyfix-Token` header. Missing/wrong → 401 `{ok:false,error}`. `/status` returns `{app,version,name,root,notesDir,origins}` — no token, no secrets.
-- **D-07** Token order: `--token` → `STICKYFIX_TOKEN` env → `crypto.randomUUID()`. Print token + name + port + origins + notesDir on startup. Write token to `<root>/.stickyfix-token`.
+- **D-05** Routes: `GET /status` (no token), `POST /annotation` (token required), `OPTIONS *` (CORS preflight). CORS: echo request `Origin` in `Access-Control-Allow-Origin`; allow `GET,POST,OPTIONS`; allow `X-Stikfix-Token` header.
+- **D-06** Token transport: `X-Stikfix-Token` header. Missing/wrong → 401 `{ok:false,error}`. `/status` returns `{app,version,name,root,notesDir,origins}` — no token, no secrets.
+- **D-07** Token order: `--token` → `STIKFIX_TOKEN` env → `crypto.randomUUID()`. Print token + name + port + origins + notesDir on startup. Write token to `<root>/.stikfix-token`.
 - **D-08** Bind `127.0.0.1` only. Honor `--port` if free; else first free in `39240–39260`.
 - **D-09** Filename `<serial>-<YYYYMMDD-HHmmss>.md` (local time). `yaml` dep for frontmatter. Payload PNG data-URLs → `<base>+<N>.png` next to `.md`. Create `notesDir` if missing + `.gitkeep`.
 - **D-10** `--notes-dir` must `path.resolve` inside `--root`. Traversal → rejected.
@@ -30,7 +30,7 @@
 ### Deferred Ideas (OUT OF SCOPE)
 
 - `/sessions`, `/claim`, `/unclaim` endpoints.
-- Publishing `stickyfix-host` as an npm `bin`.
+- Publishing `stikfix-host` as an npm `bin`.
 - Future target-subpath writes beyond the fixed `notesDir`.
 </user_constraints>
 
@@ -45,14 +45,14 @@
 | HOST-02 | Binds `127.0.0.1` only; not reachable from LAN | Verified: `server.listen(port, '127.0.0.1')` pattern; EADDRINUSE retry loop |
 | HOST-03 | Free port in 39240–39260 (or `--port`) | Verified: bind-or-fail loop confirmed working on Node 25.x |
 | HOST-04 | `GET /status` returns `{app,version,name,root,notesDir,origins}` no token required | Verified: `/status` shape; version read from `package.json` at runtime |
-| HOST-05 | `POST /annotation` requires valid `X-Stickyfix-Token`; missing/wrong → 401 | Verified: `crypto.timingSafeEqual` pattern; length check first |
+| HOST-05 | `POST /annotation` requires valid `X-Stikfix-Token`; missing/wrong → 401 | Verified: `crypto.timingSafeEqual` pattern; length check first |
 | HOST-06 | Serial zero-padded running serial via in-process mutex; no collision on concurrent POSTs | Verified: promise-queue mutex confirmed correct under concurrency |
 | HOST-07 | Writes `<serial>-<YYYYMMDD-HHmmss>.md` with YAML frontmatter + comment body | Verified: `yaml.stringify` handles URLs/colons/quotes correctly |
 | HOST-08 | Decodes PNG data-URLs → `<base>+<N>.png` next to `.md`; paths in frontmatter + body | Verified: `Buffer.from(b64, 'base64')` pattern; mime validation |
 | HOST-09 | Writes confined inside `--root`; path traversal rejected; `--notes-dir` inside `--root` | Verified: `path.resolve` + `startsWith(root + sep)` guard on Windows |
-| HOST-10 | CORS echoes request `Origin`; allows `X-Stickyfix-Token`; OPTIONS preflight | Verified: full CORS header set including `Access-Control-Allow-Private-Network` |
+| HOST-10 | CORS echoes request `Origin`; allows `X-Stikfix-Token`; OPTIONS preflight | Verified: full CORS header set including `Access-Control-Allow-Private-Network` |
 | HOST-11 | Body cap 12 MB → 413 | Verified: streaming chunk accumulation pattern |
-| HOST-12 | Notes dir created if missing + `.gitkeep`; token written to gitignored `<root>/.stickyfix-token` | Verified: `.gitignore` already contains `.stickyfix-token`; `fs.mkdirSync` |
+| HOST-12 | Notes dir created if missing + `.gitkeep`; token written to gitignored `<root>/.stikfix-token` | Verified: `.gitignore` already contains `.stikfix-token`; `fs.mkdirSync` |
 | HOST-13 | Accepts `--origin` (repeatable), `--name`, `--notes-dir`, `--token` via `util.parseArgs` | Verified: Phase 1 stub already parses all flags |
 </phase_requirements>
 
@@ -130,7 +130,7 @@ CLI args (util.parseArgs)
         │
         ▼
   config.ts ─── resolves root, notesDir, token, port range, origins
-        │        writes token to <root>/.stickyfix-token
+        │        writes token to <root>/.stikfix-token
         │        ensures notesDir + .gitkeep exist
         ▼
   index.ts ─── binds server on 127.0.0.1 (port scan loop)
@@ -284,7 +284,7 @@ function setCorsHeaders(req: http.IncomingMessage, res: http.ServerResponse): vo
 function setPreflightHeaders(req: http.IncomingMessage, res: http.ServerResponse): void {
   setCorsHeaders(req, res);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Stickyfix-Token');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Stikfix-Token');
   res.setHeader('Access-Control-Max-Age', '86400');
 }
 ```
@@ -301,7 +301,7 @@ function setPreflightHeaders(req: http.IncomingMessage, res: http.ServerResponse
 import { timingSafeEqual } from 'node:crypto';
 
 export function checkToken(req: http.IncomingMessage, expectedToken: string): boolean {
-  const provided = req.headers['x-stickyfix-token'];
+  const provided = req.headers['x-stikfix-token'];
   if (typeof provided !== 'string') return false;
   // timingSafeEqual requires equal-length buffers; length check first
   if (provided.length !== expectedToken.length) return false;
@@ -452,7 +452,7 @@ child.kill('SIGTERM');
 - **Pre-check then bind (TOCTOU):** Creating a socket probe to see if a port is free, then binding separately. Bind directly; let the `error` event tell you.
 - **`===` for token comparison:** Use `crypto.timingSafeEqual`. Simple string equality leaks token length/content via timing.
 - **`path.join` alone for path safety:** Does not prevent traversal. Always `path.resolve` + `startsWith(root + sep)`.
-- **Logging the token to a non-startup output:** Token goes in the startup JSON line only + `<root>/.stickyfix-token`. Never in error messages or response bodies.
+- **Logging the token to a non-startup output:** Token goes in the startup JSON line only + `<root>/.stikfix-token`. Never in error messages or response bodies.
 - **`req.destroy()` without rejecting:** Always pair destroy with a rejection so the promise resolves.
 
 ---
@@ -595,7 +595,7 @@ child.kill('SIGTERM');
 
 | ASVS Category | Applies | Standard Control |
 |---------------|---------|-----------------|
-| V2 Authentication | yes — token auth | `crypto.timingSafeEqual` on `X-Stickyfix-Token` header |
+| V2 Authentication | yes — token auth | `crypto.timingSafeEqual` on `X-Stikfix-Token` header |
 | V3 Session Management | no — stateless HTTP; no sessions | — |
 | V4 Access Control | yes — `POST /annotation` gated; `GET /status` open | Per-route token check; `checkToken()` called before any write |
 | V5 Input Validation | yes — body size, JSON parse, path safety | `readBody()` cap; `JSON.parse` with try/catch; `isInsideDir()` |
@@ -605,7 +605,7 @@ child.kill('SIGTERM');
 
 | Pattern | STRIDE | Standard Mitigation |
 |---------|--------|---------------------|
-| Unauthenticated file write (any local page guesses port) | Tampering | `X-Stickyfix-Token` validation on all writes; 401 on mismatch |
+| Unauthenticated file write (any local page guesses port) | Tampering | `X-Stikfix-Token` validation on all writes; 401 on mismatch |
 | Path traversal via malicious payload field | Tampering | `path.resolve` + `startsWith(root + sep)` before every write |
 | OOM via oversized POST body | Denial of Service | 12 MB hard cap; `req.destroy()` on limit exceeded; 413 response |
 | Token extraction from `/status` | Information Disclosure | `/status` never includes token; returns `{app,version,name,root,notesDir,origins}` only |
@@ -775,10 +775,10 @@ function buildNoteBody(base: string, payload: AnnotationPayload): string {
    - What's unclear: Whether to include `root` in `/status` at all. PITFALLS recommends not including it; D-06 locked it in. D-06 takes precedence.
    - Recommendation: Include `root` per D-06. It is needed by the extension for display in Phase 3.
 
-3. **`notes/` `.gitkeep` in the stickyfix repo vs the target project's `notesDir`**
-   - What we know: The stickyfix repo itself has `notes/.gitkeep`. The host creates `notesDir` (default `<root>/notes`) if missing and adds `.gitkeep`.
-   - What's unclear: Whether to add `notes/` and `!notes/.gitkeep` to the stickyfix `.gitignore` (already done per `.gitignore` check) or whether the target project needs to do this independently.
-   - Recommendation: The host's `.gitkeep` creation is for the target project's `notesDir`, not the stickyfix repo's own `notes/`. The stickyfix `.gitignore` already handles this. No action needed.
+3. **`notes/` `.gitkeep` in the stikfix repo vs the target project's `notesDir`**
+   - What we know: The stikfix repo itself has `notes/.gitkeep`. The host creates `notesDir` (default `<root>/notes`) if missing and adds `.gitkeep`.
+   - What's unclear: Whether to add `notes/` and `!notes/.gitkeep` to the stikfix `.gitignore` (already done per `.gitignore` check) or whether the target project needs to do this independently.
+   - Recommendation: The host's `.gitkeep` creation is for the target project's `notesDir`, not the stikfix repo's own `notes/`. The stikfix `.gitignore` already handles this. No action needed.
 
 ---
 

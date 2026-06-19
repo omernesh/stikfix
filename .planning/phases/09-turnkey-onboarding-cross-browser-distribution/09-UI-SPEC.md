@@ -133,7 +133,7 @@ via the existing green dot on the host row.
 **Layout:**
 ```
 ┌─────────────────────────────────────────────────────┐
-│ stickyfix            0 hosts   [Refresh]  [+]        │  ← existing header
+│ stikfix            0 hosts   [Refresh]  [+]        │  ← existing header
 ├─────────────────────────────────────────────────────┤
 │  Host found — click to pair                          │  ← #sfx-pairing-banner
 │  [  Pair with host  ]                                │
@@ -169,7 +169,7 @@ when registry is empty and native host is known to be registered).
 **Layout:**
 ```
 ┌─────────────────────────────────────────────────────┐
-│ stickyfix            0 hosts   [Refresh]  [+]        │
+│ stikfix            0 hosts   [Refresh]  [+]        │
 ├─────────────────────────────────────────────────────┤
 │  Pairing…                                            │
 │  [ (spinner) Pairing… ]   ← button disabled          │
@@ -206,7 +206,7 @@ show the new host row with a green dot.
 **Layout:**
 ```
 ┌─────────────────────────────────────────────────────┐
-│ stickyfix            1 host    [Refresh]  [+]        │
+│ stikfix            1 host    [Refresh]  [+]        │
 ├─────────────────────────────────────────────────────┤
 │  ● Paired with <host name>                           │  ← #sfx-pairing-banner (transient)
 ├─────────────────────────────────────────────────────┤
@@ -237,10 +237,10 @@ or the native host is not registered.
 **Layout:**
 ```
 ┌─────────────────────────────────────────────────────┐
-│ stickyfix            0 hosts   [Refresh]  [+]        │
+│ stikfix            0 hosts   [Refresh]  [+]        │
 ├─────────────────────────────────────────────────────┤
 │  Auto-pair failed. Run:                              │
-│  npx stickyfix init                                  │  ← inline code block
+│  npx stikfix init                                  │  ← inline code block
 │  Then click Refresh, or enter your token below.      │
 │  [  Retry  ]                                         │
 ├─────────────────────────────────────────────────────┤
@@ -251,7 +251,7 @@ or the native host is not registered.
 **Element spec:**
 - `#sfx-pairing-status`:
   - Line 1: `"Auto-pair failed. Run:"` — font 12px, weight 400, color #dc2626
-  - Line 2: inline `<code>npx stickyfix init</code>` — font-family monospace (matching
+  - Line 2: inline `<code>npx stikfix init</code>` — font-family monospace (matching
     `#sfx-empty-hint code`), font-size 11px, background #f0f0f0, padding 1px 4px,
     border-radius 3px, color #333
   - Line 3: `"Then click Refresh, or enter your token below."` — font 11px, weight 400,
@@ -421,16 +421,16 @@ details[open] #sfx-pairing-details summary::before {
 | State 2 status text | `"Pairing…"` |
 | State 3 status text | `"Paired with <host name>"` (host name from native response, not generic) |
 | State 4 status line 1 | `"Auto-pair failed. Run:"` |
-| State 4 status code block | `npx stickyfix init` |
+| State 4 status code block | `npx stikfix init` |
 | State 4 status line 3 | `"Then click Refresh, or enter your token below."` |
 | State 4 button label | `"Retry"` |
 | State 4 details summary | `"Details"` |
 | Empty state (no hosts, no native host) | `"No hosts found on 39240–39260."` (existing, unchanged) |
-| Empty state hint | `"Start one with: npx stickyfix init"` — UPDATED from `"npm run host -- --root <dir>"` to reflect Phase 9 bootstrapper |
+| Empty state hint | `"Start one with: npx stikfix init"` — UPDATED from `"npm run host -- --root <dir>"` to reflect Phase 9 bootstrapper |
 | Manual token fallback label | `"token"` (placeholder, existing, unchanged) |
 
 Note: The empty state hint copy changes from the existing `npm run host -- --root <dir>` to
-`npx stickyfix init` as the primary onboarding command. This is the only copywriting
+`npx stikfix init` as the primary onboarding command. This is the only copywriting
 change to existing elements.
 
 ---
@@ -454,7 +454,7 @@ change to existing elements.
 ### Pair button click sequence
 
 1. Button clicked → disable button, add `.sfx-pairing` class, set status text to "Pairing…" (state 2).
-2. Call `chrome.runtime.sendNativeMessage('com.stickyfix.host', { type: 'GET_TOKEN' }, callback)`.
+2. Call `chrome.runtime.sendNativeMessage('com.stikfix.host', { type: 'GET_TOKEN' }, callback)`.
 3. On success (`response.type === 'TOKEN'`):
    - Remove `.sfx-pairing` class.
    - Set status class to `.sfx-pairing-status--paired`, text to "Paired with <name>" (state 3).
@@ -489,7 +489,7 @@ change to existing elements.
 | Review Mode toggle | Unchanged — state, click handler, permission request ordering |
 | Show-hints checkbox | Unchanged |
 | Routing line | Unchanged |
-| Empty state text | Updated one line (npx stickyfix init); layout/style unchanged |
+| Empty state text | Updated one line (npx stikfix init); layout/style unchanged |
 
 ---
 

@@ -1,5 +1,5 @@
 /**
- * Integration tests for stickyfix-host server.ts.
+ * Integration tests for stikfix-host server.ts.
  * Covers HOST-01..05, HOST-10 (status, token gate, write-to-disk, CORS preflight, 127.0.0.1 binding).
  * Phase 6 extension: HOST-14/15/16 (GET /annotations, PUT /annotation/<serial>, DELETE /annotation/<serial>).
  * Pattern 12: uses node:test lifecycle hooks, node:assert/strict.
@@ -66,7 +66,7 @@ function closeFixture(fixture: TestFixture): Promise<void> {
 // Test suite
 // ---------------------------------------------------------------------------
 
-describe('stickyfix-host server integration', () => {
+describe('stikfix-host server integration', () => {
   let fixture: TestFixture;
 
   before(async () => {
@@ -94,7 +94,7 @@ describe('stickyfix-host server integration', () => {
     assert.equal(res.status, 200);
 
     const body = await res.json() as Record<string, unknown>;
-    assert.equal(body['app'], 'stickyfix');
+    assert.equal(body['app'], 'stikfix');
     assert.equal(typeof body['version'], 'string');
     assert.equal(body['name'], fixture.cfg.name);
     assert.equal(body['notesDir'], fixture.cfg.notesDir);
@@ -128,7 +128,7 @@ describe('stickyfix-host server integration', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Stickyfix-Token': 'wrong-token-value-that-does-not-match',
+        'X-Stikfix-Token': 'wrong-token-value-that-does-not-match',
       },
       body: JSON.stringify({ mode: 'free', comment: 'test' }),
     });
@@ -157,7 +157,7 @@ describe('stickyfix-host server integration', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Stickyfix-Token': TEST_TOKEN,
+        'X-Stikfix-Token': TEST_TOKEN,
       },
       body: JSON.stringify(payload),
     });
@@ -183,7 +183,7 @@ describe('stickyfix-host server integration', () => {
       headers: {
         'Origin': testOrigin,
         'Access-Control-Request-Method': 'POST',
-        'Access-Control-Request-Headers': 'Content-Type, X-Stickyfix-Token',
+        'Access-Control-Request-Headers': 'Content-Type, X-Stikfix-Token',
       },
     });
 
@@ -195,8 +195,8 @@ describe('stickyfix-host server integration', () => {
     // Must allow the token header
     const allowedHeaders = res.headers.get('access-control-allow-headers') ?? '';
     assert.ok(
-      allowedHeaders.toLowerCase().includes('x-stickyfix-token'),
-      `Expected Access-Control-Allow-Headers to include X-Stickyfix-Token, got: ${allowedHeaders}`
+      allowedHeaders.toLowerCase().includes('x-stikfix-token'),
+      `Expected Access-Control-Allow-Headers to include X-Stikfix-Token, got: ${allowedHeaders}`
     );
   });
 
@@ -226,7 +226,7 @@ describe('stickyfix-host server integration', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Stickyfix-Token': TEST_TOKEN,
+        'X-Stikfix-Token': TEST_TOKEN,
       },
       body: 'this is not json {{{',
     });
@@ -257,7 +257,7 @@ describe('stickyfix-host server integration', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Stickyfix-Token': TEST_TOKEN,
+        'X-Stikfix-Token': TEST_TOKEN,
       },
       body: JSON.stringify({}),
     });
@@ -285,7 +285,7 @@ describe('stickyfix-host server integration', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Stickyfix-Token': TEST_TOKEN,
+        'X-Stikfix-Token': TEST_TOKEN,
       },
       body: JSON.stringify({
         mode: 'free',
@@ -381,7 +381,7 @@ describe('Phase 6: GET /annotations route (HOST-14)', () => {
   it('GET /annotations with valid token returns 200 and JSON array (HOST-14)', async () => {
     const pageUrl = 'http://localhost:5173/page';
     const res = await fetch(`${fixture.baseUrl}/annotations?url=${encodeURIComponent(pageUrl)}`, {
-      headers: { 'X-Stickyfix-Token': TEST_TOKEN },
+      headers: { 'X-Stikfix-Token': TEST_TOKEN },
     });
     assert.equal(res.status, 200);
     const body = await res.json() as { ok: boolean; pins: unknown[] };
@@ -393,7 +393,7 @@ describe('Phase 6: GET /annotations route (HOST-14)', () => {
   it('GET /annotations includes CORS headers on 200 response', async () => {
     const pageUrl = 'http://localhost:5173/page';
     const res = await fetch(`${fixture.baseUrl}/annotations?url=${encodeURIComponent(pageUrl)}`, {
-      headers: { 'X-Stickyfix-Token': TEST_TOKEN, 'Origin': 'http://localhost:5173' },
+      headers: { 'X-Stikfix-Token': TEST_TOKEN, 'Origin': 'http://localhost:5173' },
     });
     assert.equal(res.status, 200);
     assert.ok(res.headers.get('access-control-allow-origin'), 'should have CORS header');
@@ -446,7 +446,7 @@ describe('Phase 6: PUT /annotation/<serial> route (HOST-15)', () => {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'X-Stickyfix-Token': TEST_TOKEN,
+        'X-Stikfix-Token': TEST_TOKEN,
       },
       body: JSON.stringify({ comment: 'new text' }),
     });
@@ -459,7 +459,7 @@ describe('Phase 6: PUT /annotation/<serial> route (HOST-15)', () => {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'X-Stickyfix-Token': TEST_TOKEN,
+        'X-Stikfix-Token': TEST_TOKEN,
       },
       body: JSON.stringify({ comment: newComment }),
     });
@@ -485,7 +485,7 @@ describe('Phase 6: PUT /annotation/<serial> route (HOST-15)', () => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'X-Stickyfix-Token': TEST_TOKEN,
+          'X-Stikfix-Token': TEST_TOKEN,
         },
         body: bigBody,
       });
@@ -533,7 +533,7 @@ describe('Phase 6: DELETE /annotation/<serial> route (HOST-16)', () => {
   it('DELETE /annotation/<serial> with unknown serial returns 404', async () => {
     const res = await fetch(`${fixture.baseUrl}/annotation/9999`, {
       method: 'DELETE',
-      headers: { 'X-Stickyfix-Token': TEST_TOKEN },
+      headers: { 'X-Stikfix-Token': TEST_TOKEN },
     });
     assert.equal(res.status, 404);
   });
@@ -544,7 +544,7 @@ describe('Phase 6: DELETE /annotation/<serial> route (HOST-16)', () => {
 
     const res = await fetch(`${fixture.baseUrl}/annotation/0001`, {
       method: 'DELETE',
-      headers: { 'X-Stickyfix-Token': TEST_TOKEN },
+      headers: { 'X-Stikfix-Token': TEST_TOKEN },
     });
     assert.equal(res.status, 200);
     const body = await res.json() as { ok: boolean };
@@ -576,7 +576,7 @@ describe('concurrent POST /annotation serial integrity (REL-02/SC-2)', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Stickyfix-Token': TEST_TOKEN,
+          'X-Stikfix-Token': TEST_TOKEN,
         },
         body: JSON.stringify({
           mode: 'free',
@@ -657,7 +657,7 @@ describe('POST /annotation payload-size backstop (REL-03/SC-3)', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Stickyfix-Token': TEST_TOKEN,
+        'X-Stikfix-Token': TEST_TOKEN,
       },
       body: payload,
     });
@@ -711,7 +711,7 @@ describe('POST /annotation payload-size backstop (REL-03/SC-3)', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Stickyfix-Token': TEST_TOKEN,
+          'X-Stikfix-Token': TEST_TOKEN,
         },
         body: bigBody,
       });
@@ -762,7 +762,7 @@ describe('FIX-1: GET /screenshot route', () => {
   it('GET /screenshot with valid token returns 200 image/png (FIX-1)', async () => {
     const res = await fetch(
       `${fixture.baseUrl}/screenshot?serial=0001&file=${encodeURIComponent('0001-20260601-120000+1.png')}`,
-      { headers: { 'X-Stickyfix-Token': TEST_TOKEN } }
+      { headers: { 'X-Stikfix-Token': TEST_TOKEN } }
     );
     assert.equal(res.status, 200);
     assert.equal(res.headers.get('content-type'), 'image/png');
@@ -773,7 +773,7 @@ describe('FIX-1: GET /screenshot route', () => {
   it('GET /screenshot rejects missing file with 404', async () => {
     const res = await fetch(
       `${fixture.baseUrl}/screenshot?serial=0001&file=${encodeURIComponent('0001-20260601-120000+9.png')}`,
-      { headers: { 'X-Stickyfix-Token': TEST_TOKEN } }
+      { headers: { 'X-Stikfix-Token': TEST_TOKEN } }
     );
     assert.equal(res.status, 404);
   });
@@ -781,7 +781,7 @@ describe('FIX-1: GET /screenshot route', () => {
   it('GET /screenshot rejects traversal in file param with 400 (T-06-02)', async () => {
     const res = await fetch(
       `${fixture.baseUrl}/screenshot?serial=0001&file=${encodeURIComponent('../secret.png')}`,
-      { headers: { 'X-Stickyfix-Token': TEST_TOKEN } }
+      { headers: { 'X-Stikfix-Token': TEST_TOKEN } }
     );
     assert.equal(res.status, 400);
   });
@@ -789,7 +789,7 @@ describe('FIX-1: GET /screenshot route', () => {
   it('GET /screenshot rejects file that does not start with serial (T-06-02)', async () => {
     const res = await fetch(
       `${fixture.baseUrl}/screenshot?serial=0001&file=${encodeURIComponent('9999-other+1.png')}`,
-      { headers: { 'X-Stickyfix-Token': TEST_TOKEN } }
+      { headers: { 'X-Stikfix-Token': TEST_TOKEN } }
     );
     assert.equal(res.status, 400);
   });
@@ -797,7 +797,7 @@ describe('FIX-1: GET /screenshot route', () => {
   it('GET /screenshot rejects non-PNG file extension (T-06-02)', async () => {
     const res = await fetch(
       `${fixture.baseUrl}/screenshot?serial=0001&file=${encodeURIComponent('0001-20260601-120000.jpg')}`,
-      { headers: { 'X-Stickyfix-Token': TEST_TOKEN } }
+      { headers: { 'X-Stikfix-Token': TEST_TOKEN } }
     );
     assert.equal(res.status, 400);
   });
@@ -805,7 +805,7 @@ describe('FIX-1: GET /screenshot route', () => {
   it('GET /screenshot includes CORS headers (Pitfall 6)', async () => {
     const res = await fetch(
       `${fixture.baseUrl}/screenshot?serial=0001&file=${encodeURIComponent('0001-20260601-120000+1.png')}`,
-      { headers: { 'X-Stickyfix-Token': TEST_TOKEN, 'Origin': 'http://localhost:5173' } }
+      { headers: { 'X-Stikfix-Token': TEST_TOKEN, 'Origin': 'http://localhost:5173' } }
     );
     assert.equal(res.status, 200);
     assert.ok(res.headers.get('access-control-allow-origin'), 'should have CORS header');
@@ -849,7 +849,7 @@ describe('D-04: optional targetDir on annotation endpoints (09-05)', () => {
 
     const res = await fetch(`${fixture.baseUrl}/annotation`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Stickyfix-Token': TEST_TOKEN },
+      headers: { 'Content-Type': 'application/json', 'X-Stikfix-Token': TEST_TOKEN },
       body: JSON.stringify(freePayload('targetDir note', targetRoot)),
     });
     assert.equal(res.status, 200);
@@ -878,7 +878,7 @@ describe('D-04: optional targetDir on annotation endpoints (09-05)', () => {
 
     const res = await fetch(`${fixture.baseUrl}/annotation`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Stickyfix-Token': TEST_TOKEN },
+      headers: { 'Content-Type': 'application/json', 'X-Stikfix-Token': TEST_TOKEN },
       body: JSON.stringify(freePayload('evil note', sysDir)),
     });
     assert.equal(res.status, 400, 'system-dir targetDir must be rejected with 400');
@@ -894,7 +894,7 @@ describe('D-04: optional targetDir on annotation endpoints (09-05)', () => {
     const ghost = join(targetRoot, 'nope-does-not-exist');
     const res = await fetch(`${fixture.baseUrl}/annotation`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Stickyfix-Token': TEST_TOKEN },
+      headers: { 'Content-Type': 'application/json', 'X-Stikfix-Token': TEST_TOKEN },
       body: JSON.stringify(freePayload('ghost note', ghost)),
     });
     assert.equal(res.status, 400, 'non-existent targetDir must be rejected with 400');
@@ -908,7 +908,7 @@ describe('D-04: optional targetDir on annotation endpoints (09-05)', () => {
 
     const res = await fetch(`${fixture.baseUrl}/annotation`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Stickyfix-Token': TEST_TOKEN },
+      headers: { 'Content-Type': 'application/json', 'X-Stikfix-Token': TEST_TOKEN },
       body: JSON.stringify(freePayload('default note')),
     });
     assert.equal(res.status, 200);
@@ -927,7 +927,7 @@ describe('D-04: optional targetDir on annotation endpoints (09-05)', () => {
     const pageUrl = 'http://localhost:5173/td';
     const res = await fetch(
       `${fixture.baseUrl}/annotations?url=${encodeURIComponent(pageUrl)}&targetDir=${encodeURIComponent(targetRoot)}`,
-      { headers: { 'X-Stickyfix-Token': TEST_TOKEN } }
+      { headers: { 'X-Stikfix-Token': TEST_TOKEN } }
     );
     assert.equal(res.status, 200);
     const body = await res.json() as { ok: boolean; pins: unknown[] };
@@ -940,7 +940,7 @@ describe('D-04: optional targetDir on annotation endpoints (09-05)', () => {
     const sysDir = process.platform === 'win32' ? 'C:\\Windows' : '/etc';
     const res = await fetch(
       `${fixture.baseUrl}/annotations?url=${encodeURIComponent('http://x/')}&targetDir=${encodeURIComponent(sysDir)}`,
-      { headers: { 'X-Stickyfix-Token': TEST_TOKEN } }
+      { headers: { 'X-Stikfix-Token': TEST_TOKEN } }
     );
     assert.equal(res.status, 400);
   });

@@ -16,7 +16,7 @@ import { bindServer, BIND_HOST } from '../src/bind.js';
 // Hermetic by design: we occupy an OS-assigned ephemeral port (listen(0)) and
 // ask bindServer to scan a small range that STARTS on it. This exercises the
 // real "skip occupied, land on next free" logic without hardcoding the
-// production port 39240 — so the test passes even when a real stickyfix host
+// production port 39240 — so the test passes even when a real stikfix host
 // is already running on the production range.
 // ---------------------------------------------------------------------------
 

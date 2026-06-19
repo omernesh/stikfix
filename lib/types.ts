@@ -1,5 +1,5 @@
 /**
- * Shared TypeScript types for the stickyfix extension.
+ * Shared TypeScript types for the stikfix extension.
  * Consumed by: background.ts, popup/main.ts, review.content/index.ts
  *
  * Re-exports AnnotationPayload/ElementContext/Screenshot from the host package
@@ -14,7 +14,7 @@ export type { AnnotationPayload, ElementContext, Screenshot } from '../host/src/
 // ---------------------------------------------------------------------------
 
 /**
- * A single discovered stickyfix host.
+ * A single discovered stikfix host.
  * Keyed by `name` in the registry (not port — ports change on restart).
  */
 export interface HostEntry {

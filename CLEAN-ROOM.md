@@ -2,7 +2,7 @@
 
 ## 1. MIT Provenance Declaration
 
-**stickyfix** is an original work.
+**stikfix** is an original work.
 
 Copyright (c) 2026 Omer Nesher. Licensed under the MIT License — see [LICENSE](./LICENSE).
 
@@ -26,7 +26,7 @@ This project was built using a clean-room method:
    primary design authority; the upstream was a reference only for problem-space understanding.
 
 3. **Zero copy-paste.** No file was created by pasting and modifying upstream source. The
-   identifier namespace (`sfx-*`, `stickyfix`) was established and enforced from Phase 1 so
+   identifier namespace (`sfx-*`, `stikfix`) was established and enforced from Phase 1 so
    that no upstream-flavored naming could inadvertently creep in.
 
 4. **Automated gate from commit one.** The clean-room check script (`scripts/clean-room-check.mjs`)
@@ -37,7 +37,7 @@ This project was built using a clean-room method:
 
 ## 3. GPL Upstream Acknowledgment (Without Inclusion)
 
-The architecture of stickyfix was informed by studying the open-source project hosted at
+The architecture of stikfix was informed by studying the open-source project hosted at
 GitHub under the user handle `JodusNodus`, a Chrome annotation extension released under
 the GPL-3.0 license. That project served as a reference for understanding the domain; its
 GPL license means its source code cannot be incorporated into an MIT-licensed codebase.
@@ -129,13 +129,13 @@ constants. Files inspected:
 | `entrypoints/review.content/index.ts` | No unusual patterns | Clean |
 | `entrypoints/review.content/fab.ts` | `annot` substring | Clean-room original |
 | `entrypoints/review.content/picker.ts` | No unusual patterns | Clean |
-| `entrypoints/background.ts` | `__stickyfix_` prefix (`window.__stickyfix_project`) | Clean-room original — our own `sfx`/`stickyfix` namespace, documented in CONTEXT |
+| `entrypoints/background.ts` | `__stikfix_` prefix (`window.__stikfix_project`) | Clean-room original — our own `sfx`/`stikfix` namespace, documented in CONTEXT |
 | `host/src/server.ts` | `annot` substring (route path `/annotation`) | Clean-room original — route designed from PRD §7 |
 | `host/src/security.ts` | No unusual patterns | Clean |
 | `scripts/clean-room-check.mjs` | Fragment-constructed banned tokens only | Not self-tripping (fragment construction verified) |
 
 **Extended banned set:** The self-audit found **no new tokens to ban**. Every suspicious
-pattern traced to our own project-originated identifiers (our `stickyfix`/`sfx` namespace,
+pattern traced to our own project-originated identifiers (our `stikfix`/`sfx` namespace,
 our domain term `annotation`, standard W3C CSS property names). The three original tokens
 remain the complete banned set:
 

@@ -1,5 +1,5 @@
 /**
- * HTTP server factory for stickyfix-host.
+ * HTTP server factory for stikfix-host.
  * D-05/HOST-10: CORS echo-Origin + Access-Control-Allow-Private-Network on every response
  * D-06/HOST-04: GET /status no-token, no secrets
  * D-05/HOST-05: POST /annotation token-gated via checkToken
@@ -82,7 +82,7 @@ function setCorsHeaders(req: http.IncomingMessage, res: http.ServerResponse): vo
 function setPreflightHeaders(req: http.IncomingMessage, res: http.ServerResponse): void {
   setCorsHeaders(req, res);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Stickyfix-Token');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Stikfix-Token');
   res.setHeader('Access-Control-Max-Age', '86400');
 }
 
@@ -93,7 +93,7 @@ function setPreflightHeaders(req: http.IncomingMessage, res: http.ServerResponse
 function handleStatus(req: http.IncomingMessage, res: http.ServerResponse, cfg: Config): void {
   setCorsHeaders(req, res);
   const body = JSON.stringify({
-    app: 'stickyfix',
+    app: 'stikfix',
     version: VERSION,
     name: cfg.name,
     root: cfg.root,

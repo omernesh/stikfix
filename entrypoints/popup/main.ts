@@ -1,5 +1,5 @@
 /**
- * stickyfix popup — vanilla DOM, no framework (D-07)
+ * stikfix popup — vanilla DOM, no framework (D-07)
  *
  * Responsibilities:
  *   - Read sfxRegistry + sfxTokens from chrome.storage.local → render host rows
@@ -140,7 +140,7 @@ function showPairingState4(error: string): void {
   const line1 = document.createTextNode('Auto-pair failed. Run:');
   const br1 = document.createElement('br');
   const code = document.createElement('code');
-  code.textContent = 'npx stickyfix init';
+  code.textContent = 'npx stikfix init';
   const br2 = document.createElement('br');
   const line3 = document.createTextNode('Then click Refresh, or enter your token below.');
   pairingStatus.appendChild(line1);

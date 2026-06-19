@@ -9,7 +9,7 @@ block_on: high
 created: 2026-06-02
 ---
 
-# SECURITY.md — stickyfix Phase 4 Security Audit
+# SECURITY.md — stikfix Phase 4 Security Audit
 
 **Phase:** 4 — Free-Note Mode + Capture Utilities (plans 04-01, 04-02, 04-03)
 **Audit date:** 2026-06-02

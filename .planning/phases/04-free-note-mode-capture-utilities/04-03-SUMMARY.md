@@ -144,7 +144,7 @@ Task 2 is a `checkpoint:human-verify` gate. The automated portion (Task 1 build 
    - `const url = await captureTab(tabId)` — expect `data:image/png;base64,...`
    - `const cropped = await cropToRect(url, {x:0,y:0,width:200,height:120}, window.devicePixelRatio)`
    - Restore UI (`visibility:''`)
-4. Open the dataURL in a new tab — confirm real page pixels, NO stickyfix UI (chip/FAB) visible
+4. Open the dataURL in a new tab — confirm real page pixels, NO stikfix UI (chip/FAB) visible
 5. Send a free note — verify written `.md` file has `screenshots: []`
 
 **Acceptance:** captureTab → SW PNG dataUrl + own-UI absent + DPR-correct crop + free-note screenshots still [].

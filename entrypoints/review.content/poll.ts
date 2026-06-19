@@ -1,5 +1,5 @@
 /**
- * poll.ts — live disk→UI sync for stickyfix review UI.
+ * poll.ts — live disk→UI sync for stikfix review UI.
  *
  * Polls GET /annotations (via SW relay) every ~4 s while the tab is visible.
  * Calls `onChange` only when the note set actually changed (stable signature

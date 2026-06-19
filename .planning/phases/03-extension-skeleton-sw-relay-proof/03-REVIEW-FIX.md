@@ -101,7 +101,7 @@ content_scripts: []
 
 **Files modified:** `entrypoints/background.ts`
 **Commit:** `c4aaf35`
-**Applied fix:** `console.log('stickyfix SW loaded')` is now gated behind `if (import.meta.env.DEV)`.
+**Applied fix:** `console.log('stikfix SW loaded')` is now gated behind `if (import.meta.env.DEV)`.
 
 ---
 

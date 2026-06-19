@@ -9,9 +9,9 @@ dependency_graph:
     - host/src/native-msg.ts (encodeNativeMessage, decodeNativeMessages, sendNativeMessage, readNativeMessages)
     - host/src/bootstrap/register.ts (nativeManifestPath, buildManifest, writeManifest, registerNativeHost, unregisterNativeHost, enumerateArtifacts)
     - host/src/folder-picker.ts (buildPickerArgs, pickFolder)
-    - <root>/.stickyfix-port written by HTTP host on startup
+    - <root>/.stikfix-port written by HTTP host on startup
   affects:
-    - host/src/index.ts (additive: writes .stickyfix-port)
+    - host/src/index.ts (additive: writes .stikfix-port)
 tech_stack:
   added: []
   patterns:
@@ -52,14 +52,14 @@ metrics:
 |---|------|--------|--------|
 | 1 | native-msg.ts stdio framing + tests (TDD) | fdf6687 (RED), 3c888a9 (GREEN) | Done |
 | 2 | bootstrap/register.ts + folder-picker.ts + tests (TDD) | 7e55b45 (RED), 7d71e0e (GREEN) | Done |
-| 3 | HTTP host writes .stickyfix-port on startup | f840728 | Done |
+| 3 | HTTP host writes .stikfix-port on startup | f840728 | Done |
 
 ## Verification Results
 
 - `npm test` (host): **142/142 pass** (includes 44 new tests from this plan)
 - `tsc --noEmit -p tsconfig.host.json`: **0 errors**
 - `node scripts/host-smoke-test.mjs`: **PASS** (startup contract unchanged)
-- `.stickyfix-port` written correctly and verified: PASS
+- `.stikfix-port` written correctly and verified: PASS
 - Buffer-only stdout writes confirmed: `grep -v '^\s*//' host/src/native-msg.ts | grep -c "stdout.write('"` = 0
 - No `exec` calls: only `execFile`/`execFileSync` in child_process imports
 - No `shell:` option anywhere in folder-picker.ts or register.ts
@@ -101,7 +101,7 @@ No new threat surface beyond what is in the plan's `<threat_model>`. All mitigat
 | T-09-01 (folder-picker execFile, fixed args) | Mitigated — execFile only, static arg arrays, no shell |
 | T-09-02 (manifest path absolute) | Mitigated — resolve() always used in buildManifest |
 | T-09-03 (Windows HKCU only) | Mitigated — HKCU keys only, execFileSync |
-| T-09-04 (.stickyfix-port disclosure) | Accepted — mode 0o600, non-secret (also on stdout) |
+| T-09-04 (.stikfix-port disclosure) | Accepted — mode 0o600, non-secret (also on stdout) |
 | T-09-05 (enumerateArtifacts completeness) | Mitigated — unit-tested to include all init artifacts |
 
 ## Self-Check: PASSED
@@ -117,7 +117,7 @@ No new threat surface beyond what is in the plan's `<threat_model>`. All mitigat
 | commit 3c888a9 (GREEN native-msg) | FOUND |
 | commit 7e55b45 (RED bootstrapper) | FOUND |
 | commit 7d71e0e (GREEN bootstrapper) | FOUND |
-| commit f840728 (.stickyfix-port) | FOUND |
+| commit f840728 (.stikfix-port) | FOUND |
 | npm test: 142/142 pass | PASS |
 | tsc --noEmit: 0 errors | PASS |
 | smoke test: PASS | PASS |

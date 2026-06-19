@@ -1,5 +1,5 @@
 /**
- * Element context extraction utilities for stickyfix.
+ * Element context extraction utilities for stikfix.
  *
  * captureElementContext — pure, node:test-safe (all DOM/chrome inside function bodies).
  * buildContextSummary — pure, node:test-safe.

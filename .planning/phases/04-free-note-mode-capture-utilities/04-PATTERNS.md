@@ -34,7 +34,7 @@ Content scripts NEVER call `chrome.tabs.captureVisibleTab` or `fetch 127.0.0.1`.
 **INVARIANT C — DOM via `createElement`/`textContent` only.**
 No `innerHTML` with any external string. Enforced unconditionally across `chip.ts`. Apply to `fab.ts`, `card.ts`, `toast.ts`.
 
-**INVARIANT D — `sfx-*`/`stickyfix` namespace only.**
+**INVARIANT D — `sfx-*`/`stikfix` namespace only.**
 All element IDs, class names, and message-type strings must use the `sfx-` prefix. Clean-room check (`scripts/clean-room-check.mjs`) runs as part of `npm run check`.
 
 **INVARIANT E — `interactjs` is for new surfaces only.**
@@ -417,7 +417,7 @@ sendBtn.addEventListener('click', () => {
 
   const payload: AnnotationPayload = {
     mode: 'free',
-    comment: textarea.value.trim(),    // REAL comment — replaces 'stickyfix relay proof'
+    comment: textarea.value.trim(),    // REAL comment — replaces 'stikfix relay proof'
     page: { url: window.location.href, title: document.title },
     viewport: {
       width: window.innerWidth,

@@ -1,11 +1,11 @@
-# stickyfix — Product Requirements Document
+# stikfix — Product Requirements Document
 
 > **For the AI session executing this:** This PRD is written to be run **autonomously**. It contains everything you need — background, full architecture, exact specs, and an appendix with a verified architecture blueprint. Build the product described here. It is a **clean-room MIT implementation** — read §13 (Clean-room notice) before you start: you may use the blueprint in Appendix A for architectural knowledge, but you must **write original code and copy nothing** from the GPL upstream.
 
 **Version:** 1.0 (initial)
 **Owner:** Omer Nesher
 **License of deliverable:** MIT
-**Repo:** `omernesh/stickyfix` (public)
+**Repo:** `omernesh/stikfix` (public)
 **Status:** Approved for build.
 
 ---
@@ -27,7 +27,7 @@ Today the UI review loop with an AI coding agent is painful **ping-pong**:
 
 The friction is: **the developer is the rendering pipeline and the context-transfer mechanism.** Every note requires a manual screenshot + a manual, error-prone description of *which thing* on screen they mean.
 
-**stickyfix removes the human from that pipe.** The developer annotates *directly on the page*. When they click an element, the tool captures the exact selector, computed styles, outerHTML, bounding box, and a screenshot — so the AI knows precisely which element and in what state. Notes accumulate as markdown files in the repo. The AI reads the queue, fixes, and marks each note read. The developer reviews again and drops new notes. It's a **durable, file-based, iterative review loop** instead of ephemeral chat ping-pong.
+**stikfix removes the human from that pipe.** The developer annotates *directly on the page*. When they click an element, the tool captures the exact selector, computed styles, outerHTML, bounding box, and a screenshot — so the AI knows precisely which element and in what state. Notes accumulate as markdown files in the repo. The AI reads the queue, fixes, and marks each note read. The developer reviews again and drops new notes. It's a **durable, file-based, iterative review loop** instead of ephemeral chat ping-pong.
 
 This was conceived while iterating on a React admin panel (the `chatlytics.ai` project), but the tool is **product-agnostic** — it works on any web page in Chrome.
 
@@ -59,7 +59,7 @@ This was conceived while iterating on a React admin panel (the `chatlytics.ai` p
 ### 5.1 Setup (once)
 1. For **each project**, start a host pointed at its repo and dev URL: `npm run host -- --root <path-to-project> --origin http://localhost:<devPort>`. It prints the project name, bound port, declared origin(s), a **pairing token**, and the notes dir. Run one per project you're reviewing (§6.1).
 2. Load the unpacked extension in Chrome (`chrome://extensions` → Load unpacked → the WXT `.output` dir).
-3. Click the extension icon → it lists every discovered host with its project name; paste/confirm each **token** (or use a shared `STICKYFIX_TOKEN` to enter it once). Stored in `chrome.storage.local` (persists across restarts — §7.6).
+3. Click the extension icon → it lists every discovered host with its project name; paste/confirm each **token** (or use a shared `STIKFIX_TOKEN` to enter it once). Stored in `chrome.storage.local` (persists across restarts — §7.6).
 
 ### 5.2 Review session
 1. Navigate to the page you want to review (e.g. `http://localhost:5173` or `https://app.chatlytics.ai`).
@@ -81,7 +81,7 @@ Two components + the filesystem as the contract.
 
 ```
 ┌─────────────────────────────┐         POST /annotation              ┌──────────────────────────┐
-│  Chrome Extension (MV3)      │   (token-authed, JSON over HTTP)      │  stickyfix-host          │
+│  Chrome Extension (MV3)      │   (token-authed, JSON over HTTP)      │  stikfix-host          │
 │  - service worker (bg)       │ ───────────────────────────────────► │  Node HTTP server        │
 │  - injected review UI        │                                       │  binds 127.0.0.1 only    │
 │    · connection chip (drag)  │   GET /status  (discovery + notesDir) │  port range 39240-39260  │
@@ -103,12 +103,12 @@ Two components + the filesystem as the contract.
 
 You often run **several projects at once** — multiple CC sessions, each project's UI in its own Chrome tab. Routing is **automatic by the tab's origin** (`scheme://host:port`) — you **never pick a project per note**.
 
-- **One host per project.** Start a host per project, pointed at its repo and told its dev URL: `stickyfix-host --root D:\proj-a --origin http://localhost:5173`. Each host picks a free port in 39240-39260 and writes only into **its own** `notes/`.
+- **One host per project.** Start a host per project, pointed at its repo and told its dev URL: `stikfix-host --root D:\proj-a --origin http://localhost:5173`. Each host picks a free port in 39240-39260 and writes only into **its own** `notes/`.
 - **The extension discovers ALL live hosts** (probes the whole port range, collects every responder) and builds a registry `{ project, port, token, origins }` from each `/status`.
 - **Each note routes by the active tab's origin** to the host that advertises it. Bounce between tabs freely — zero picks.
 - **Unknown origin** (no host declares it): the extension asks **once** — a dropdown of discovered hosts ("map this tab → project") — and persists `origin → host` in `chrome.storage`. Never asked again for that origin. This one-time mapper is the *only* place a dropdown appears; it doubles as the manual override.
-- **Same-origin collision** (two projects both on `localhost:3000`): the page may self-identify with `<meta name="stickyfix-project" content="proj-a">` or `window.__stickyfix_project = "proj-a"`; the extension prefers that over the origin map. Optional, for the rare clash.
-- **Tokens across many hosts:** each host has its own token, OR set a shared token (`--token` / `STICKYFIX_TOKEN` env) across your hosts so you paste it **once**. The popup lists discovered hosts with project + token state.
+- **Same-origin collision** (two projects both on `localhost:3000`): the page may self-identify with `<meta name="stikfix-project" content="proj-a">` or `window.__stikfix_project = "proj-a"`; the extension prefers that over the origin map. Optional, for the rare clash.
+- **Tokens across many hosts:** each host has its own token, OR set a shared token (`--token` / `STIKFIX_TOKEN` env) across your hosts so you paste it **once**. The popup lists discovered hosts with project + token state.
 
 ```
 tab :5173      ─┐                      ┌─► hostA(--root proj-a) ─► proj-a/notes/
@@ -133,7 +133,7 @@ tab app.chatl  ─┘  by tab origin ──────┴─► hostC(--root ch
 - **Connection chip:** small pill, top-right by default, `z-index: 2147483647`, shows connection state + target notes dir. **Draggable** (pointer events, viewport-clamped). Has an Exit button.
 - **`+` free-note tool:** a draggable floating action button. Click → opens a **post-it note card** (textarea + Send/Cancel). The post-it itself is draggable. Multiple can't be open at once (keep it simple: one active note card).
 - **🎯 element-picker tool:** toggles pick mode. While active: a highlight overlay follows the cursor (outline + label `tag · WxH`). `Esc` cancels pick mode. Click selects → opens the post-it pre-filled with a context summary.
-- **📷 camera tool (in the post-it toolbar):** manual region capture, available on **every** note (free and element). Clicking it **dims the page** with a translucent scrim and switches the cursor to a **crosshair (`+`)**. The user **drags a rectangle** over the relevant area; on release, stickyfix **hides its own UI** (scrim, note card, chip, highlight), captures the visible tab, **crops to the dragged rect (DPR-corrected)**, restores the UI, and **attaches the crop to the note as a small thumbnail**. Each thumbnail has an **`×`** to delete it before Send. Multiple captures stack as thumbnails. **`Esc`** (or a sub-threshold drag, < ~6px) cancels without capturing. Optional nicety: clicking a thumbnail opens a lightbox preview. See §7.3 for capture mechanics + naming.
+- **📷 camera tool (in the post-it toolbar):** manual region capture, available on **every** note (free and element). Clicking it **dims the page** with a translucent scrim and switches the cursor to a **crosshair (`+`)**. The user **drags a rectangle** over the relevant area; on release, stikfix **hides its own UI** (scrim, note card, chip, highlight), captures the visible tab, **crops to the dragged rect (DPR-corrected)**, restores the UI, and **attaches the crop to the note as a small thumbnail**. Each thumbnail has an **`×`** to delete it before Send. Multiple captures stack as thumbnails. **`Esc`** (or a sub-threshold drag, < ~6px) cancels without capturing. Optional nicety: clicking a thumbnail opens a lightbox preview. See §7.3 for capture mechanics + naming.
 - **Post-it visual design (G8):** genuine sticky-note aesthetic — warm paper color, subtle shadow/peel, legible type, a colored header strip indicating mode (free = one color, element = another). Smooth drag. This is a design-conscious tool; invest in the look. Use the `frontend-design` skill's principles. Avoid generic "AI slop" styling.
 
 ### 7.3 Element capture (the differentiator)
@@ -155,13 +155,13 @@ Also capture per-note: `url`, `title`, `viewport {width,height,devicePixelRatio}
 - **Auto element-highlight (element mode only):** on Send, capture the visible tab (`chrome.tabs.captureVisibleTab`, real PNG pixels) **with the picker's highlight box drawn on the selected element**, so the image shows *which* element in context. This is `+1`. (Free notes have no auto shot.)
 - **Manual region captures (📷 camera tool, any mode):** each user-dragged crop is the next `+<N>`. So an element note's manual shots are `+2`, `+3`…; a free note's are `+1`, `+2`…
 
-**Capture mechanics (there is no native 'capture region' API):** grab the full visible viewport with `chrome.tabs.captureVisibleTab` (a real screenshot — higher fidelity than DOM-to-canvas libs like html2canvas, which is why we don't use them here), then **crop to the target rectangle with a canvas `drawImage(img, sx,sy,sw,sh, 0,0,dw,dh)`** in the extension (keeps the host dependency-light). **Multiply the CSS-pixel rect by `devicePixelRatio`** before cropping — the captured bitmap is at device pixels, or HiDPI crops misalign. **Before every capture, hide stickyfix's own UI** (scrim, note card, chip, highlight) so the shot is clean page pixels, then restore.
+**Capture mechanics (there is no native 'capture region' API):** grab the full visible viewport with `chrome.tabs.captureVisibleTab` (a real screenshot — higher fidelity than DOM-to-canvas libs like html2canvas, which is why we don't use them here), then **crop to the target rectangle with a canvas `drawImage(img, sx,sy,sw,sh, 0,0,dw,dh)`** in the extension (keeps the host dependency-light). **Multiply the CSS-pixel rect by `devicePixelRatio`** before cropping — the captured bitmap is at device pixels, or HiDPI crops misalign. **Before every capture, hide stikfix's own UI** (scrim, note card, chip, highlight) so the shot is clean page pixels, then restore.
 
 ### 7.4 Host discovery, routing & auth
-- On entering Review Mode (and on refresh), the service worker probes ports `39240..39260` on `127.0.0.1`, calling `GET /status`, and collects **every** responder returning `{ app: "stickyfix", name, origins, ... }` into a **host registry**.
-- **Routing (see §6.1):** for each note, resolve the active tab's origin → host in this order: (1) a host advertising this origin; else (2) a persisted `origin → host` mapping; else (3) a page self-id (`<meta name="stickyfix-project">` / `window.__stickyfix_project`); else (4) ask once via the host dropdown and persist. Never per-note.
+- On entering Review Mode (and on refresh), the service worker probes ports `39240..39260` on `127.0.0.1`, calling `GET /status`, and collects **every** responder returning `{ app: "stikfix", name, origins, ... }` into a **host registry**.
+- **Routing (see §6.1):** for each note, resolve the active tab's origin → host in this order: (1) a host advertising this origin; else (2) a persisted `origin → host` mapping; else (3) a page self-id (`<meta name="stikfix-project">` / `window.__stikfix_project`); else (4) ask once via the host dropdown and persist. Never per-note.
 - Store the registry + per-host **tokens** + the `origin → host` map in `chrome.storage.local`.
-- Every `POST /annotation` goes to the **resolved** host with header `X-Stickyfix-Token: <that host's token>`. If missing/wrong, the host rejects (see §8.4). Surface routing/auth failures (no host for this origin, token rejected) as a visible toast — never a silent drop.
+- Every `POST /annotation` goes to the **resolved** host with header `X-Stikfix-Token: <that host's token>`. If missing/wrong, the host rejects (see §8.4). Surface routing/auth failures (no host for this origin, token rejected) as a visible toast — never a silent drop.
 
 ### 7.5 Error handling (no silent failures)
 - Connection lost / host down / 4xx-5xx / token rejected → **visible toast** in the page UI with the reason. Never swallow a failed Send. (The whole point is reliability of capture; a dropped note is a regression.)
@@ -173,24 +173,24 @@ All settings live in **`chrome.storage.local`** (Chrome persists it to disk, sco
 - Tokens persist (paste once). If a host rotates its token, the next Send 401s → toast → re-enter for that host only.
 - `chrome.storage.local` is per-profile and **not** synced — intended, so tokens never leave the machine.
 
-## 8. Component spec — `stickyfix-host`
+## 8. Component spec — `stikfix-host`
 
 A small Node program. Prefer **zero runtime dependencies** (use built-in `http`, `fs`, `crypto`, `path`). TypeScript, built to a runnable JS entry.
 
 ### 8.1 CLI
 ```
-stickyfix-host --root <projectRoot> [--origin <url> ...] [--name <project>] [--notes-dir <dir>] [--port <preferred>] [--token <token>]
+stikfix-host --root <projectRoot> [--origin <url> ...] [--name <project>] [--notes-dir <dir>] [--port <preferred>] [--token <token>]
 ```
 - `--root` (required): the project root. Writes are confined to it.
 - `--origin <url>` (repeatable, recommended): the dev URL(s) this project is served at (e.g. `http://localhost:5173`). Advertised in `/status` so the extension auto-routes tabs on that origin to this host with **zero picks**. Omit and the extension asks to map the origin once (§6.1).
 - `--name <project>` (default: basename of `--root`): display name in the extension's host list; also the key the `origin → host` map re-binds against across restarts.
 - `--notes-dir` (default `<root>/notes`): where `.md` files land. Must resolve **inside** `--root` (reject otherwise).
 - `--port`: preferred port; else first free in `39240..39260`.
-- `--token`: fixed token; else `STICKYFIX_TOKEN` env; else generate a random one (`crypto.randomUUID()`) and **print it**. Use a shared `--token`/env across your hosts to paste it once in the extension.
-- On startup print, clearly: project name, bound port, declared origins, token, absolute notes dir. Also write the token to `<root>/.stickyfix-token` (gitignored) for convenience.
+- `--token`: fixed token; else `STIKFIX_TOKEN` env; else generate a random one (`crypto.randomUUID()`) and **print it**. Use a shared `--token`/env across your hosts to paste it once in the extension.
+- On startup print, clearly: project name, bound port, declared origins, token, absolute notes dir. Also write the token to `<root>/.stikfix-token` (gitignored) for convenience.
 
 ### 8.2 Endpoints
-- `GET /status` → `{ app: "stickyfix", version, name, root, notesDir, origins: [...] }`. **No token required** (discovery handshake; `name`/`origins` are not sensitive, no secrets returned).
+- `GET /status` → `{ app: "stikfix", version, name, root, notesDir, origins: [...] }`. **No token required** (discovery handshake; `name`/`origins` are not sensitive, no secrets returned).
 - `OPTIONS *` → CORS preflight (see §8.4).
 - `POST /annotation` → **token required**. Body = annotation JSON (§9.1 shape). Writes the `.md` (+ screenshot). Returns `{ ok: true, file: "0007-20260531-143022.md", serial: 7 }`. On error `400/401/500` with `{ ok:false, error }`.
 
@@ -205,7 +205,7 @@ stickyfix-host --root <projectRoot> [--origin <url> ...] [--name <project>] [--n
 - Bind **`127.0.0.1` only** (never `0.0.0.0`).
 - **Token auth** on `POST /annotation`. This matters more than in the upstream (which only forwarded to an agent) because **we write files to disk** — any local webpage that guessed the port could otherwise write arbitrary notes. Reject missing/incorrect token with `401`.
 - **Path safety:** if a note ever carries a target subpath (future), `path.resolve` it and assert it stays within `--root`; reject traversal. v1 writes only to the fixed `notesDir`.
-- **CORS:** the page origin (e.g. `https://app.chatlytics.ai`, `http://localhost:5173`) must be allowed to POST to the localhost host. Echo the request `Origin` in `Access-Control-Allow-Origin` and allow `X-Stickyfix-Token`. (Token is the real gate; CORS is permissive by necessity.)
+- **CORS:** the page origin (e.g. `https://app.chatlytics.ai`, `http://localhost:5173`) must be allowed to POST to the localhost host. Echo the request `Origin` in `Access-Control-Allow-Origin` and allow `X-Stikfix-Token`. (Token is the real gate; CORS is permissive by necessity.)
 - No eval, no shelling out, no writing outside `notesDir`.
 
 ## 9. Data contracts
@@ -312,7 +312,7 @@ Edge cases to handle: empty queue ("no unread notes"); a note that's ambiguous (
 - **Host:** Node + TypeScript. **Runtime = built-ins only** (`http`, `fs`, `crypto`, `path`, and **`util.parseArgs`** for CLI — no commander/yargs), **plus one dep: [`yaml`](https://eemeli.org/yaml/)** (ISC) for safe frontmatter serialization (URLs/titles with colons & quotes are exactly where hand-rolled YAML breaks). Build with esbuild or tsc. Runnable via `npm run host -- --root <dir>`; publishable later as an npm `bin`.
 - **Repo layout (WXT conventions):**
 ```
-stickyfix/
+stikfix/
 ├── PRD.md  README.md  LICENSE  .gitignore
 ├── package.json
 ├── wxt.config.ts                    # manifest + build config (WXT)
@@ -352,13 +352,13 @@ The architecture in this PRD (and Appendix A) was derived by **studying** the op
 
 - ✅ You **may** use the architectural facts in Appendix A (that MV3 + dynamic injection works, the localhost port-range discovery pattern, the `/annotation` request shape, that `captureVisibleTab` is the screenshot path, that a single sink function is the seam).
 - ❌ You **must not** copy, paste, or closely paraphrase any source code, comments, identifiers, file structure, or text from that project.
-- Write **original** code from this spec. Use **`@medv/finder`** (MIT) for selectors rather than reproducing the upstream's selector heuristic. Choose our own identifiers (`stickyfix`, `sfx-*` DOM ids — not `__opc_*`), our own file names, our own UI copy.
+- Write **original** code from this spec. Use **`@medv/finder`** (MIT) for selectors rather than reproducing the upstream's selector heuristic. Choose our own identifiers (`stikfix`, `sfx-*` DOM ids — not `__opc_*`), our own file names, our own UI copy.
 - The result is an independent MIT work that happens to solve the same problem.
 
 ## 14. Acceptance criteria (definition of done)
 
 1. `npm run build` succeeds on Windows (the dev's primary OS) with no macOS-only steps.
-2. `npm run host -- --root <somedir>` prints port + token + notes dir and serves `GET /status` as `{ app: "stickyfix" }`.
+2. `npm run host -- --root <somedir>` prints port + token + notes dir and serves `GET /status` as `{ app: "stikfix" }`.
 3. Loading `dist/` unpacked in Chrome, pasting the token, and entering Review Mode on a real page shows the connection chip with the correct notes dir.
 4. A **free note** Send produces `notes/0001-<ts>.md` with frontmatter + comment + screenshot, and a toast naming the file.
 5. An **element note** on a React app produces a `.md` whose frontmatter includes a working `selector` and (when detectable) `react_component`, plus a computed-styles table and truncated `outerHTML`.
@@ -367,19 +367,19 @@ The architecture in this PRD (and Appendix A) was derived by **studying** the op
 8. Running the `review-notes` skill reads unread notes in order and renames each to `*.read.md`; a re-run reports "no unread notes."
 9. Repo is public, MIT, README has install + usage; no GPL code present (clean-room §13 honored).
 10. Host binds only `127.0.0.1` (verify it is NOT reachable from another LAN host).
-11. The **📷 camera tool** dims the page, region-drag yields a **DPR-correct cropped** PNG named `<noteBase>+<N>.png` in the notes folder **with stickyfix's own UI excluded** from the shot, shows as a deletable `×` thumbnail in the post-it, and its path is written into the `.md`. Multiple captures increment `+2`, `+3`.
+11. The **📷 camera tool** dims the page, region-drag yields a **DPR-correct cropped** PNG named `<noteBase>+<N>.png` in the notes folder **with stikfix's own UI excluded** from the shot, shows as a deletable `×` thumbnail in the post-it, and its path is written into the `.md`. Multiple captures increment `+2`, `+3`.
 12. **Multi-project routing:** with two hosts running (proj-a `--origin :5173`, proj-b `--origin :3000`), a note on the `:5173` tab lands in `proj-a/notes/` and a note on the `:3000` tab lands in `proj-b/notes/`, with **no per-note project selection**. An unmapped origin prompts the one-time picker, then routes automatically. The mapping + tokens **survive a Chrome restart** (`chrome.storage.local`), re-binding by project name even if a host's port changed.
 
 ## 15. Open decisions (safe defaults chosen; change only with reason)
 - **Serial scope:** per-notes-dir (per project). ✔ default.
 - **One active post-it at a time** (vs. many). ✔ default for v1 simplicity.
 - **Screenshot = visible viewport only.** ✔ v1.
-- **Token transport = custom header `X-Stickyfix-Token`.** ✔.
-- **Notes committed to the consuming repo?** Left to that repo; stickyfix's own `.gitignore` ignores `notes/`. ✔.
+- **Token transport = custom header `X-Stikfix-Token`.** ✔.
+- **Notes committed to the consuming repo?** Left to that repo; stikfix's own `.gitignore` ignores `notes/`. ✔.
 - **Screenshot location/format:** images live **in the notes dir** alongside the `.md`, named `<noteBase>+<N>.png` (no `assets/` subdir). ✔.
 - **Cropping side:** done **extension-side** (canvas), so the host stays near-zero-dep. ✔.
 - **Libraries (don't reinvent):** WXT (framework), `@medv/finder` (selectors), `interact.js` (drag + marquee), `yaml` (host frontmatter), native `captureVisibleTab` + canvas (screenshots). ✔.
-- **Concurrent projects:** **host-per-project**; the extension discovers all live hosts and **auto-routes by tab origin** (one-time map for unknown origins; optional `<meta name="stickyfix-project">` for same-origin clashes). Notes stay in each project's own `notes/`. Central store + prefix was rejected — it orphans notes from their repo and complicates the skill. ✔.
+- **Concurrent projects:** **host-per-project**; the extension discovers all live hosts and **auto-routes by tab origin** (one-time map for unknown origins; optional `<meta name="stikfix-project">` for same-origin clashes). Notes stay in each project's own `notes/`. Central store + prefix was rejected — it orphans notes from their repo and complicates the skill. ✔.
 - **Settings persistence:** `chrome.storage.local` (survives Chrome restart + MV3 service-worker recycling; never in worker memory). Re-bind hosts by `name`+origin, not port. ✔.
 
 ---

@@ -8,7 +8,7 @@
 
 This phase turns the Phase 1 host **stub** into a real localhost server. `npm run host -- --root <dir>` starts an HTTP server bound to `127.0.0.1` on a free port in 39240–39260 that: serves `GET /status` (no token), accepts `POST /annotation` (token-required), assigns running serials via an in-process mutex, and writes `<serial>-<ts>.md` (+ decoded `+N.png` images) safely inside `--root`. Includes CORS, body-size cap (413), path-traversal rejection, and unit tests for serial assignment + path safety.
 
-In scope: HTTP server + routing (`/status`, `/annotation`, `OPTIONS`), token auth, serial mutex, frontmatter `.md` writing, PNG data-URL decode/write, CORS, port discovery, path/size guards, `.stickyfix-token` + `.gitkeep`, `util.parseArgs` CLI completion (all flags), unit tests (`node:test`).
+In scope: HTTP server + routing (`/status`, `/annotation`, `OPTIONS`), token auth, serial mutex, frontmatter `.md` writing, PNG data-URL decode/write, CORS, port discovery, path/size guards, `.stikfix-token` + `.gitkeep`, `util.parseArgs` CLI completion (all flags), unit tests (`node:test`).
 
 Out of scope (later phases): anything extension-side (discovery, routing, UI, capture) is Phase 3+. No element/region capture logic here — the host only receives already-cropped PNG data-URLs and writes them. No `/sessions`/`/claim`/`/unclaim` (PRD drops those upstream endpoints).
 </domain>
@@ -29,11 +29,11 @@ Out of scope (later phases): anything extension-side (discovery, routing, UI, ca
 - **D-04:** Read the request body as a stream with a **hard 12 MB cap**; abort and return **413** if exceeded (screenshots are base64). `JSON.parse` the body; malformed JSON → **400** `{ok:false,error}`. Success/error responses are JSON.
 
 ### Routing, CORS & Token Transport
-- **D-05:** Routes: `GET /status` (no token), `POST /annotation` (token required), `OPTIONS *` (CORS preflight). CORS: **echo the request `Origin`** into `Access-Control-Allow-Origin`, allow methods `GET,POST,OPTIONS`, allow header `X-Stickyfix-Token`. Token is the real gate (CORS is permissive by necessity, §8.4).
-- **D-06:** Token transport = custom header **`X-Stickyfix-Token`**. Missing/wrong token on `POST /annotation` → **401** `{ok:false,error}`. `/status` returns `{app,version,name,root,notesDir,origins}` and never requires a token / returns no secrets.
+- **D-05:** Routes: `GET /status` (no token), `POST /annotation` (token required), `OPTIONS *` (CORS preflight). CORS: **echo the request `Origin`** into `Access-Control-Allow-Origin`, allow methods `GET,POST,OPTIONS`, allow header `X-Stikfix-Token`. Token is the real gate (CORS is permissive by necessity, §8.4).
+- **D-06:** Token transport = custom header **`X-Stikfix-Token`**. Missing/wrong token on `POST /annotation` → **401** `{ok:false,error}`. `/status` returns `{app,version,name,root,notesDir,origins}` and never requires a token / returns no secrets.
 
 ### Token Lifecycle
-- **D-07:** Token resolution order: `--token` → `STICKYFIX_TOKEN` env → generate `crypto.randomUUID()`. Print the token (and name, bound port, declared origins, absolute notesDir) on startup. Also write the token to gitignored `<root>/.stickyfix-token` for convenience (HOST-12).
+- **D-07:** Token resolution order: `--token` → `STIKFIX_TOKEN` env → generate `crypto.randomUUID()`. Print the token (and name, bound port, declared origins, absolute notesDir) on startup. Also write the token to gitignored `<root>/.stikfix-token` for convenience (HOST-12).
 
 ### Port Discovery & Binding
 - **D-08:** Bind **`127.0.0.1` only** (never `0.0.0.0`). Honor `--port` if provided and free; otherwise take the first free port in **39240–39260**. Must NOT be reachable from another LAN host (HOST-02, Success Criterion via acceptance test).
@@ -57,7 +57,7 @@ Out of scope (later phases): anything extension-side (discovery, routing, UI, ca
 **Downstream agents MUST read these before planning or implementing.**
 
 ### Host spec & contracts
-- `PRD.md` §8 — `stickyfix-host` spec (CLI, endpoints, file writing, security) — authoritative for this phase
+- `PRD.md` §8 — `stikfix-host` spec (CLI, endpoints, file writing, security) — authoritative for this phase
 - `PRD.md` §8.4 — Security must-haves (127.0.0.1 bind, token auth, path safety, CORS)
 - `PRD.md` §9.1 — Annotation payload shape (extension → host)
 - `PRD.md` §9.2 — Note file format on disk (frontmatter + body)
@@ -68,24 +68,24 @@ Out of scope (later phases): anything extension-side (discovery, routing, UI, ca
 - `.planning/research/PITFALLS.md` — serial race (explicit promise queue), path traversal, CORS preflight, body-size handling
 - `.planning/research/STACK.md` — `yaml` (eemeli) dep rationale; Node built-ins only otherwise
 - `.planning/REQUIREMENTS.md` — HOST-01..HOST-13 (this phase's requirements)
-- `.planning/phases/01-scaffold-clean-room-foundation/01-CONTEXT.md` — Phase 1 locked decisions (tsc host build, NodeNext ESM, sfx-*/stickyfix namespace, host smoke test)
+- `.planning/phases/01-scaffold-clean-room-foundation/01-CONTEXT.md` — Phase 1 locked decisions (tsc host build, NodeNext ESM, sfx-*/stikfix namespace, host smoke test)
 </canonical_refs>
 
 <code_context>
 ## Existing Code Insights
 
 ### Reusable Assets
-- `host/src/index.ts` (Phase 1 stub): already parses `--root`, `--origin` (multiple), `--name`, `--notes-dir`, `--port`, `--token` via `util.parseArgs` and prints a JSON startup line with `app:"stickyfix"`. Phase 2 extends this into the real CLI entry that boots `server.ts`.
+- `host/src/index.ts` (Phase 1 stub): already parses `--root`, `--origin` (multiple), `--name`, `--notes-dir`, `--port`, `--token` via `util.parseArgs` and prints a JSON startup line with `app:"stikfix"`. Phase 2 extends this into the real CLI entry that boots `server.ts`.
 - `tsconfig.host.json`: NodeNext ESM config already targets `dist/host/`.
 - `scripts/host-smoke-test.mjs`: spawn-and-assert smoke test — extend/keep so `npm run check` still proves the host boots.
-- `scripts/clean-room-check.mjs`: clean-room gate already wired into `npm run check`; new host modules must stay in the `sfx-*`/`stickyfix` namespace (no `__opc_*`/`opencode`/`JodusNodus`).
+- `scripts/clean-room-check.mjs`: clean-room gate already wired into `npm run check`; new host modules must stay in the `sfx-*`/`stikfix` namespace (no `__opc_*`/`opencode`/`JodusNodus`).
 
 ### Established Patterns
 - Build = `tsc` to `dist/host/` (no bundler), Node built-ins + single `yaml` dep. `npm run check` is the per-task verification harness (tsc ×2 + clean-room + smoke; Phase 2 adds `node:test`).
 - `"type":"module"` package; host emits ESM.
 
 ### Integration Points
-- `index.ts` startup line is the seam the smoke test reads; keep its `{app:"stickyfix", name, root, ..., port, notesDir}` shape (now with a real bound port).
+- `index.ts` startup line is the seam the smoke test reads; keep its `{app:"stikfix", name, root, ..., port, notesDir}` shape (now with a real bound port).
 - The HTTP server's `/status` JSON is the discovery handshake the Phase 3 extension will probe — get its shape right now (`{app,version,name,root,notesDir,origins}`).
 </code_context>
 
@@ -101,7 +101,7 @@ Out of scope (later phases): anything extension-side (discovery, routing, UI, ca
 ## Deferred Ideas
 
 - `/sessions`, `/claim`, `/unclaim` endpoints — explicitly dropped (OpenCode session-binding we don't need; §Appendix A).
-- Publishing `stickyfix-host` as an npm `bin` — v2 (FUT-04).
+- Publishing `stikfix-host` as an npm `bin` — v2 (FUT-04).
 - Future target-subpath writes (beyond the fixed notesDir) — the path-safety guard is built to support it, but v1 writes only to notesDir.
 
 None block Phase 2.

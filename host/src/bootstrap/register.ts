@@ -1,6 +1,6 @@
 /**
  * Native-messaging manifest writer, per-OS path resolver, Windows registry
- * registration, uninstall enumerator, and desktop launcher creator for stickyfix.
+ * registration, uninstall enumerator, and desktop launcher creator for stikfix.
  *
  * Node builtins only — no WXT, no Chrome imports.
  *
@@ -21,9 +21,9 @@ import { isInsideDir } from '../security.js';
 
 // The native host name — must match the manifest JSON `name` field and the
 // value passed to chrome.runtime.sendNativeMessage in background.ts.
-const NATIVE_HOST_NAME = 'com.stickyfix.host';
+const NATIVE_HOST_NAME = 'com.stikfix.host';
 const MANIFEST_FILENAME = `${NATIVE_HOST_NAME}.json`;
-// On Windows the Firefox manifest shares the stickyfix data dir with the Chrome
+// On Windows the Firefox manifest shares the stikfix data dir with the Chrome
 // one, so it needs a distinct filename to avoid clobbering the Chrome manifest.
 // (On macOS/Linux Firefox uses a separate Mozilla dir, so this filename only
 // differs the win32 on-disk JSON; the registry value points straight at it.)
@@ -35,7 +35,7 @@ const FIREFOX_MANIFEST_FILENAME = `${NATIVE_HOST_NAME}.firefox.json`;
 const NATIVE_WRAPPER_WIN = `${NATIVE_HOST_NAME}.bat`;
 const NATIVE_WRAPPER_NIX = `${NATIVE_HOST_NAME}.sh`;
 // Firefox wrapper file names — MUST be distinct from the Chrome wrapper. On
-// Windows both browsers share the stickyfix data dir, so a shared wrapper file
+// Windows both browsers share the stikfix data dir, so a shared wrapper file
 // would be deleted by a Firefox uninstall and break a co-installed Chrome whose
 // manifest still references that absolute path (cross-browser regression). The
 // suffix mirrors FIREFOX_MANIFEST_FILENAME so manifest+wrapper stay paired.
@@ -55,19 +55,19 @@ export type TargetBrowser = 'chrome' | 'firefox';
 // The default add-on id used by the Firefox path. Must match
 // browser_specific_settings.gecko.id in wxt.config.ts and the
 // allowed_extensions entry in the Firefox native-messaging manifest.
-export const DEFAULT_GECKO_ID = 'stickyfix@stickyfix.dev';
+export const DEFAULT_GECKO_ID = 'stikfix@stikfix.com';
 
 // Config file location (read by native host at startup)
-const CONFIG_DIR = (home: string) => join(home, '.config', 'stickyfix');
+const CONFIG_DIR = (home: string) => join(home, '.config', 'stikfix');
 const CONFIG_PATH = (home: string) => join(CONFIG_DIR(home), 'config.json');
 
 // Launcher file names used across functions
-const LAUNCHER_BATCH_FILENAME = 'stickyfix-host.bat';
-const LAUNCHER_VBS_FILENAME = 'stickyfix-host.vbs';
-const LAUNCHER_LNK_FILENAME = 'Stickyfix Host.lnk';
-const LAUNCHER_COMMAND_FILENAME = 'stickyfix-host.command';
-const LAUNCHER_DESKTOP_FILENAME = 'stickyfix-host.desktop';
-const LAUNCHER_SH_FILENAME = 'stickyfix-host.sh';
+const LAUNCHER_BATCH_FILENAME = 'stikfix-host.bat';
+const LAUNCHER_VBS_FILENAME = 'stikfix-host.vbs';
+const LAUNCHER_LNK_FILENAME = 'Stikfix Host.lnk';
+const LAUNCHER_COMMAND_FILENAME = 'stikfix-host.command';
+const LAUNCHER_DESKTOP_FILENAME = 'stikfix-host.desktop';
+const LAUNCHER_SH_FILENAME = 'stikfix-host.sh';
 
 // ---------------------------------------------------------------------------
 // nativeManifestPath — per-OS path resolver
@@ -80,7 +80,7 @@ const LAUNCHER_SH_FILENAME = 'stickyfix-host.sh';
  * Paths verified via Chrome + Edge native-messaging docs (RESEARCH Pattern 4):
  *   darwin: ~/Library/App Support/Google/Chrome/NativeMessagingHosts/
  *   linux:  ~/.config/google-chrome/NativeMessagingHosts/
- *   win32:  ~/.local/share/stickyfix/  (manifest only; registry key written separately)
+ *   win32:  ~/.local/share/stikfix/  (manifest only; registry key written separately)
  */
 export function nativeManifestPath(
   plat: NodeJS.Platform = process.platform,
@@ -101,10 +101,10 @@ export function nativeManifestPath(
       case 'linux':
         return join(home, '.mozilla', 'native-messaging-hosts', MANIFEST_FILENAME);
       case 'win32':
-        // Windows: the manifest JSON lives on disk in the stickyfix data dir
+        // Windows: the manifest JSON lives on disk in the stikfix data dir
         // (same place as the Chrome one would, but a distinct filename via the
         // firefox suffix so both can coexist); the registry key points at it.
-        return join(home, '.local', 'share', 'stickyfix', FIREFOX_MANIFEST_FILENAME);
+        return join(home, '.local', 'share', 'stikfix', FIREFOX_MANIFEST_FILENAME);
       default:
         throw new Error(`Unsupported platform: ${plat}`);
     }
@@ -124,7 +124,7 @@ export function nativeManifestPath(
     case 'linux':
       return join(home, '.config', 'google-chrome', 'NativeMessagingHosts', MANIFEST_FILENAME);
     case 'win32':
-      return join(home, '.local', 'share', 'stickyfix', MANIFEST_FILENAME);
+      return join(home, '.local', 'share', 'stikfix', MANIFEST_FILENAME);
     default:
       throw new Error(`Unsupported platform: ${plat}`);
   }
@@ -184,17 +184,17 @@ export function writeNativeWrapper(
 
 /**
  * Return the directory where launcher files (batch, .command, .desktop) are written.
- * On win32: ~/.local/share/stickyfix/ (same dir as the manifest)
- * On darwin/linux: ~/.config/stickyfix/
+ * On win32: ~/.local/share/stikfix/ (same dir as the manifest)
+ * On darwin/linux: ~/.config/stikfix/
  */
 export function launcherDir(
   plat: NodeJS.Platform = process.platform,
   home: string = homedir(),
 ): string {
   if (plat === 'win32') {
-    return join(home, '.local', 'share', 'stickyfix');
+    return join(home, '.local', 'share', 'stikfix');
   }
-  return join(home, '.config', 'stickyfix');
+  return join(home, '.config', 'stikfix');
 }
 
 // ---------------------------------------------------------------------------
@@ -253,8 +253,8 @@ const EXT_ID_RE = /^[a-p]{32}$/;
 
 /**
  * Regex: a Firefox/gecko add-on id. Firefox accepts either an email-style id
- * (`name@domain`) or a UUID in braces; stickyfix ships the email-style id
- * `stickyfix@stickyfix.dev`. We validate the `local@domain` shape (no spaces,
+ * (`name@domain`) or a UUID in braces; stikfix ships the email-style id
+ * `stikfix@stikfix.com`. We validate the `local@domain` shape (no spaces,
  * a single @, a dot-bearing domain) rather than the Chrome a-p alphabet.
  */
 const GECKO_ID_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -267,7 +267,7 @@ const GECKO_ID_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * - browser 'chrome' (default): `extensionId` must be exactly 32 lowercase a-p
  *   chars; emits `allowed_origins: ["chrome-extension://<id>/"]`.
  * - browser 'firefox': `extensionId` is the gecko add-on id (e.g.
- *   `stickyfix@stickyfix.dev`); emits `allowed_extensions: [<gecko-id>]`.
+ *   `stikfix@stikfix.com`); emits `allowed_extensions: [<gecko-id>]`.
  *   Firefox rejects a manifest carrying `allowed_origins`, so the two shapes
  *   are mutually exclusive.
  */
@@ -286,7 +286,7 @@ export function buildManifest(
     }
     return {
       name: NATIVE_HOST_NAME,
-      description: 'stickyfix native messaging host',
+      description: 'stikfix native messaging host',
       path: absPath,
       type: 'stdio',
       allowed_extensions: [extensionId],
@@ -301,7 +301,7 @@ export function buildManifest(
 
   return {
     name: NATIVE_HOST_NAME,
-    description: 'stickyfix native messaging host',
+    description: 'stikfix native messaging host',
     path: absPath,
     type: 'stdio',
     allowed_origins: [`chrome-extension://${extensionId}/`],
@@ -354,13 +354,13 @@ export interface LauncherResult {
  * Create a double-click launcher that starts the HTTP host backend,
  * so the user never has to open a terminal.
  *
- * Windows: writes stickyfix-host.bat in the stickyfix data dir, then creates
+ * Windows: writes stikfix-host.bat in the stikfix data dir, then creates
  * a Desktop shortcut (.lnk) pointing at that batch file. If the .lnk creation
  * fails, the batch file alone is the acceptable fallback.
  *
- * macOS: writes an executable stickyfix-host.command (bash script).
+ * macOS: writes an executable stikfix-host.command (bash script).
  *
- * Linux: writes stickyfix-host.sh + a .desktop entry.
+ * Linux: writes stikfix-host.sh + a .desktop entry.
  *
  * Security: the ONLY subprocess allowed is the Windows .lnk creation via
  * execFile(powershell, [argArray]) — mirroring folder-picker.ts safety exactly.
@@ -388,8 +388,8 @@ export function createLauncherFiles(opts: LauncherOptions): LauncherResult {
     // Write batch file — plain text, no exec required
     const batchContent = [
       '@echo off',
-      `rem Stickyfix HTTP host launcher — double-click to start the backend`,
-      `rem Generated by: npx stickyfix init`,
+      `rem Stikfix HTTP host launcher — double-click to start the backend`,
+      `rem Generated by: npx stikfix init`,
       `rem Root: ${rootArg}`,
       ``,
       `"${nodeCmd}" "${hostEntry}" --root "${rootArg}"${portArg}`,
@@ -418,15 +418,15 @@ export function createLauncherFiles(opts: LauncherOptions): LauncherResult {
       `sh.Run "cmd /c node """ & hostEntry & """ --root """ & root & """${vbsPortArg}", 0, False`,
       "' Give it a moment to bind and write the port file",
       'WScript.Sleep 1800',
-      'msg = "Stickyfix host is running." & vbCrLf & vbCrLf & "You can start dropping notes."',
-      'portFile = root & "\\.stickyfix-port"',
+      'msg = "Stikfix host is running." & vbCrLf & vbCrLf & "You can start dropping notes."',
+      'portFile = root & "\\.stikfix-port"',
       'If fso.FileExists(portFile) Then',
       '  Set f = fso.OpenTextFile(portFile, 1)',
       '  port = Trim(f.ReadAll)',
       '  f.Close',
-      '  If Len(port) > 0 Then msg = "Stickyfix host is running on port " & port & "." & vbCrLf & vbCrLf & "You can start dropping notes."',
+      '  If Len(port) > 0 Then msg = "Stikfix host is running on port " & port & "." & vbCrLf & vbCrLf & "You can start dropping notes."',
       'End If',
-      'sh.Popup msg, 5, "Stickyfix", 64',
+      'sh.Popup msg, 5, "Stikfix", 64',
     ].join('\r\n');
 
     const vbsPath = join(launcherDir(plat, home), LAUNCHER_VBS_FILENAME);
@@ -457,7 +457,7 @@ export function createLauncherFiles(opts: LauncherOptions): LauncherResult {
         `$s = $ws.CreateShortcut('${safeLnkPath}');` +
         `$s.TargetPath = '${safeWscript}';` +
         `$s.Arguments = '"${safeVbsPath}"';` +
-        `$s.Description = 'Start the Stickyfix HTTP backend host';` +
+        `$s.Description = 'Start the Stikfix HTTP backend host';` +
         (safeIconPath ? `$s.IconLocation = '${safeIconPath},0';` : '') +
         `$s.Save()`;
 
@@ -485,8 +485,8 @@ export function createLauncherFiles(opts: LauncherOptions): LauncherResult {
     // macOS: executable .command file (double-click in Finder to run in Terminal)
     const commandContent = [
       '#!/bin/bash',
-      `# Stickyfix HTTP host launcher — double-click in Finder or drag to Dock`,
-      `# Generated by: npx stickyfix init`,
+      `# Stikfix HTTP host launcher — double-click in Finder or drag to Dock`,
+      `# Generated by: npx stikfix init`,
       ``,
       `exec "${nodeCmd}" "${hostEntry}" --root "${rootArg}"${portArg}`,
     ].join('\n');
@@ -499,8 +499,8 @@ export function createLauncherFiles(opts: LauncherOptions): LauncherResult {
     // Linux: executable shell script + .desktop entry
     const shContent = [
       '#!/bin/sh',
-      `# Stickyfix HTTP host launcher`,
-      `# Generated by: npx stickyfix init`,
+      `# Stikfix HTTP host launcher`,
+      `# Generated by: npx stikfix init`,
       ``,
       `exec "${nodeCmd}" "${hostEntry}" --root "${rootArg}"${portArg}`,
     ].join('\n');
@@ -523,8 +523,8 @@ export function createLauncherFiles(opts: LauncherOptions): LauncherResult {
         '[Desktop Entry]',
         'Version=1.0',
         'Type=Application',
-        'Name=Stickyfix Host',
-        'Comment=Start the Stickyfix HTTP backend host',
+        'Name=Stikfix Host',
+        'Comment=Start the Stikfix HTTP backend host',
         `Exec=${shPath}`,
         iconLine,
         'Terminal=true',
@@ -707,8 +707,8 @@ interface ArtifactList {
  *
  * paths includes:
  *   - native-messaging manifest JSON
- *   - stickyfix config file (~/.config/stickyfix/config.json)
- *   - <root>/.stickyfix-port (written by HTTP host on startup)
+ *   - stikfix config file (~/.config/stikfix/config.json)
+ *   - <root>/.stikfix-port (written by HTTP host on startup)
  *   - launcher batch/command/sh file
  *   - Desktop shortcut (.lnk on win32) or .desktop entry (linux)
  *
@@ -728,12 +728,12 @@ export function enumerateArtifacts(opts: ArtifactOptions = {}): ArtifactList {
     CONFIG_PATH(home),
   ];
 
-  // .stickyfix-port is written by the HTTP host alongside .stickyfix-token
+  // .stikfix-port is written by the HTTP host alongside .stikfix-token
   if (root) {
-    paths.push(join(root, '.stickyfix-port'));
+    paths.push(join(root, '.stikfix-port'));
   } else {
     // Include a generic indicator when root is unknown
-    paths.push('.stickyfix-port');
+    paths.push('.stikfix-port');
   }
 
   // Launcher files created by createLauncherFiles

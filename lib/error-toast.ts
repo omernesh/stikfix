@@ -1,5 +1,5 @@
 /**
- * Error-toast mapper for stickyfix.
+ * Error-toast mapper for stikfix.
  *
  * mapSendOutcome — pure, node:test-safe (no DOM/chrome at module level).
  *

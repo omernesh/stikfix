@@ -31,15 +31,15 @@ No previous VERIFICATION.md found. Initial mode.
 | 2 | HOST-02: Server binds 127.0.0.1 only | VERIFIED | `bind.ts:12` `BIND_HOST='127.0.0.1'`; `index.ts:55` safety assertion; `server.test.ts` asserts `addr.address==='127.0.0.1'`; no `0.0.0.0` in src |
 | 3 | HOST-03: Free port in 39240–39260 (or honors --port) | VERIFIED | `bind.ts:10-11,66-73` range scan; `bindServer` honors preferredPort first; `index.test.ts` asserts skip-past-39240 lands on 39241 |
 | 4 | HOST-04: GET /status returns {app,version,name,root,notesDir,origins}, no token required, token field absent | VERIFIED | `server.ts:46-58`; `server.test.ts` asserts `body.token===undefined`; smoke test asserts `status.token===undefined` |
-| 5 | HOST-05: POST /annotation without/wrong X-Stickyfix-Token → 401 | VERIFIED | `server.ts:75-78`; `security.ts:22-31` `checkToken` with timingSafeEqual; `security.test.ts` covers missing/wrong/exact; `server.test.ts` two 401 cases; smoke test 401 assertion |
+| 5 | HOST-05: POST /annotation without/wrong X-Stikfix-Token → 401 | VERIFIED | `server.ts:75-78`; `security.ts:22-31` `checkToken` with timingSafeEqual; `security.test.ts` covers missing/wrong/exact; `server.test.ts` two 401 cases; smoke test 401 assertion |
 | 6 | HOST-06: Serial mutex yields 0001/0002 under concurrency, no collision | VERIFIED | `serial.ts:15-19` promise-queue mutex; `serial.test.ts` `Promise.all` concurrent test asserts distinct `['0001','0002']` and 2 files on disk |
 | 7 | HOST-07: .md written with YAML frontmatter (id/created/mode/url/title/viewport/status:unread) | VERIFIED | `write-note.ts:71-99` `buildFrontmatter`; `write-note.test.ts` parses frontmatter, asserts all required keys and `status==='unread'` |
 | 8 | HOST-08: Decoded +N.png written next to .md; listed in frontmatter and body | VERIFIED | `write-note.ts:171-185` decode-before-write; `write-note.test.ts` asserts `+1.png` exists, non-zero bytes, in frontmatter screenshots array and body Screenshots section |
 | 9 | HOST-09: Path traversal rejected; notesDir outside --root rejected | VERIFIED | `security.ts:78-83` `isInsideDir` with `path.sep`; `config.ts:47-50` throws on notesDir outside root; `security.test.ts` covers `../sibling` and `rootfoo` sibling-prefix |
-| 10 | HOST-10: CORS echoes Origin + allows X-Stickyfix-Token; OPTIONS → 204 | VERIFIED | `server.ts:26-30,35-39` `setCorsHeaders`/`setPreflightHeaders`; called at top of every handler (Pitfall 6); `server.test.ts` asserts echoed Origin on OPTIONS 204 and on 401 error responses |
+| 10 | HOST-10: CORS echoes Origin + allows X-Stikfix-Token; OPTIONS → 204 | VERIFIED | `server.ts:26-30,35-39` `setCorsHeaders`/`setPreflightHeaders`; called at top of every handler (Pitfall 6); `server.test.ts` asserts echoed Origin on OPTIONS 204 and on 401 error responses |
 | 11 | HOST-11: >12 MB body → 413 | VERIFIED | `security.ts:51-55` `readBody` cap with `req.destroy()`; `server.ts:85-91` maps `statusCode 413`; `security.test.ts` over-cap rejects with `statusCode===413` |
-| 12 | HOST-12: Notes dir created with .gitkeep; .stickyfix-token written | VERIFIED | `config.ts:80-86` `ensureNotesDir` creates dir + .gitkeep; `config.ts:101-107` `writeTokenFile` with mode 0o600; called in `index.ts:43-44` |
-| 13 | HOST-13: --origin/--name/--notes-dir/--token/--port/--root parsed via util.parseArgs | VERIFIED | `index.ts:21-31` full parseArgs options block; `config.ts:32-69` `resolveConfig` consumes all flags; token resolution order --token → STICKYFIX_TOKEN → randomUUID() |
+| 12 | HOST-12: Notes dir created with .gitkeep; .stikfix-token written | VERIFIED | `config.ts:80-86` `ensureNotesDir` creates dir + .gitkeep; `config.ts:101-107` `writeTokenFile` with mode 0o600; called in `index.ts:43-44` |
+| 13 | HOST-13: --origin/--name/--notes-dir/--token/--port/--root parsed via util.parseArgs | VERIFIED | `index.ts:21-31` full parseArgs options block; `config.ts:32-69` `resolveConfig` consumes all flags; token resolution order --token → STIKFIX_TOKEN → randomUUID() |
 
 **Score:** 13/13 truths verified
 
@@ -99,7 +99,7 @@ No previous VERIFICATION.md found. Initial mode.
 |----------|---------|--------|--------|
 | npm run build exits 0 | `npm run build` | exit 0; WXT + tsc clean | PASS |
 | npm run check exits 0 (tsc x2 + clean-room + smoke + 48 tests) | `npm run check` | exit 0; 48 pass, 0 fail | PASS |
-| Smoke: startup app=stickyfix, port in 39240-39260 | `node scripts/host-smoke-test.mjs` (within check) | `smoke test: PASS` | PASS |
+| Smoke: startup app=stikfix, port in 39240-39260 | `node scripts/host-smoke-test.mjs` (within check) | `smoke test: PASS` | PASS |
 | Smoke: no-token POST → 401 | Assertion in smoke test | Verified | PASS |
 | Smoke: token POST → 200 + .md on disk | Assertion in smoke test | Verified | PASS |
 | No 0.0.0.0 bind in source | grep host/src | Only comment reference in bind.ts:12 | PASS |
@@ -125,9 +125,9 @@ No `scripts/*/tests/probe-*.sh` probes exist. The equivalent gate is `npm run ch
 | HOST-07 | 02-01 | .md with YAML frontmatter (§9.2) | SATISFIED | `write-note.ts:71-99`; `write-note.test.ts` frontmatter key assertions |
 | HOST-08 | 02-01 | Decoded +N.png next to .md | SATISFIED | `write-note.ts:171-185`; `write-note.test.ts` +1.png existence + content |
 | HOST-09 | 02-01 | Path traversal + notesDir-outside-root rejected | SATISFIED | `security.ts:78-83` + `config.ts:47-50`; `security.test.ts` traversal + sibling-prefix cases |
-| HOST-10 | 02-02 | CORS echoes Origin, allows X-Stickyfix-Token, OPTIONS 204 | SATISFIED | `server.ts:26-40`; `server.test.ts` OPTIONS + 401-with-CORS tests |
+| HOST-10 | 02-02 | CORS echoes Origin, allows X-Stikfix-Token, OPTIONS 204 | SATISFIED | `server.ts:26-40`; `server.test.ts` OPTIONS + 401-with-CORS tests |
 | HOST-11 | 02-01 | >12 MB body → 413 | SATISFIED | `security.ts:51-55`; `security.test.ts` over-cap rejection |
-| HOST-12 | 02-01, 02-02 | .gitkeep + .stickyfix-token written | SATISFIED | `config.ts:80-86,101-107`; called in `index.ts:43-44`; token file mode 0o600 |
+| HOST-12 | 02-01, 02-02 | .gitkeep + .stikfix-token written | SATISFIED | `config.ts:80-86,101-107`; called in `index.ts:43-44`; token file mode 0o600 |
 | HOST-13 | 02-01 | All flags parsed via util.parseArgs | SATISFIED | `index.ts:21-31` full options block; D-07 token order in `config.ts:64-67` |
 
 All 13 HOST requirements SATISFIED.

@@ -1,5 +1,5 @@
 /**
- * stickyfix service worker — the SOLE HTTP client for localhost.
+ * stikfix service worker — the SOLE HTTP client for localhost.
  *
  * Architecture invariants (enforced by design):
  *  - ONLY this file fetches http://127.0.0.1/* — content scripts and the
@@ -89,13 +89,13 @@ async function refreshHosts(): Promise<HostEntry[]> {
 
 // ---------------------------------------------------------------------------
 // readPageSelfId — injected via executeScript({func}) into the page context
-// Returns meta[name="stickyfix-project"] content or window.__stickyfix_project
+// Returns meta[name="stikfix-project"] content or window.__stikfix_project
 // ---------------------------------------------------------------------------
 
 function readPageSelfId(): string | null {
-  const meta = document.querySelector('meta[name="stickyfix-project"]');
+  const meta = document.querySelector('meta[name="stikfix-project"]');
   if (meta) return meta.getAttribute('content');
-  return (window as unknown as Record<string, unknown>).__stickyfix_project as string ?? null;
+  return (window as unknown as Record<string, unknown>).__stikfix_project as string ?? null;
 }
 
 // ---------------------------------------------------------------------------
@@ -305,7 +305,7 @@ async function handleGetRoute(
       func: readPageSelfId,
     });
     // WR-06: validate result before using as a storage key — the page controls
-    // window.__stickyfix_project and could supply a non-string or large value.
+    // window.__stikfix_project and could supply a non-string or large value.
     const raw = probeResult[0]?.result;
     projectName = (typeof raw === 'string' && raw.length > 0 && raw.length < 128)
       ? raw
@@ -373,7 +373,7 @@ async function handleSetRoute(
  * Relay a fetch to the host with one automatic token-rotation recovery: on HTTP
  * 401, re-pair with the native host (refreshing sfxTokens) and retry the SAME
  * request once with the fresh token. Returns the final Response. Only the
- * X-Stickyfix-Token header value is swapped on retry; caller init is preserved.
+ * X-Stikfix-Token header value is swapped on retry; caller init is preserved.
  * Bounded to a single retry — a persistent 401 falls through to the caller's
  * existing error mapping (user still sees "unauthorized").
  */
@@ -385,7 +385,7 @@ async function relayFetchWithRepair(
 ): Promise<Response> {
   const withToken = (t: string): RequestInit => ({
     ...init,
-    headers: { ...(init.headers as Record<string, string> | undefined), 'X-Stickyfix-Token': t },
+    headers: { ...(init.headers as Record<string, string> | undefined), 'X-Stikfix-Token': t },
   });
   let resp = await fetch(url, withToken(token));
   if (resp.status === 401) {
@@ -788,7 +788,7 @@ async function handleGetScreenshot(
  * Returns { ok: true, name } on success or { ok: false, error } on failure.
  */
 
-const NATIVE_HOST_NAME = 'com.stickyfix.host';
+const NATIVE_HOST_NAME = 'com.stikfix.host';
 
 async function handlePairNative(): Promise<{ ok: true; name: string } | { ok: false; error: string }> {
   return new Promise((resolve) => {
@@ -880,7 +880,7 @@ async function handlePickFolder(
         // installed/reachable. This is NOT a user cancel — tell them to install
         // the host, not to retry the (never-opened) dialog. No `cancelled` flag.
         if (chrome.runtime.lastError) {
-          resolve({ ok: false, error: 'stickyfix host not found — run: npx stickyfix init' });
+          resolve({ ok: false, error: 'stikfix host not found — run: npx stikfix init' });
           return;
         }
 
@@ -895,7 +895,7 @@ async function handlePickFolder(
         // token or config missing. Surface the real host error, not a cancel
         // message. No `cancelled` flag — retrying the dialog won't fix it.
         if (r && r.type === 'ERROR') {
-          resolve({ ok: false, error: r.error ?? 'stickyfix host error' });
+          resolve({ ok: false, error: r.error ?? 'stikfix host error' });
           return;
         }
 
@@ -937,7 +937,7 @@ async function handleAddHost(
   try {
     host = await probePort(port);
   } catch {
-    return { ok: false, error: 'No stickyfix host responding on port ' + port };
+    return { ok: false, error: 'No stikfix host responding on port ' + port };
   }
 
   // Re-read registry + tokens at handler top (Pitfall 1 — no module-level cache)
@@ -1302,7 +1302,7 @@ export default defineBackground({
     // detection but execution happens in the top-level registrations above.
     // IN-01: gate debug log behind DEV flag to avoid noise in production
     if (import.meta.env.DEV) {
-      console.log('stickyfix SW loaded');
+      console.log('stikfix SW loaded');
     }
   },
 });

@@ -1,5 +1,5 @@
 /**
- * Pure routing and registry-reconciliation functions for stickyfix.
+ * Pure routing and registry-reconciliation functions for stikfix.
  *
  * ZERO chrome/wxt imports — these functions operate on plain TypeScript objects
  * and are fully unit-testable with node:test without any Chrome API.

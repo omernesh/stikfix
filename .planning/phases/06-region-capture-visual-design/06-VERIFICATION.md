@@ -13,7 +13,7 @@ gates:
 runtime_uat:
   performed_by: project owner (Omer)
   date: 2026-06-03
-  host: "127.0.0.1:39240, root D:/docker/stickyfix-uat"
+  host: "127.0.0.1:39240, root D:/docker/stikfix-uat"
   origins: [app.chatlytics.ai, waha.nesher.co]
   fix_commits: [5c79941, 721359e, 73f4717, 31f90d2]
   confirmed:

@@ -1,16 +1,16 @@
 {
-  "name": "stickyfix",
+  "name": "stikfix",
   "version": "1.1.1",
   "description": "Pin sticky notes on any page — your AI reads them.",
   "license": "MIT",
   "author": "Omer Nesher <omernesher@gmail.com>",
-  "homepage": "https://github.com/omernesh/stickyfix#readme",
+  "homepage": "https://github.com/omernesh/stikfix#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/omernesh/stickyfix.git"
+    "url": "git+https://github.com/omernesh/stikfix.git"
   },
   "bugs": {
-    "url": "https://github.com/omernesh/stickyfix/issues"
+    "url": "https://github.com/omernesh/stikfix/issues"
   },
   "keywords": [
     "chrome-extension",
@@ -28,12 +28,12 @@
     "node": ">=20"
   },
   "bin": {
-    "stickyfix": "dist/host/stickyfix-init.cjs"
+    "stikfix": "dist/host/stikfix-init.cjs"
   },
   "files": [
     "dist/host/src",
-    "dist/host/stickyfix-init.cjs",
-    "dist/host/stickyfix-native.cjs",
+    "dist/host/stikfix-init.cjs",
+    "dist/host/stikfix-native.cjs",
     "public/icon",
     "README.md",
     "LICENSE"
@@ -43,7 +43,7 @@
   },
   "scripts": {
     "dev": "wxt",
-    "build:host-bin": "npx esbuild bin/stickyfix.ts --platform=node --format=cjs --bundle \"--external:node:*\" --outfile=dist/host/stickyfix-init.cjs && npx esbuild host/src/native-host.ts --platform=node --format=cjs --bundle \"--external:node:*\" --outfile=dist/host/stickyfix-native.cjs",
+    "build:host-bin": "npx esbuild bin/stikfix.ts --platform=node --format=cjs --bundle \"--external:node:*\" --outfile=dist/host/stikfix-init.cjs && npx esbuild host/src/native-host.ts --platform=node --format=cjs --bundle \"--external:node:*\" --outfile=dist/host/stikfix-native.cjs",
     "build": "wxt build && tsc -p tsconfig.host.json && npm run build:host-bin",
     "build:firefox": "wxt build -b firefox && tsc -p tsconfig.host.json && npm run build:host-bin",
     "host": "node dist/host/src/index.js",

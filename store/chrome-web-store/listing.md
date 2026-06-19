@@ -9,7 +9,7 @@ last_updated: 2026-06-17
 ## Name
 (≤ 45 characters)
 
-stickyfix
+stikfix
 
 ## Short Description / Summary
 (≤ 132 characters — CWS calls this "Summary")
@@ -29,11 +29,11 @@ English
 
 Stop describing UI bugs in chat. Drop a note directly on the broken element.
 
-stickyfix turns browser-based UI review into a precise, file-based loop between you and your AI coding agent — no screenshots to paste, no "which button did you mean?", no lost context.
+stikfix turns browser-based UI review into a precise, file-based loop between you and your AI coding agent — no screenshots to paste, no "which button did you mean?", no lost context.
 
 ─── HOW IT WORKS ───
 
-1. Run `npx stickyfix init --root /path/to/your/project` (one time, no admin rights). This registers the companion localhost host and drops a desktop launcher. Nothing is sent to any server — everything stays on your machine.
+1. Run `npx stikfix init --root /path/to/your/project` (one time, no admin rights). This registers the companion localhost host and drops a desktop launcher. Nothing is sent to any server — everything stays on your machine.
 
 2. Click "Enter Review Mode" on any page. Drop sticky notes — free-floating, or click an element to anchor. Anchored notes auto-capture the CSS selector, computed styles, outerHTML, bounding box, React component name, and an element-highlight screenshot. Nothing to type beyond your actual comment.
 
@@ -52,11 +52,11 @@ stickyfix turns browser-based UI review into a precise, file-based loop between 
 • Pin decluttering — overlapping pins fan out so dense pages stay readable.
 • Persistent pins — notes survive page reloads; backed by host-side CRUD over the localhost relay.
 • Per-origin routing — first note on a new site opens a folder picker; choice is remembered for every subsequent tab on that origin.
-• Cross-browser — the same artifact runs in Chrome and Edge; `npx stickyfix init` registers both.
+• Cross-browser — the same artifact runs in Chrome and Edge; `npx stikfix init` registers both.
 
 ─── WHO IT'S FOR ───
 
-Developers who do UI review with an AI coding agent (Claude, Cursor, Copilot, or any agent that can read files on disk). If your review workflow today involves pasting screenshots into a chat and re-describing context, stickyfix replaces that with a durable, file-based loop where nothing is lost.
+Developers who do UI review with an AI coding agent (Claude, Cursor, Copilot, or any agent that can read files on disk). If your review workflow today involves pasting screenshots into a chat and re-describing context, stikfix replaces that with a durable, file-based loop where nothing is lost.
 
 ─── SETUP REQUIREMENT ───
 
@@ -64,19 +64,19 @@ Developers who do UI review with an AI coding agent (Claude, Cursor, Copilot, or
 
 Install it with one command (Node 20+, no admin rights):
 
-  npx stickyfix init --root /path/to/your/project
+  npx stikfix init --root /path/to/your/project
 
 The host is a small Node.js process that runs entirely on your machine. It registers itself via Chrome's Native Messaging API — the extension communicates with it through the OS, not over the internet. No cloud account, no sign-up, no subscription.
 
-The host is open source and published on npm as `stickyfix`. Repo: https://github.com/omernesh/stickyfix
+The host is open source and published on npm as `stikfix`. Repo: https://github.com/omernesh/stikfix
 
 ─── PRIVACY & SECURITY ───
 
-No data leaves your machine. Note content and screenshots are sent only to your own localhost host (127.0.0.1) over a token-authenticated local connection and written to your project folder on disk. No analytics, no telemetry, no remote servers. See the full privacy policy at: https://github.com/omernesh/stickyfix/blob/main/store/privacy-policy.md
+No data leaves your machine. Note content and screenshots are sent only to your own localhost host (127.0.0.1) over a token-authenticated local connection and written to your project folder on disk. No analytics, no telemetry, no remote servers. See the full privacy policy at: https://github.com/omernesh/stikfix/blob/main/store/privacy-policy.md
 
 ─── OPEN SOURCE ───
 
-MIT licensed. https://github.com/omernesh/stickyfix
+MIT licensed. https://github.com/omernesh/stikfix
 
 ## Suggested Search Keywords
 
@@ -93,7 +93,7 @@ MIT licensed. https://github.com/omernesh/stickyfix
 
 This extension requires a companion native-messaging host to be installed and running on the reviewer's machine before the core functionality (note capture, pin display) is testable. The host is installed via:
 
-  npx stickyfix init --root /tmp/stickyfix-test
+  npx stikfix init --root /tmp/stikfix-test
 
 After running that command, start the host via the desktop launcher it creates, then open any web page, click the extension icon, and click "Enter Review Mode."
 

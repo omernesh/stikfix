@@ -1,5 +1,5 @@
 /**
- * stickyfix toast surface — shadow-root UI
+ * stikfix toast surface — shadow-root UI
  *
  * Shows transient (success) or persistent (error) feedback after a Send.
  * Never silent — every Send result surfaces a toast (REL-01 / FREE-04).

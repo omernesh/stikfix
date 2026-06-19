@@ -8,7 +8,7 @@ human_uat_result: "PASS — relay proof (EXT-05) confirmed; notes/0001,0002-*.md
 score: 10/10 must-haves verified (automated surface)
 overrides_applied: 0
 human_verification:
-  - test: "Popup lists discovered hosts after loading extension in Chrome with a running stickyfix host (npm run host -- --root <dir>)"
+  - test: "Popup lists discovered hosts after loading extension in Chrome with a running stikfix host (npm run host -- --root <dir>)"
     expected: "Popup shows project name, port, status dot, and token input for each host on 39240-39260"
     why_human: "Requires live Chrome extension runtime + running host process; not automatable"
   - test: "Enter Review Mode toggle requests <all_urls> permission and injects chip on the current tab"
@@ -18,7 +18,7 @@ human_verification:
     expected: "Drag to all four viewport corners; chip clamps and never exits screen. Works on a scrolled page."
     why_human: "Pointer-event drag + viewport clamp requires visual inspection in live browser"
   - test: "Stub Send relay proof on an HTTPS-origin page (Success Criterion 3 / EXT-05)"
-    expected: "Clicking Send writes a file named '0001-*.md' in the host's notes dir with 'comment: stickyfix relay proof'; chip shows 'sent ✓ 0001-*.md'"
+    expected: "Clicking Send writes a file named '0001-*.md' in the host's notes dir with 'comment: stikfix relay proof'; chip shows 'sent ✓ 0001-*.md'"
     why_human: "End-to-end CS→SW→host relay requires live Chrome + live host; file write must be verified on disk"
   - test: "One-time origin dropdown — unknown origin shows dropdown once, never re-asks (EXT-07/EXT-08)"
     expected: "On a tab whose origin is not in any host's origins[] or sfxOriginMap, chip shows a project dropdown. After selecting, chip transitions to labeled view. Reopen on same origin — dropdown never reappears."
@@ -99,7 +99,7 @@ None — all must-haves are in scope for Phase 3. WR-04 (eviction TTL) and WR-05
 |------|----|-----|--------|---------|
 | `lib/routing.ts` | `lib/types.ts` | `import type { HostEntry, StorageState }` | WIRED | Line 8 of routing.ts |
 | `package.json check` | `lib/test/*.test.js` | `node --test dist/lib/lib/test/...` | WIRED | `test:lib` script confirmed in `npm run check` output |
-| `background.ts` | `http://127.0.0.1/annotation` | `fetch(...)` with `X-Stickyfix-Token` | WIRED | Line 303 of background.ts |
+| `background.ts` | `http://127.0.0.1/annotation` | `fetch(...)` with `X-Stikfix-Token` | WIRED | Line 303 of background.ts |
 | `background.ts` | `lib/routing.ts resolveRoute` | import + call in `handleGetRoute`/`handleSendAnnotation` | WIRED | `resolveRoute(origin, state)` called in both handlers |
 | `background.ts` | `lib/storage.ts loadStorageState` | re-read at handler top | WIRED | `await loadStorageState()` at top of each handler |
 | `chip.ts` | `background.ts SEND_ANNOTATION` | `chrome.runtime.sendMessage({type: SFX_MSG.SEND_ANNOTATION, ...})` | WIRED | `chip.ts:367` |
@@ -157,7 +157,7 @@ Step 7c: SKIPPED — no probe scripts exist at `scripts/*/tests/probe-*.sh` for 
 | EXT-05 | 03-02, 03-04 | All localhost fetches route through SW (not content script) | SATISFIED | Only `background.ts:303` fetches `127.0.0.1`; popup and chip have zero code fetches |
 | EXT-06 | 03-01, 03-02 | Note routes by active tab's origin to advertising host | SATISFIED | `resolveRoute` step 1 + 2 covered by 13 routing tests; `background.ts` derives origin from `chrome.tabs.get(tabId).url` |
 | EXT-07 | 03-01, 03-03, 03-04 | Unknown origin prompts one-time dropdown; `origin → host` persisted | SATISFIED (automated); UAT required | `SET_ROUTE` handler in `background.ts:229`; chip shows dropdown on `reason === 'unmapped'`; persistence via `sfxOriginMap.setValue` |
-| EXT-08 | 03-01, 03-02, 03-04 | Same-origin clashes resolved by page self-id (`<meta>`/`window.__stickyfix_project`) | SATISFIED | `handleGetRoute` in `background.ts` runs `scripting.executeScript` for self-id probe; validated `typeof raw === 'string' && raw.length < 128` |
+| EXT-08 | 03-01, 03-02, 03-04 | Same-origin clashes resolved by page self-id (`<meta>`/`window.__stikfix_project`) | SATISFIED | `handleGetRoute` in `background.ts` runs `scripting.executeScript` for self-id probe; validated `typeof raw === 'string' && raw.length < 128` |
 | EXT-09 | 03-01, 03-03 | Registry/tokens/originMap/prefs persist in `chrome.storage.local` | SATISFIED (automated); UAT required | `lib/storage.ts` `defineItem` for all 4 items; persisted on write, read on load |
 | EXT-10 | 03-01, 03-02 | On wake: re-discover hosts; re-bind by name+origin when host restarts on new port | SATISFIED | `reconcileRegistry` tested: same-name host updates port, preserves token; SW runs discovery on `ENTER_REVIEW` |
 | EXT-11 | 03-04 | Draggable, viewport-clamped chip at `z-index: 2147483647`; connection state + target project/notesDir; Exit button | SATISFIED (automated); UAT required | `styles.css` z-index confirmed; `makeDraggable` clamp present (CR-03 fixed); Exit via `chrome.tabs.sendMessage` |
@@ -179,7 +179,7 @@ No `TBD`, `FIXME`, or `XXX` debt markers found in phase-modified files. No unref
 
 ## Human Verification Required
 
-The following require a live Chrome environment with a running stickyfix host:
+The following require a live Chrome environment with a running stikfix host:
 
 ### 1. Popup Host Discovery (EXT-03 / SC-1)
 
@@ -196,7 +196,7 @@ The following require a live Chrome environment with a running stickyfix host:
 ### 3. Stub Send Relay Proof (SC-3 / EXT-05)
 
 **Test:** With the chip visible on an HTTPS-origin page (with a live host and valid token), click the Send button on the chip.
-**Expected:** The host's `notes/` directory receives a new file `0001-<timestamp>.md` with frontmatter `comment: stickyfix relay proof`. The chip shows inline `sent ✓ 0001-<timestamp>.md` for ~1.5s. This proves the CS→SW→host relay end-to-end.
+**Expected:** The host's `notes/` directory receives a new file `0001-<timestamp>.md` with frontmatter `comment: stikfix relay proof`. The chip shows inline `sent ✓ 0001-<timestamp>.md` for ~1.5s. This proves the CS→SW→host relay end-to-end.
 **Why human:** Requires live HTTPS page + live host + file-system verification.
 
 ### 4. One-Time Origin Dropdown (EXT-07/EXT-08 / SC-5)
@@ -225,7 +225,7 @@ The following require a live Chrome environment with a running stickyfix host:
 
 ### 8. EXT-02 Runtime-Only Injection
 
-**Test:** Open `chrome://extensions` → stickyfix → Permissions. Check that no page origins are listed as static content script targets.
+**Test:** Open `chrome://extensions` → stikfix → Permissions. Check that no page origins are listed as static content script targets.
 **Expected:** No content_scripts permissions shown for pages you haven't visited with Review Mode active. The chip appears only after toggling Review Mode.
 **Why human:** Requires chrome://extensions inspection.
 

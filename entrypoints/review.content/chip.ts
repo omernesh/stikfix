@@ -1,5 +1,5 @@
 /**
- * stickyfix connection chip — shadow-root UI
+ * stikfix connection chip — shadow-root UI
  *
  * Responsibilities:
  *  - Query SFX_GET_ROUTE on mount; render routed label or one-time dropdown
@@ -12,7 +12,7 @@
  *    chrome.runtime.sendMessage to the SW relay (EXT-05 / T-03-04)
  *  - DOM built with createElement/textContent only — no innerHTML with
  *    external strings (XSS surface — Pattern 9)
- *  - sfx-* / stickyfix namespace (clean-room gate)
+ *  - sfx-* / stikfix namespace (clean-room gate)
  */
 
 import { SFX_MSG, SFX_SET_ROUTE, SFX_GET_TAB_ID } from '../../lib/types.js';
@@ -144,7 +144,7 @@ export function mountChip(
   // Label placeholder (will be replaced after route resolves)
   const label = document.createElement('span');
   label.className = 'sfx-chip-label';
-  label.textContent = 'stickyfix…';
+  label.textContent = 'stikfix…';
   chip.appendChild(label);
 
   // Feedback span (inline confirm / error — initially hidden)
@@ -615,7 +615,7 @@ function wireSendButton(
     // §9.1 minimal valid free-note payload (D-09)
     const payload: AnnotationPayload = {
       mode: 'free',
-      comment: 'stickyfix relay proof',
+      comment: 'stikfix relay proof',
       page: {
         url: window.location.href,
         title: document.title,

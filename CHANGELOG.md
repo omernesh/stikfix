@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to **stickyfix** are documented in this file.
+All notable changes to **stikfix** are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -8,10 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Firefox MV3 support (full port).** New `npm run build:firefox` WXT target emits a Firefox build with `browser_specific_settings.gecko.id` (`stickyfix@stickyfix.dev`, `strict_min_version 109.0`). `npx stickyfix init --root <dir> --browser firefox` registers a Firefox native-messaging host — `allowed_extensions` (gecko id) instead of `allowed_origins`, Mozilla manifest paths (macOS/Linux) and the `HKCU\Software\Mozilla\NativeMessagingHosts` registry key on Windows. The Chrome build is unchanged (same `key`, same derived extension ID).
+- **Firefox MV3 support (full port).** New `npm run build:firefox` WXT target emits a Firefox build with `browser_specific_settings.gecko.id` (`stikfix@stikfix.com`, `strict_min_version 109.0`). `npx stikfix init --root <dir> --browser firefox` registers a Firefox native-messaging host — `allowed_extensions` (gecko id) instead of `allowed_origins`, Mozilla manifest paths (macOS/Linux) and the `HKCU\Software\Mozilla\NativeMessagingHosts` registry key on Windows. The Chrome build is unchanged (same `key`, same derived extension ID).
+
+### Changed
+- **Renamed: stickyfix → stikfix.** The project, npm package (`stikfix`), CLI (`npx stikfix init`), native-messaging host id (`com.stikfix.host` + its OS registry keys), Firefox add-on id (`stikfix@stikfix.com`), env-var prefix (`STIKFIX_*`), and the on-disk `.stikfix-token` / `.stikfix-port` files are all renamed to **stikfix**. New home: `github.com/omernesh/stikfix` and `stikfix.com`. The Chrome extension's pinned ID is unchanged, so existing Chrome users keep the same extension; anyone who ran the old host must re-run `npx stikfix init` to re-register it under the new id.
 
 ### Fixed
-- **Hermetic port-scan test (WR-06).** The test previously hardcoded the production port `39240` as its "occupied" blocker, so it failed with `EADDRINUSE` whenever a real stickyfix host was already running on that port. It now occupies an OS-assigned ephemeral port and scans a range starting on it. `bindServer()` gained optional `startPort`/`endPort` params (defaulting to the existing `39240`–`39260` range) to support this — production behavior is unchanged.
+- **Hermetic port-scan test (WR-06).** The test previously hardcoded the production port `39240` as its "occupied" blocker, so it failed with `EADDRINUSE` whenever a real stikfix host was already running on that port. It now occupies an OS-assigned ephemeral port and scans a range starting on it. `bindServer()` gained optional `startPort`/`endPort` params (defaulting to the existing `39240`–`39260` range) to support this — production behavior is unchanged.
 
 ## [1.1.1] - 2026-06-17
 
@@ -52,16 +55,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.1] - 2026-06-07
 
 ### Fixed
-- **Folder picker error reporting:** when the native host is down or its token is missing, the chip/card now surfaces the real host error (e.g. _"stickyfix host not found — run: npx stickyfix init"_) instead of the misleading _"No folder chosen — note not saved. Drop again to pick one."_ toast. The "drop again" message is shown only when the OS dialog is actually dismissed by the user.
-- **Folder picker no longer requires a token:** the native host reads `.stickyfix-token` lazily (only for token pairing), so choosing a project folder works during onboarding even before the host token exists. Previously the native host exited early when the token file was absent and the OS dialog never opened.
+- **Folder picker error reporting:** when the native host is down or its token is missing, the chip/card now surfaces the real host error (e.g. _"stikfix host not found — run: npx stikfix init"_) instead of the misleading _"No folder chosen — note not saved. Drop again to pick one."_ toast. The "drop again" message is shown only when the OS dialog is actually dismissed by the user.
+- **Folder picker no longer requires a token:** the native host reads `.stikfix-token` lazily (only for token pairing), so choosing a project folder works during onboarding even before the host token exists. Previously the native host exited early when the token file was absent and the OS dialog never opened.
 - **Automatic recovery from token rotation:** every host request — loading pins, saving, editing, deleting notes, and fetching screenshots — now auto re-pairs with the native host and retries once on HTTP 401, so a host restart (which mints a new token) no longer dead-ends with an _"unauthorized"_ toast (e.g. _"Could not load pins — unauthorized"_).
 
 ## [1.0.0] - 2026-06-07
 
 ### Added
-- Initial public release (npm: `stickyfix`, MIT).
+- Initial public release (npm: `stikfix`, MIT).
 - Chrome MV3 extension (WXT) to pin free-floating or DOM-anchored sticky notes on any web page; review UI injected on demand inside a shadow root.
 - Localhost native-messaging host (Node built-ins + `yaml`) that writes each note as a markdown file into the target project's `notes/` folder, auto-creating `notes/` if missing.
-- Turnkey onboarding via `npx stickyfix init --root <project>` — registers the native-messaging host and Desktop launcher.
+- Turnkey onboarding via `npx stikfix init --root <project>` — registers the native-messaging host and Desktop launcher.
 - Zero-config origin→folder mapping (D-04): an unmapped origin opens an OS folder picker; the choice is remembered and reused silently.
 - Security: host binds `127.0.0.1` only, token auth on `POST /annotation`, 12 MB body cap.

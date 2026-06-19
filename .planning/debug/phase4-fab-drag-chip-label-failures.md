@@ -1,6 +1,6 @@
 ---
 status: investigating
-trigger: "Phase 4 UAT — FAILURE A: FAB completely inert (no click, no drag); FAILURE B: chip label D-09 re-map doesn't work. Chip Send works (stickyfix relay proof written to disk). No mount-time JS exception."
+trigger: "Phase 4 UAT — FAILURE A: FAB completely inert (no click, no drag); FAILURE B: chip label D-09 re-map doesn't work. Chip Send works (stikfix relay proof written to disk). No mount-time JS exception."
 created: 2026-06-01T00:00:00Z
 updated: 2026-06-01T00:01:00Z
 symptoms_prefilled: true

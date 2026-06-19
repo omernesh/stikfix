@@ -199,7 +199,7 @@ export function mountChip(container: HTMLElement, unmountFn: () => void): void {
 
 **File:** `entrypoints/review.content/chip.ts:362`
 
-**Issue:** The chip's Send button sends `comment: 'stickyfix relay proof'` — a hardcoded stub string — as the annotation content. This was appropriate as a relay proof of concept but is now shipped as the chip's actual send behavior. Users clicking the chip's Send button will file notes with this literal string as the comment body.
+**Issue:** The chip's Send button sends `comment: 'stikfix relay proof'` — a hardcoded stub string — as the annotation content. This was appropriate as a relay proof of concept but is now shipped as the chip's actual send behavior. Users clicking the chip's Send button will file notes with this literal string as the comment body.
 
 **Fix:** Either remove the chip's Send button entirely (the full-featured card in `card.ts` is the correct capture surface), or replace the hardcoded string with a real UI affordance (textarea in chip). At minimum, mark this as a known limitation in the UI.
 

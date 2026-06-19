@@ -38,7 +38,7 @@
 **Module doc + invariant comment** (lines 1-12 of highlight-draw.ts):
 ```typescript
 /**
- * Canvas highlight box draw utility for stickyfix.
+ * Canvas highlight box draw utility for stikfix.
  *
  * drawHighlightBox — pure, node:test-safe (no DOM/chrome at module level).
  * Takes a canvas element reference (passed in) — no document.createElement calls.
@@ -331,7 +331,7 @@ res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
 // AFTER:
 res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
 ```
-This is the only change to `setPreflightHeaders`. `Access-Control-Allow-Headers` already includes `X-Stickyfix-Token` — preserve it.
+This is the only change to `setPreflightHeaders`. `Access-Control-Allow-Headers` already includes `X-Stikfix-Token` — preserve it.
 
 **Handler skeleton pattern** (handleAnnotation lines 66-137):
 ```typescript
@@ -740,7 +740,7 @@ async function handleListAnnotations(
   try {
     resp = await fetch(
       `http://127.0.0.1:${host.port}/annotations?url=${encodeURIComponent(tab.url)}`,
-      { headers: { 'X-Stickyfix-Token': host.token } }
+      { headers: { 'X-Stikfix-Token': host.token } }
     );
   } catch (e: unknown) {
     return { ok: false, error: `Host unreachable: ${String(e)}` };
@@ -973,6 +973,6 @@ All files in Phase 6 have strong analogs in the existing codebase. No files lack
 
 ## Metadata
 
-**Analog search scope:** `/d/docker/stickyfix/lib/`, `/d/docker/stickyfix/host/src/`, `/d/docker/stickyfix/host/test/`, `/d/docker/stickyfix/entrypoints/review.content/`, `/d/docker/stickyfix/entrypoints/background.ts`
+**Analog search scope:** `/d/docker/stikfix/lib/`, `/d/docker/stikfix/host/src/`, `/d/docker/stikfix/host/test/`, `/d/docker/stikfix/entrypoints/review.content/`, `/d/docker/stikfix/entrypoints/background.ts`
 **Files scanned:** 24 source files + 9 test files
 **Pattern extraction date:** 2026-06-03

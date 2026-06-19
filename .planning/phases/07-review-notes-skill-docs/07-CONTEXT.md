@@ -67,7 +67,7 @@ Out of scope (other phases): error-path toast hardening + concurrent-Send stress
 
 ### Reusable Assets
 - `host/src/write-note.ts` `buildFrontmatter()` — defines every field the skill parses; the skill is the read-side mirror of this write-side contract.
-- Existing UAT notes (`D:\docker\stickyfix-uat\notes\*.md`) — real fixtures for skill SC-1/SC-2/SC-3 testing (serial order, element + free modes, multi-screenshot, missing-image cases).
+- Existing UAT notes (`D:\docker\stikfix-uat\notes\*.md`) — real fixtures for skill SC-1/SC-2/SC-3 testing (serial order, element + free modes, multi-screenshot, missing-image cases).
 - The repo already has a 56-line `README.md` to expand (not greenfield) — preserve any accurate existing content (regression guard).
 
 ### Established Patterns

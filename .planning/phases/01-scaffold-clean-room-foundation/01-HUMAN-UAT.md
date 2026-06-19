@@ -13,7 +13,7 @@ updated: 2026-05-31
 ## Tests
 
 ### 1. Load the built extension unpacked in Chrome
-expected: After `npm run build`, open `chrome://extensions`, enable Developer mode, click "Load unpacked", and select `D:\docker\stickyfix\.output\chrome-mv3`. The extension appears as **stickyfix** with no manifest errors, its icon renders in the extensions list and toolbar, and clicking the toolbar icon shows the placeholder popup.
+expected: After `npm run build`, open `chrome://extensions`, enable Developer mode, click "Load unpacked", and select `D:\docker\stikfix\.output\chrome-mv3`. The extension appears as **stikfix** with no manifest errors, its icon renders in the extensions list and toolbar, and clicking the toolbar icon shows the placeholder popup.
 result: passed — confirmed by user 2026-05-31
 
 ## Summary
