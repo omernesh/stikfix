@@ -697,10 +697,10 @@ function _positionPin(pin: HTMLElement, data: PinDescriptor, anchorEl: Element |
   pin.style.top = `${top}px`;
 
   if (isOrphaned) {
+    // Orphaned element pins are hidden (not greyed) — the note stays reachable
+    // in the Notes panel. Hidden ⇒ no title tooltip (unreachable on display:none).
     pin.style.display = 'none';
     pin.classList.add('sfx-pin-orphaned');
-    // Orphaned tooltip via title attr — no innerHTML risk (T-06-05)
-    pin.title = 'Element not found on this page — click to view or delete';
   } else {
     pin.style.display = '';
   }
@@ -760,11 +760,9 @@ function _repositionElementPins(): void {
       if (isOrphaned && !entry.pin.classList.contains('sfx-pin-orphaned')) {
         entry.pin.style.display = 'none';
         entry.pin.classList.add('sfx-pin-orphaned');
-        entry.pin.title = 'Element not found on this page — click to view or delete';
       } else if (!isOrphaned && entry.pin.classList.contains('sfx-pin-orphaned')) {
         entry.pin.style.display = '';
         entry.pin.classList.remove('sfx-pin-orphaned');
-        entry.pin.title = '';
       }
     }
   }

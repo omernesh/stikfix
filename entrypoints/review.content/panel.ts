@@ -336,7 +336,16 @@ function renderList(): void {
   if (visible.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'sfx-panel-empty';
-    empty.textContent = _pins.length === 0 ? 'No notes yet.' : 'No matches.';
+    // 'all' now means active work (read notes excluded), so an all-archived
+    // project would otherwise read as the misleading "No matches." — point the
+    // user at the Read chip instead.
+    const allArchived =
+      _filter === 'all' && _pins.length > 0 && _pins.every(p => p.status === 'read');
+    empty.textContent = allArchived
+      ? 'All notes archived — see the Read filter.'
+      : _pins.length === 0
+        ? 'No notes yet.'
+        : 'No matches.';
     _listEl.appendChild(empty);
     return;
   }
@@ -427,6 +436,13 @@ function buildRow(pin: PinDescriptor): HTMLElement {
         noteUrl.hostname === window.location.hostname);
 
     if (onCurrentPage) {
+      // Archived (read) notes have no pin on the page (mountPins never fetches
+      // done notes), so scroll-to-pin would silently no-op. Keep the panel open
+      // and tell the user where the note lives instead (REL-01: no silent no-op).
+      if (pin.status === 'read') {
+        _toast?.(`Note #${pin.serial} is archived — no pin on this page`, false);
+        return;
+      }
       // Close panel, scroll to pin
       togglePanel();
       scrollToPinBySerial(pin.serial);

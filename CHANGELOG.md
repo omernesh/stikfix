@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-07-01
+
 ### Added
 - **"Read / Archived" filter in the Notes panel + honest status counts.** The panel now has a `Read` chip listing archived notes (`*.read.md` / `status: read`), and the `All`/`Unread`/`Flagged`/`Resolved` chips count active work while `Read` counts the archive — so resolved/dismissed notes are no longer invisible and the counts reflect reality. This is panel-only: the page-pin layer and the live poller still exclude done notes (a `done=1` opt-in flows panel→SW→host `GET /annotations`), so read/resolved pins never reappear on the page (the v1.0.4 invariant holds).
 - **"Browse folder…" in the chip dropdown.** Review Mode's project pull-down now has a `📁 Browse folder…` item at the top, so you can pick the project folder for the current site directly — no longer only via the first Send. Selecting it opens the OS folder dialog, persists the origin→folder mapping, and the chip self-updates to the `→ name · <folder>` routed label. The existing host-routing options and the Send→needs-folder flow are unchanged.
