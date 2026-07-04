@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-07-05
+
+### Fixed
+- **Critical: the package failed to install via `npm install` / `npx`.** The `postinstall` guard meant to skip `wxt prepare` for consumers was inverted — on a machine without `wxt` (every end-user install) it ran `wxt prepare` anyway, which errored with `'wxt' is not recognized`, aborting the install so no `stikfix` CLI bin was ever linked. This is why `npx stikfix init` could appear to do nothing. `postinstall` now runs `wxt prepare` only when `wxt` actually resolves and never fails the install. Affected 1.3.0–1.3.1 and earlier; **use 1.3.2+**.
+
 ## [1.3.1] - 2026-07-05
 
 ### Changed

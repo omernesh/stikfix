@@ -1,6 +1,6 @@
 {
   "name": "stikfix",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "Pin sticky notes on any page — your AI reads them.",
   "license": "MIT",
   "author": "Omer Nesher <omernesher@gmail.com>",
@@ -50,7 +50,7 @@
     "test:lib": "tsc -p tsconfig.lib.json && node --test \"dist/lib/lib/test/**/*.test.js\"",
     "test": "tsc -p tsconfig.host.json && node --test \"dist/host/test/**/*.test.js\"",
     "check": "tsc --noEmit && tsc --noEmit -p tsconfig.host.json && node scripts/clean-room-check.mjs && node scripts/host-smoke-test.mjs && npm run test:lib && npm test",
-    "postinstall": "node -e \"try{require.resolve('wxt')}catch(e){process.exit(0)}\" && wxt prepare"
+    "postinstall": "node -e \"try{require.resolve('wxt');require('node:child_process').execSync('wxt prepare',{stdio:'inherit'})}catch(e){}\""
   },
   "devDependencies": {
     "@medv/finder": "4.0.2",
