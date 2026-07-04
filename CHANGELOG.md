@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-07-05
+
+### Changed
+- **`npx stikfix init` no longer requires `--root`.** When omitted, it defaults to the current working directory (prints `no --root given, using current directory: <cwd>`), so running it from inside your project folder just works. Pass `--root <dir>` to target a different folder.
+
+### Fixed
+- Startup de-registration (`--no-startup`, and `uninstall` when no autostart was set) no longer prints a spurious `ERROR: The system was unable to find the specified registry key or value.` — `reg DELETE` output is now suppressed since idempotent removal of an absent value is expected, not an error.
+
 ## [1.3.0] - 2026-07-04
 
 ### Added

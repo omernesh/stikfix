@@ -603,7 +603,10 @@ export function unregisterStartup(opts: StartupOptions = {}): void {
     return;
   }
   const execReg = opts.execReg ?? ((args: readonly string[]) => {
-    execFileSync('reg', args as string[]);
+    // stdio:'ignore' so reg.exe's benign "unable to find the specified registry
+    // key or value" message on an already-absent value never leaks to the
+    // console — removal is idempotent, so that case is expected, not an error.
+    execFileSync('reg', args as string[], { stdio: 'ignore' });
   });
   // /f suppresses the confirmation prompt and tolerates an absent value.
   try {

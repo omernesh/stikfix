@@ -135,10 +135,12 @@ if (subcommand === 'init') {
   const rawPort = values['port'];
   const rawBrowser = values['browser'];
 
+  // --root is optional: when omitted, default to the current working directory
+  // so `npx stikfix init` "just works" in the project folder you're standing in.
+  const rootArg: string =
+    rawRoot && typeof rawRoot === 'string' ? rawRoot : process.cwd();
   if (!rawRoot || typeof rawRoot !== 'string') {
-    console.error('stikfix init: --root is required');
-    console.error('Usage: npx stikfix init --root <project-dir> [--browser <chrome|firefox>] [--extension-id <id>] [--port <port>]');
-    process.exit(1);
+    console.error(`stikfix init: no --root given, using current directory: ${process.cwd()}`);
   }
 
   // Resolve target browser (default chrome — covers Chrome + Edge).
@@ -161,7 +163,7 @@ if (subcommand === 'init') {
 
   const port: number | undefined = rawPort ? parseInt(rawPort as string, 10) : undefined;
 
-  const root = resolve(rawRoot);
+  const root = resolve(rootArg);
   const name = basename(root);
   const notesDir = join(root, 'notes');
 
