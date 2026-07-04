@@ -16,11 +16,12 @@
  *  - The relay is the only localhost path; content-script fetch is forbidden.
  */
 
-import { SFX_MSG, SFX_SET_ROUTE, SFX_GET_TAB_ID, SFX_CAPTURE_TAB, SFX_LIST_ANNOTATIONS, SFX_EDIT_ANNOTATION, SFX_DELETE_ANNOTATION, SFX_GET_SCREENSHOT } from '../lib/types.js';
+import { SFX_MSG, SFX_SET_ROUTE, SFX_GET_TAB_ID, SFX_CAPTURE_TAB, SFX_LIST_ANNOTATIONS, SFX_EDIT_ANNOTATION, SFX_DELETE_ANNOTATION, SFX_GET_SCREENSHOT, SFX_LIST_RECENT, SFX_START_HOST } from '../lib/types.js';
 import type {
   SfxMessage,
   SfxResponse,
   HostEntry,
+  RecentProject,
   StorageState,
   AnnotationPayload,
   MsgCaptureTab,
@@ -30,12 +31,15 @@ import type {
   MsgEditAnnotation,
   MsgDeleteAnnotation,
   MsgGetScreenshot,
+  MsgListRecentResponse,
 } from '../lib/types.js';
+import { basenameOf, rootFromNotesDir } from '../lib/path-utils.js';
 import {
   sfxRegistry,
   sfxTokens,
   sfxOriginMap,
   sfxPrefs,
+  sfxRecent,
   loadStorageState,
 } from '../lib/storage.js';
 import { discoverHosts, probePort } from '../lib/discovery.js';
@@ -118,6 +122,54 @@ function isFolderValue(v: string | undefined | null): v is string {
   if (v.startsWith('/')) return true;            // POSIX absolute
   if (/^[A-Za-z]:[\\/]/.test(v)) return true;    // Windows drive-letter absolute
   return false;
+}
+
+// ---------------------------------------------------------------------------
+// Recent-projects helpers (Features 3 & 4)
+// ---------------------------------------------------------------------------
+
+/** Max recent projects retained (most-recent-first). */
+const RECENT_CAP = 8;
+
+/**
+ * Upsert a project into sfxRecent (Features 3 & 4). Dedupe by `root` (fallback
+ * `name`), move the matched entry to the front, merge new non-empty fields onto
+ * it, stamp lastUsed=now, and cap the list at RECENT_CAP.
+ *
+ * Re-reads sfxRecent at call time (Pitfall 1 — no module-level cache). Never
+ * throws to callers; best-effort recording must not break the primary flow.
+ */
+async function recordRecent(
+  partial: Partial<RecentProject> & { name: string }
+): Promise<void> {
+  try {
+    const list = await sfxRecent.getValue();
+    const key = partial.root ?? partial.name;
+    const matches = (e: RecentProject) => (e.root ?? e.name) === key;
+
+    const existing = list.find(matches);
+    const rest = list.filter((e) => !matches(e));
+
+    // Merge: start from the existing entry (if any), overlay only non-empty
+    // incoming fields so a later call with a missing origin/port never clobbers
+    // a previously-known value.
+    const merged: RecentProject = {
+      name: partial.name || existing?.name || key,
+      notesDir: partial.notesDir ?? existing?.notesDir ?? '',
+      lastUsed: Date.now(),
+    };
+    const root = partial.root ?? existing?.root;
+    if (root !== undefined && root !== '') merged.root = root;
+    const port = partial.port ?? existing?.port;
+    if (typeof port === 'number' && port > 0) merged.port = port;
+    const origin = partial.origin ?? existing?.origin;
+    if (origin !== undefined && origin !== '') merged.origin = origin;
+
+    const next = [merged, ...rest].slice(0, RECENT_CAP);
+    await sfxRecent.setValue(next);
+  } catch (e: unknown) {
+    console.debug('[stikfix] recordRecent failed (non-fatal):', e);
+  }
 }
 
 /**
@@ -364,6 +416,16 @@ async function handleSetRoute(
   const updatedState = await loadStorageState();
   const route = resolveRoute(origin, updatedState);
   if (route) {
+    // Recent-projects: record the routed host (Features 3 & 4). notesDir/port
+    // come from the reconciled registry; root is derived from notesDir; origin
+    // is the one just routed here.
+    await recordRecent({
+      name: route.name,
+      notesDir: route.notesDir,
+      root: rootFromNotesDir(route.notesDir),
+      port: route.port > 0 ? route.port : undefined,
+      origin,
+    });
     return { ok: true, host: route };
   }
   return { ok: false, error: 'Route resolve failed after SET_ROUTE persist' };
@@ -791,11 +853,31 @@ async function handleGetScreenshot(
 
 const NATIVE_HOST_NAME = 'com.stikfix.host';
 
-async function handlePairNative(): Promise<{ ok: true; name: string } | { ok: false; error: string }> {
+/**
+ * Core native-messaging token plumbing (shared by PAIR_NATIVE and START_HOST).
+ *
+ * Sends `{ type:'GET_TOKEN' }` to the native host — optionally with a `root`
+ * field so the host reads `<root>/.stikfix-token` / `.stikfix-port` for THAT
+ * project instead of its default-configured root. Omitting `root` preserves the
+ * original default-config behavior (backward compatible).
+ *
+ * On a valid TOKEN reply it persists token+registry exactly as handleAddHost
+ * does AND records the project into sfxRecent, then resolves with the host
+ * name/port. All native/parse failures resolve to { ok:false, error } — never
+ * throws.
+ */
+function fetchTokenViaNative(
+  root?: string
+): Promise<{ ok: true; name: string; port: number } | { ok: false; error: string }> {
+  const request: { type: 'GET_TOKEN'; root?: string } = { type: 'GET_TOKEN' };
+  // Only attach root when provided — omit for the default-config project so the
+  // existing (no-root) pairing path is byte-for-byte unchanged.
+  if (typeof root === 'string' && root.length > 0) request.root = root;
+
   return new Promise((resolve) => {
     chrome.runtime.sendNativeMessage(
       NATIVE_HOST_NAME,
-      { type: 'GET_TOKEN' },
+      request,
       async (response: unknown) => {
         if (chrome.runtime.lastError) {
           resolve({ ok: false, error: chrome.runtime.lastError.message ?? 'native messaging error' });
@@ -809,7 +891,9 @@ async function handlePairNative(): Promise<{ ok: true; name: string } | { ok: fa
           return;
         }
 
-        const { token, port, name, notesDir } = r;
+        const { token, name } = r;
+        const port = typeof r.port === 'number' ? r.port : 0;
+        const notesDir = typeof r.notesDir === 'string' ? r.notesDir : '';
 
         // Re-read storage at handler top (Pitfall 1 — MV3 SW globals zeroed after idle)
         const [registry, tokens] = await Promise.all([
@@ -821,8 +905,8 @@ async function handlePairNative(): Promise<{ ok: true; name: string } | { ok: fa
         tokens[name] = token;
         registry[name] = {
           name,
-          port: typeof port === 'number' ? port : 0,
-          notesDir: typeof notesDir === 'string' ? notesDir : '',
+          port,
+          notesDir,
           origins: [],
           token,
         };
@@ -832,10 +916,194 @@ async function handlePairNative(): Promise<{ ok: true; name: string } | { ok: fa
           sfxRegistry.setValue(registry),
         ]);
 
-        resolve({ ok: true, name });
+        // Recent-projects: record this project as used (Features 3 & 4).
+        // Prefer the caller-supplied root; else derive it from notesDir.
+        await recordRecent({
+          name,
+          notesDir,
+          root: root && root.length > 0 ? root : rootFromNotesDir(notesDir),
+          port: port > 0 ? port : undefined,
+        });
+
+        resolve({ ok: true, name, port });
       }
     );
   });
+}
+
+/**
+ * ONB-02: pair with the default-configured project's native host and persist
+ * its token. Backward-compatible wrapper over fetchTokenViaNative() with no
+ * root (the original GET_TOKEN semantics). Returns { ok, name } as before.
+ */
+async function handlePairNative(): Promise<{ ok: true; name: string } | { ok: false; error: string }> {
+  const r = await fetchTokenViaNative();
+  return r.ok ? { ok: true, name: r.name } : r;
+}
+
+// ---------------------------------------------------------------------------
+// autoConnectDiscovered — Feature 2: silently fetch tokens on Chrome start
+// ---------------------------------------------------------------------------
+
+/**
+ * Feature 2 — after discovery, silently fetch a token for every discovered host
+ * that does NOT already have one in sfxTokens, so hosts are fully connected on
+ * Chrome start without any popup interaction.
+ *
+ * For each such host we call the native host with `GET_TOKEN { root }` where
+ * root = dirname(host.notesDir). Best-effort and non-throwing: each native call
+ * is isolated via Promise.allSettled so one failing host never aborts the rest,
+ * and errors are logged to console.debug (never surfaced — this is a silent
+ * background path).
+ */
+async function autoConnectDiscovered(): Promise<void> {
+  try {
+    const discovered = await refreshHosts();
+    const tokens = await sfxTokens.getValue();
+
+    // Only hosts still missing a token AND with a derivable root are candidates.
+    const candidates = discovered
+      .filter((h) => !tokens[h.name])
+      .map((h) => ({ host: h, root: rootFromNotesDir(h.notesDir) }))
+      .filter((c): c is { host: HostEntry; root: string } => typeof c.root === 'string');
+
+    if (candidates.length === 0) return;
+
+    await Promise.allSettled(
+      candidates.map(async ({ host, root }) => {
+        const r = await fetchTokenViaNative(root);
+        if (!r.ok) {
+          console.debug(`[stikfix] auto-connect: token fetch failed for "${host.name}":`, r.error);
+        }
+      })
+    );
+  } catch (e: unknown) {
+    // Never surface — silent background best-effort (Feature 2). Log for debug.
+    console.debug('[stikfix] autoConnectDiscovered failed (non-fatal):', e);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// handleListRecent — Feature 3: list recent projects + which are live
+// ---------------------------------------------------------------------------
+
+async function handleListRecent(): Promise<MsgListRecentResponse> {
+  // Re-read storage at handler top (Pitfall 1)
+  const state = await loadStorageState();
+  return { ok: true, recent: state.recent, liveNames: Object.keys(state.registry) };
+}
+
+// ---------------------------------------------------------------------------
+// handleStartHost — Feature 4: quick-connect a STOPPED project by root
+// ---------------------------------------------------------------------------
+
+const START_HOST_POLL_MS = 600;
+const START_HOST_TIMEOUT_MS = 9000;
+
+/**
+ * Given a discovered host list, find the one belonging to `root` — either its
+ * notesDir-dirname === root, or its name === basename(root).
+ */
+function findHostForRoot(hosts: HostEntry[], root: string): HostEntry | undefined {
+  const wantName = basenameOf(root);
+  return hosts.find(
+    (h) => rootFromNotesDir(h.notesDir) === root || h.name === wantName
+  );
+}
+
+/**
+ * Shared tail for handleStartHost: reconcile a discovered host into the
+ * persisted registry (name+origin re-bind, same as refreshHosts) BEFORE
+ * fetching the token so a restarted host on a new port binds correctly and
+ * keeps any prior token, then fetch+persist the token and record the project.
+ */
+async function connectFoundHost(
+  found: HostEntry,
+  root: string
+): Promise<{ ok: true; name: string; port: number } | { ok: false; error: string }> {
+  const [persisted, tokens] = await Promise.all([
+    sfxRegistry.getValue(),
+    sfxTokens.getValue(),
+  ]);
+  await sfxRegistry.setValue(reconcileRegistry(persisted, [found], tokens));
+
+  // fetchTokenViaNative handles registry/token persistence and recordRecent.
+  const tok = await fetchTokenViaNative(root);
+  if (!tok.ok) return tok;
+  return { ok: true, name: tok.name, port: tok.port };
+}
+
+/**
+ * Feature 4 — quick-connect a project by root. IDEMPOTENT: works for both
+ * stopped and already-running projects without spawning a duplicate host.
+ *
+ * 1. Validate `root`.
+ * 2. Run discovery ONCE. If a host for `root` is already live, SKIP the native
+ *    spawn and connect it directly (reconcile + token + record).
+ * 3. Otherwise ask the native host to spawn the HTTP host (START_HOST) and poll
+ *    discoverHosts() until the host for `root` appears (up to the timeout).
+ * 4. Connect the found host (reconcile + fetchTokenViaNative + recordRecent).
+ */
+async function handleStartHost(
+  root: string
+): Promise<{ ok: true; name: string; port: number } | { ok: false; error: string }> {
+  if (typeof root !== 'string' || root.trim().length === 0) {
+    return { ok: false, error: 'A project root is required' };
+  }
+
+  // Step 2: is a host for this root ALREADY live? If so, skip the spawn entirely
+  // (idempotent quick-connect for a running project — no duplicate host).
+  // ONLY the discovery scan is guarded — a connectFoundHost failure (token
+  // fetch / storage / reconcile) is a REAL error and must propagate, not be
+  // swallowed into a duplicate-host spawn.
+  let alreadyLive: HostEntry | undefined;
+  try {
+    alreadyLive = findHostForRoot(await discoverHosts(), root);
+  } catch {
+    // Transient scan error — fall through to the spawn+poll path below.
+  }
+  if (alreadyLive) return await connectFoundHost(alreadyLive, root);
+
+  // Step 3a: no live host — ask the native host to spawn one for `root`.
+  const spawn = await new Promise<{ ok: true } | { ok: false; error: string }>((resolve) => {
+    chrome.runtime.sendNativeMessage(
+      NATIVE_HOST_NAME,
+      { type: 'START_HOST', root },
+      (response: unknown) => {
+        if (chrome.runtime.lastError) {
+          resolve({ ok: false, error: chrome.runtime.lastError.message ?? 'native messaging error' });
+          return;
+        }
+        const r = response as { type?: string; error?: string } | null;
+        if (r && r.type === 'ERROR') {
+          resolve({ ok: false, error: r.error ?? 'Host failed to start' });
+          return;
+        }
+        // Accept HOST_STARTING (or any non-ERROR frame) as "spawn requested".
+        resolve({ ok: true });
+      }
+    );
+  });
+  if (!spawn.ok) return spawn;
+
+  // Step 3b: poll discovery until the host for `root` shows up (or timeout).
+  const deadline = Date.now() + START_HOST_TIMEOUT_MS;
+  let found: HostEntry | undefined;
+  while (Date.now() < deadline && !found) {
+    await new Promise((r) => setTimeout(r, START_HOST_POLL_MS));
+    try {
+      found = findHostForRoot(await discoverHosts(), root);
+    } catch {
+      // transient scan error — keep polling until the deadline
+    }
+  }
+
+  if (!found) {
+    return { ok: false, error: 'Host did not start (timed out)' };
+  }
+
+  // Step 4: connect the freshly-started host.
+  return connectFoundHost(found, root);
 }
 
 // ---------------------------------------------------------------------------
@@ -916,6 +1184,17 @@ async function handlePickFolder(
         const originMap = await sfxOriginMap.getValue();
         originMap[origin] = folder;
         await sfxOriginMap.setValue(originMap);
+
+        // Recent-projects: record the picked folder as a used project (Features
+        // 3 & 4). The folder IS the project root; notesDir is <folder>/notes
+        // (mirrors host convention). Preserve the separator style of `folder`.
+        const sep = folder.includes('\\') && !folder.includes('/') ? '\\' : '/';
+        await recordRecent({
+          name: basenameOf(folder),
+          root: folder,
+          notesDir: `${folder.replace(/[\\/]+$/, '')}${sep}notes`,
+          origin,
+        });
 
         resolve({ ok: true, folder });
       }
@@ -1208,6 +1487,26 @@ chrome.runtime.onMessage.addListener(
         return true;
       }
 
+      case SFX_LIST_RECENT:
+        // Feature 3: list recent projects for the popup quick-connect UI.
+        handleListRecent()
+          .then(sendResponse)
+          .catch((err: unknown) =>
+            sendResponse({ ok: false, error: String(err) })
+          );
+        return true;
+
+      case SFX_START_HOST:
+        // Feature 4: launch a stopped project's host and connect it.
+        // Security (T-09-06): sendNativeMessage is SW-only — web origins cannot trigger this.
+        // msg is narrowed to MsgStartHost by the SfxMessage union — no cast needed.
+        handleStartHost(msg.root)
+          .then(sendResponse)
+          .catch((err: unknown) =>
+            sendResponse({ ok: false, error: String(err) })
+          );
+        return true;
+
       case SFX_GET_SCREENSHOT: {
         // T-06-06 IDOR guard: only the tab that owns the note may fetch its screenshots
         // tabId bound to sender.tab.id — never trusted from the message body (anti-spoof)
@@ -1240,12 +1539,16 @@ chrome.runtime.onMessage.addListener(
  * so the registry is fresh. This handles the EXT-10 "re-bind by name+origin
  * after port change" requirement without waiting for a user message.
  */
+// Feature 2: autoConnectDiscovered runs refreshHosts() (discovery + reconcile,
+// EXT-10) and THEN silently fetches tokens for any discovered-but-unpaired host
+// so projects are fully connected on Chrome start with no popup interaction.
+// It swallows/logs its own errors (silent background best-effort).
 chrome.runtime.onStartup.addListener(() => {
-  refreshHosts().catch(console.error);
+  autoConnectDiscovered().catch(console.error);
 });
 
 chrome.runtime.onInstalled.addListener(() => {
-  refreshHosts().catch(console.error);
+  autoConnectDiscovered().catch(console.error);
 });
 
 // ---------------------------------------------------------------------------

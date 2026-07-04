@@ -15,8 +15,9 @@ import { resolve, join, basename, dirname } from 'node:path';
 import { homedir } from 'node:os';
 import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
+import { createInterface } from 'node:readline';
 
-import { registerNativeHost, unregisterNativeHost, createLauncherFiles, DEFAULT_GECKO_ID } from '../host/src/bootstrap/register.js';
+import { registerNativeHost, unregisterNativeHost, createLauncherFiles, registerStartup, unregisterStartup, DEFAULT_GECKO_ID } from '../host/src/bootstrap/register.js';
 import type { TargetBrowser } from '../host/src/bootstrap/register.js';
 import { STABLE_EXTENSION_ID, MANIFEST_PUBLIC_KEY } from '../host/src/extension-id.js';
 
@@ -31,6 +32,8 @@ const { values, positionals } = parseArgs({
     'extension-id': { type: 'string' },
     port: { type: 'string' },
     browser: { type: 'string' },
+    startup: { type: 'boolean' },
+    'no-startup': { type: 'boolean' },
   },
   strict: false,
 });
@@ -54,6 +57,65 @@ function resolveBrowser(raw: unknown): TargetBrowser {
     process.exit(1);
   }
   return raw.toLowerCase() === 'firefox' ? 'firefox' : 'chrome';
+}
+
+// ---------------------------------------------------------------------------
+// Startup (Windows login autoload) — flag resolution + interactive prompt
+// ---------------------------------------------------------------------------
+
+/**
+ * Read a single line SYNCHRONOUSLY from stdin (fd 0). Needed because the init
+ * flow is top-level synchronous code compiled to a CJS bundle (esbuild
+ * --format=cjs), which cannot use top-level await — so readline's async
+ * `question` is unavailable here. Returns the trimmed line (without newline),
+ * or '' on EOF/read error.
+ */
+function promptLineSync(): string {
+  // Import lazily so a non-interactive path never touches fs for this.
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { readSync } = require('node:fs') as typeof import('node:fs');
+  const buf = Buffer.alloc(1);
+  let line = '';
+  for (;;) {
+    let bytes = 0;
+    try {
+      bytes = readSync(0, buf, 0, 1, null);
+    } catch {
+      // EAGAIN or closed stdin — stop reading.
+      break;
+    }
+    if (bytes === 0) break; // EOF
+    const ch = buf.toString('utf8', 0, 1);
+    if (ch === '\n') break;
+    if (ch === '\r') continue;
+    line += ch;
+  }
+  return line.trim();
+}
+
+/**
+ * Decide whether to register Windows startup autoload, honoring flags first,
+ * then an interactive prompt (DEFAULT ON), then a non-TTY skip. Only meaningful
+ * on win32; callers already gate on platform for the actual registration.
+ *
+ * Returns true = register, false = skip.
+ */
+function resolveStartupChoice(
+  forceOn: boolean,
+  forceOff: boolean,
+  isTTY: boolean,
+): boolean {
+  if (forceOn) return true;
+  if (forceOff) return false;
+  if (isTTY) {
+    process.stdout.write('Start stikfix host automatically on Windows login? [Y/n] ');
+    const answer = promptLineSync().toLowerCase();
+    // Empty / y / yes = yes (DEFAULT ON); n / no = no.
+    if (answer === 'n' || answer === 'no') return false;
+    return true;
+  }
+  // Non-TTY, no flag: skip (can be enabled with --startup).
+  return false;
 }
 
 // ---------------------------------------------------------------------------
@@ -103,9 +165,16 @@ if (subcommand === 'init') {
   const name = basename(root);
   const notesDir = join(root, 'notes');
 
-  // Write config file — read by native host at startup
+  // Resolve the HTTP host entry path (node dist/host/src/index.js) up front so
+  // it can be persisted into config.json for the native START_HOST handler.
+  // __dirname here is dist/host/ (esbuild CJS output directory).
+  const hostEntryPath = resolve(join(__dirname, 'src', 'index.js'));
+
+  // Write config file — read by native host at startup.
+  // hostEntry + nodePath let the native START_HOST handler spawn a detached
+  // HTTP host without re-deriving these paths (nodePath = the Node that ran init).
   mkdirSync(CONFIG_DIR, { recursive: true });
-  const config = { root, name, notesDir };
+  const config = { root, name, notesDir, hostEntry: hostEntryPath, nodePath: process.execPath };
   writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), { encoding: 'utf8', mode: 0o600 });
 
   // Absolute path to the native host bundle — must be absolute (Pitfall 4)
@@ -119,10 +188,6 @@ if (subcommand === 'init') {
     console.error('stikfix init: failed to register native host:', String(err));
     process.exit(1);
   }
-
-  // Resolve the HTTP host entry path (node dist/host/src/index.js)
-  // __dirname here is dist/host/ (esbuild CJS output directory)
-  const hostEntryPath = resolve(join(__dirname, 'src', 'index.js'));
 
   // Find the launcher icon — resolve relative to the dist/host dir (go up two
   // levels to the project / installed-package root). On Windows a .lnk
@@ -166,6 +231,47 @@ if (subcommand === 'init') {
   // Surface any non-fatal launcher warnings
   for (const warn of launcherResult.warnings) {
     console.warn('  [warn] ' + warn);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Windows startup autoload (default ON) — register an HKCU Run entry that
+  // launches the hidden VBS launcher (just written by createLauncherFiles) on
+  // login. Flags: --startup (force on) / --no-startup (force off) skip the
+  // prompt. Interactive TTY prompts (default ON); non-TTY with no flag skips.
+  // Windows-only for now.
+  // ---------------------------------------------------------------------------
+
+  if (process.platform === 'win32') {
+    const wantStartup = resolveStartupChoice(
+      values['startup'] === true,
+      values['no-startup'] === true,
+      Boolean(process.stdin.isTTY),
+    );
+    if (wantStartup) {
+      try {
+        registerStartup();
+        console.log('  Startup:      enabled — the host will start on Windows login.');
+      } catch (err) {
+        console.warn(
+          '  [warn] Could not register Windows startup autoload (non-fatal): ' + String(err),
+        );
+      }
+    } else {
+      // Ensure any prior autoload entry is cleared if the user opted out.
+      try {
+        unregisterStartup();
+      } catch {
+        // Idempotent — ignore.
+      }
+      const hint =
+        values['no-startup'] !== true && !process.stdin.isTTY
+          ? ' (enable later with: npx stikfix init --root <dir> --startup)'
+          : '';
+      console.log('  Startup:      not enabled' + hint + '.');
+    }
+  } else if (values['startup'] === true) {
+    // Honor the explicit flag with a clear note that it is Windows-only for now.
+    console.log('  Startup:      skipped — startup autoload is Windows-only for now.');
   }
 
   // ---------------------------------------------------------------------------
@@ -243,11 +349,20 @@ if (subcommand === 'init') {
     // Continue to remove config file even if manifest removal failed
   }
 
+  // Remove the Windows startup autoload Run entry (idempotent; no-op off-win32).
+  try {
+    unregisterStartup();
+  } catch (err) {
+    console.error('stikfix uninstall: error removing startup entry:', String(err));
+    // Non-fatal — continue.
+  }
+
   rmSync(CONFIG_PATH, { force: true });
 
   console.log('stikfix: native host unregistered.');
   console.log('  manifest removed');
   console.log('  launcher files removed');
+  console.log('  startup entry removed');
   console.log('  config removed');
 
 // ---------------------------------------------------------------------------

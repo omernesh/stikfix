@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-07-04
+
+### Added
+- **Quick-connect recent projects.** The extension now remembers the last projects you used (a capped, most-recent-first list) and surfaces them in two places: a **"Recent projects"** section in the popup, and a **"Recent"** group in the on-page chip's project dropdown. Clicking one connects you in a single action — if that project's host is already running it just re-attaches; if it's stopped, the extension **launches the host for you** (via a new native `START_HOST` message that spawns the host detached — the native host still never listens on a socket itself) and connects once it comes up. Idempotent: a running project is never double-spawned.
+- **Auto-connect on Chrome start.** On browser startup (and on extension install/update) the service worker now not only discovers running hosts but also silently fetches each one's token via native messaging, so your hosts are connected without opening the popup. Powered by an extended native `GET_TOKEN` that accepts an optional `root`, letting the extension fetch a token for *any* project it knows about (not just the one in `config.json`).
+- **Run the host on Windows login.** `npx stikfix init` now asks *"Start stikfix host automatically on Windows login?"* (default **Yes**; `--startup` / `--no-startup` bypass the prompt, non-interactive shells skip it). When enabled it registers the existing hidden VBS launcher under `HKCU\…\CurrentVersion\Run`; `npx stikfix uninstall` removes it. `config.json` gains `hostEntry` / `nodePath` so the host can be relaunched cleanly — **existing installs should re-run `npx stikfix init` once** to pick these up and to see the startup prompt.
+- **System-tray host indicator (Windows).** The running host now shows a tray icon whose presence means "host is running." It polls `/status` (green = running · tooltip shows the project + port; grey = not responding), self-exits when the host stops, and offers a right-click menu: **Open notes folder**, **Stop host**, **Quit tray**. Best-effort and Windows-only — it never affects the host on other platforms and can never crash it (a dropped note remains the one thing that must never happen).
+
+### Changed
+- **Chip shows the project name after you pick one.** Once you choose a folder or project in the chip dropdown, the chip collapses to the project's name instead of leaving the confusing "— select project —" placeholder, and re-opening the dropdown pre-selects the current project.
+
+### Fixed
+- Native `GET_TOKEN` with an explicit `root` no longer silently falls back to the default project when that root is invalid — it now returns a precise error instead of the wrong project's token.
+- Quick-connect no longer leaves a row stuck spinning if the post-connect UI refresh fails, and every connect failure is now both surfaced to the user and logged.
+- Quick-connect to an already-running host no longer risks spawning a duplicate host when an internal reconcile error occurs (that error now propagates instead of being swallowed).
+
 ## [1.2.0] - 2026-07-01
 
 ### Added

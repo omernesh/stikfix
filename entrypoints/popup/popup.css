@@ -313,6 +313,112 @@ body {
   margin-top: 2px;
 }
 
+/* ── Recent projects ─────────────────────────────────────────────────────── */
+
+#sfx-recent-section {
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+#sfx-recent-header {
+  padding: 6px 12px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #999;
+}
+
+.sfx-recent-row {
+  display: grid;
+  grid-template-columns: 10px 1fr;
+  align-items: start;
+  gap: 8px;
+  padding: 6px 12px;
+  border-top: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.sfx-recent-row:hover {
+  background: #f5f5f5;
+}
+
+.sfx-recent-row--disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.sfx-recent-row--disabled:hover {
+  background: transparent;
+}
+
+.sfx-recent-row--connecting {
+  cursor: not-allowed;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Info column: name + secondary path line */
+.sfx-recent-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sfx-recent-name {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #111;
+}
+
+.sfx-recent-path {
+  font-size: 10px;
+  color: #888;
+  font-family: ui-monospace, 'Cascadia Code', 'Courier New', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sfx-recent-no-path {
+  font-size: 10px;
+  color: #bbb;
+  font-style: italic;
+}
+
+/* Inline error under name (failed quick-connect) */
+.sfx-recent-error {
+  font-size: 10px;
+  color: #dc2626;
+  margin-top: 2px;
+  white-space: normal;
+  line-height: 1.4;
+}
+
+/* Connecting spinner — reuses the existing sfx-spin keyframe */
+.sfx-recent-spinner {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid rgba(0, 0, 0, 0.15);
+  border-top-color: #555;
+  border-radius: 50%;
+  animation: sfx-spin 0.6s linear infinite;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sfx-recent-spinner {
+    animation: none;
+  }
+}
+
 /* ── Review Mode toggle ───────────────────────────────────────────────────── */
 
 #sfx-toggle-section {

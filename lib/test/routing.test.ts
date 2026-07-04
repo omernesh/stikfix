@@ -38,6 +38,7 @@ function makeState(
     tokens,
     originMap,
     prefs: { reviewMode: {}, showHints: true },
+    recent: [],
   };
 }
 

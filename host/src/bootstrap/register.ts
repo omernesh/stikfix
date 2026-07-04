@@ -540,6 +540,80 @@ export function createLauncherFiles(opts: LauncherOptions): LauncherResult {
 }
 
 // ---------------------------------------------------------------------------
+// registerStartup / unregisterStartup — HKCU Run entry (Windows startup autoload)
+// ---------------------------------------------------------------------------
+
+// HKCU Run key + value name for the "start host on Windows login" feature.
+// HKCU (Pitfall 5 — never HKLM); the value data launches the existing hidden
+// VBS launcher via wscript.exe so no console window ever appears.
+const REG_RUN_KEY = 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run';
+const REG_RUN_VALUE = 'stikfix-host';
+
+interface StartupOptions {
+  plat?: NodeJS.Platform;
+  home?: string;
+  /**
+   * Injectable registry writer (win32). Defaults to the real `reg ADD`.
+   * Tests MUST pass a no-op: the Run value name is a hardcoded HKCU constant,
+   * so a real `reg ADD` from a test would register a phantom login item pointing
+   * at a temp VBS deleted in afterEach.
+   */
+  execReg?: (args: readonly string[]) => void;
+}
+
+/**
+ * Register the stikfix host to start automatically on Windows login by adding
+ * an HKCU Run entry that launches the existing hidden VBS launcher (created by
+ * createLauncherFiles) via wscript.exe — so no console window is shown.
+ *
+ * Value data: `wscript.exe "<abs vbsPath>"` — reuses the same VBS path that
+ * createLauncherFiles/getLauncherPaths compute (LAUNCHER_VBS_FILENAME in the
+ * stikfix data dir).
+ *
+ * Non-win32: no-op (startup autoload is Windows-only for now).
+ * execFileSync is used (NEVER exec, NEVER shell) — mirrors registerNativeHost.
+ */
+export function registerStartup(opts: StartupOptions = {}): void {
+  const plat = opts.plat ?? process.platform;
+  if (plat !== 'win32') {
+    // Startup autoload is Windows-only for now — no-op on other platforms.
+    return;
+  }
+  const home = opts.home ?? homedir();
+  const vbsPath = join(launcherDir(plat, home), LAUNCHER_VBS_FILENAME);
+  const wscriptPath = join(process.env['SystemRoot'] ?? 'C:\\Windows', 'System32', 'wscript.exe');
+  // Value data: wscript.exe "<abs vbsPath>" — the VBS launches the host hidden.
+  const runData = `"${wscriptPath}" "${vbsPath}"`;
+
+  const execReg = opts.execReg ?? ((args: readonly string[]) => {
+    execFileSync('reg', args as string[]);
+  });
+  // /f overwrites any existing value without prompting (idempotent re-register).
+  execReg(['ADD', REG_RUN_KEY, '/v', REG_RUN_VALUE, '/t', 'REG_SZ', '/d', runData, '/f']);
+}
+
+/**
+ * Remove the HKCU Run entry created by registerStartup. Idempotent: does not
+ * throw if the value is already absent (reg DELETE /f tolerates a missing value;
+ * a non-zero exit is swallowed). Non-win32: no-op.
+ */
+export function unregisterStartup(opts: StartupOptions = {}): void {
+  const plat = opts.plat ?? process.platform;
+  if (plat !== 'win32') {
+    return;
+  }
+  const execReg = opts.execReg ?? ((args: readonly string[]) => {
+    execFileSync('reg', args as string[]);
+  });
+  // /f suppresses the confirmation prompt and tolerates an absent value.
+  try {
+    execReg(['DELETE', REG_RUN_KEY, '/v', REG_RUN_VALUE, '/f']);
+  } catch {
+    // Value may not exist — ignore (idempotent removal).
+  }
+}
+
+// ---------------------------------------------------------------------------
 // registerNativeHost — write manifest + optional registry keys
 // ---------------------------------------------------------------------------
 

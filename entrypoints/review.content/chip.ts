@@ -15,8 +15,9 @@
  *  - sfx-* / stikfix namespace (clean-room gate)
  */
 
-import { SFX_MSG, SFX_SET_ROUTE, SFX_GET_TAB_ID } from '../../lib/types.js';
-import type { HostEntry, AnnotationPayload } from '../../lib/types.js';
+import { SFX_MSG, SFX_SET_ROUTE, SFX_GET_TAB_ID, SFX_LIST_RECENT, SFX_START_HOST } from '../../lib/types.js';
+import type { HostEntry, AnnotationPayload, RecentProject, MsgListRecentResponse } from '../../lib/types.js';
+import { basenameOf } from '../../lib/path-utils.js';
 import { enterPickMode, exitPickMode } from './picker.js';
 import { sfxPrefs } from '../../lib/storage.js';
 
@@ -396,8 +397,9 @@ function renderRoutedLabel(
   dot.classList.remove('sfx-dot-error');
 
   // D-09: .onclick = assignment (idempotent — prevents stacking on re-renders)
+  // Pass host.name so the dropdown pre-selects the current host (Feature 5b).
   label.onclick = () => {
-    renderDropdown(chip, label, dot, feedback, sendBtn, tabId, origin, showFeedbackFn, onRouteMaybeChanged);
+    renderDropdown(chip, label, dot, feedback, sendBtn, tabId, origin, showFeedbackFn, onRouteMaybeChanged, host.name);
   };
   // UI-SPEC §4: cursor + tooltip signal clickability
   label.style.cursor = 'pointer';
@@ -409,6 +411,8 @@ function renderRoutedLabel(
  * Render the one-time host selection dropdown when the origin is unmapped.
  * After selection: persists via SFX_SET_ROUTE, then swaps to the label view.
  * The origin is never re-asked after this (EXT-07/EXT-08).
+ *
+ * @param currentHostName  Optional: host name to pre-select (D-09 re-map flow).
  */
 function renderDropdown(
   chip: HTMLDivElement,
@@ -419,7 +423,8 @@ function renderDropdown(
   tabId: number,
   origin: string,
   showFeedbackFn: (el: HTMLSpanElement, msg: string, isError: boolean) => void,
-  onRouteMaybeChanged?: () => void
+  onRouteMaybeChanged?: () => void,
+  currentHostName?: string
 ): void {
   // Update label to explain what's needed. D-04: Send is ALSO live here — the
   // first Send on an unmapped origin opens the OS folder dialog (needs-folder),
@@ -450,6 +455,10 @@ function renderDropdown(
   // Insert the select immediately; populate after the SW responds.
   chip.insertBefore(select, sendBtn);
 
+  // Track stopped recent projects by their sentinel value so the change handler
+  // can look up the root to pass to SFX_START_HOST.
+  const recentByValue = new Map<string, RecentProject>();
+
   // Ask the SW (the owner of the registry) for the current host names. The SW
   // refreshes discovery, reconciles, and returns the full list of known host
   // names — the content script never reads chrome.storage directly (the SW owns
@@ -465,21 +474,70 @@ function renderDropdown(
         return;
       }
 
-      const hostNames = refreshResp.hosts ?? [];
-      if (hostNames.length === 0) {
+      const liveNames = new Set(refreshResp.hosts ?? []);
+
+      if (liveNames.size === 0) {
         const emptyOpt = document.createElement('option');
         emptyOpt.value = '';
         emptyOpt.textContent = 'No hosts found — start one first';
         select.appendChild(emptyOpt);
-        return;
+      } else {
+        for (const name of liveNames) {
+          const opt = document.createElement('option');
+          opt.value = name; // safe — host name is controlled by our app
+          opt.textContent = name; // textContent, not innerHTML
+          select.appendChild(opt);
+        }
       }
 
-      for (const name of hostNames) {
-        const opt = document.createElement('option');
-        opt.value = name; // safe — host name is controlled by our app
-        opt.textContent = name; // textContent, not innerHTML
-        select.appendChild(opt);
-      }
+      // ── Feature 4: recent (stopped) projects ─────────────────────────────
+      // Ask the SW for the recent project list after we know which are live.
+      chrome.runtime.sendMessage(
+        { type: SFX_LIST_RECENT },
+        (recentResp: MsgListRecentResponse | undefined) => {
+          if (chrome.runtime.lastError) {
+            console.debug('[stikfix] chip: SFX_LIST_RECENT failed:', chrome.runtime.lastError.message);
+            return;
+          }
+          if (!recentResp?.ok) {
+            console.debug('[stikfix] chip: SFX_LIST_RECENT not ok:', recentResp);
+            return;
+          }
+
+          // Dedupe: only add projects NOT already in liveNames.
+          const stopped = (recentResp.recent ?? []).filter(
+            r => r.root && !liveNames.has(r.name)
+          );
+          if (stopped.length === 0) {
+            // 5b: restore pre-selected value if we have one.
+            // NOTE: sentinel options (__sfx_recent__:<root>) are intentionally NOT
+            // pre-selected here — currentHostName is a host name, never a sentinel value.
+            if (currentHostName && select.querySelector(`option[value="${CSS.escape(currentHostName)}"]`)) {
+              select.value = currentHostName;
+            }
+            return;
+          }
+
+          const group = document.createElement('optgroup');
+          group.label = 'Recent';
+          for (const proj of stopped) {
+            const sentinelValue = `__sfx_recent__:${proj.root!}`;
+            recentByValue.set(sentinelValue, proj);
+            const opt = document.createElement('option');
+            opt.value = sentinelValue;
+            opt.textContent = `${proj.name}  (start)`; // textContent only (Pattern 9)
+            group.appendChild(opt);
+          }
+          select.appendChild(group);
+
+          // 5b: restore pre-selected value now that all options are present.
+          // NOTE: sentinel options (__sfx_recent__:<root>) are intentionally NOT
+          // pre-selected here — currentHostName is a host name, never a sentinel value.
+          if (currentHostName && select.querySelector(`option[value="${CSS.escape(currentHostName)}"]`)) {
+            select.value = currentHostName;
+          }
+        }
+      );
     }
   );
 
@@ -501,10 +559,17 @@ function renderDropdown(
               return;
             }
             if (pick.ok) {
-              // Folder chosen — confirm, remove dropdown, and let the chip
-              // re-resolve to the "→ name · <folder>" routed label.
+              // Folder chosen — confirm, remove dropdown, and immediately render
+              // the routed label so the chip shows the project name (Feature 5a).
               showFeedbackFn(feedback, `Saving notes to ${pick.folder}`, false);
               if (select.parentElement) select.parentElement.removeChild(select);
+              // Derive a display name from the chosen folder path (last segment).
+              const projName = basenameOf(pick.folder) || pick.folder;
+              renderRoutedLabel(
+                label, dot,
+                { name: projName, port: 0, origins: [], notesDir: pick.folder, token: null },
+                chip, feedback, sendBtn, tabId, origin, showFeedbackFn, onRouteMaybeChanged
+              );
               onRouteMaybeChanged?.();
             } else if (pick.cancelled) {
               // User cancelled the OS dialog — visible toast, no silent drop (REL-01).
@@ -519,6 +584,73 @@ function renderDropdown(
         showFeedbackFn(feedback, 'Extension error: ' + (e instanceof Error ? e.message : String(e)), true);
       }
       return; // do NOT fall through to host-routing logic
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // ── Feature 4: recent (stopped) project sentinel ──────────────────────────
+    if (select.value.startsWith('__sfx_recent__:')) {
+      const sentinelValue = select.value;
+      const proj = recentByValue.get(sentinelValue);
+      if (!proj || !proj.root) return; // guard — should never be missing root
+
+      const root = proj.root;
+      label.textContent = 'Connecting…';
+      select.disabled = true;
+
+      try {
+        chrome.runtime.sendMessage(
+          { type: SFX_START_HOST, root },
+          (startResp: { ok: boolean; name?: string; port?: number; error?: string } | undefined) => {
+            if (chrome.runtime.lastError || !startResp) {
+              showFeedbackFn(
+                feedback,
+                'SW error: ' + (chrome.runtime.lastError?.message ?? 'no response'),
+                true
+              );
+              label.textContent = 'Pick project / Send to choose a folder:';
+              select.disabled = false;
+              return;
+            }
+            if (!startResp.ok || !startResp.name) {
+              showFeedbackFn(feedback, startResp.error ?? 'Failed to start host', true);
+              label.textContent = 'Pick project / Send to choose a folder:';
+              select.disabled = false;
+              return;
+            }
+
+            // Host started — now persist origin → hostName via SW
+            const startedName = startResp.name;
+            chrome.runtime.sendMessage(
+              { type: SFX_SET_ROUTE, tabId, hostName: startedName },
+              (routeResp: SetRouteResponse | undefined) => {
+                if (chrome.runtime.lastError || !routeResp || !routeResp.ok) {
+                  showFeedbackFn(
+                    feedback,
+                    `Set route failed: ${routeResp && !routeResp.ok ? routeResp.error : 'unknown'}`,
+                    true
+                  );
+                  label.textContent = 'Pick project / Send to choose a folder:';
+                  select.disabled = false;
+                  return;
+                }
+
+                // Remove dropdown and render routed label
+                if (select.parentElement) select.parentElement.removeChild(select);
+                renderRoutedLabel(
+                  label, dot, routeResp.host,
+                  chip, feedback, sendBtn, tabId, origin, showFeedbackFn, onRouteMaybeChanged
+                );
+                wireSendButton(sendBtn, feedback, tabId, routeResp.host, showFeedbackFn, onRouteMaybeChanged);
+              }
+            );
+          }
+        );
+      } catch (e) {
+        showFeedbackFn(feedback, 'Extension error: ' + (e instanceof Error ? e.message : String(e)), true);
+        label.textContent = 'Pick project / Send to choose a folder:';
+        select.disabled = false;
+      }
+      return; // do NOT fall through to live-host logic
     }
     // ─────────────────────────────────────────────────────────────────────────
 

@@ -8,7 +8,7 @@
  */
 
 import { storage } from 'wxt/utils/storage';
-import type { HostEntry, StorageState } from './types.js';
+import type { HostEntry, RecentProject, StorageState } from './types.js';
 
 // ---------------------------------------------------------------------------
 // Named storage items
@@ -40,6 +40,11 @@ export const sfxPrefs = storage.defineItem<{ reviewMode: Record<string, boolean>
   { fallback: { reviewMode: {}, showHints: true } }
 );
 
+/** Recently-used projects (most-recent-first, capped at 8) — Features 3 & 4 */
+export const sfxRecent = storage.defineItem<RecentProject[]>('local:sfxRecent', {
+  fallback: [],
+});
+
 // ---------------------------------------------------------------------------
 // Convenience loader
 // ---------------------------------------------------------------------------
@@ -50,11 +55,12 @@ export const sfxPrefs = storage.defineItem<{ reviewMode: Record<string, boolean>
  * (the MV3 service worker is recycled after ~30s idle; globals are zeroed).
  */
 export async function loadStorageState(): Promise<StorageState> {
-  const [registry, tokens, originMap, prefs] = await Promise.all([
+  const [registry, tokens, originMap, prefs, recent] = await Promise.all([
     sfxRegistry.getValue(),
     sfxTokens.getValue(),
     sfxOriginMap.getValue(),
     sfxPrefs.getValue(),
+    sfxRecent.getValue(),
   ]);
-  return { registry, tokens, originMap, prefs };
+  return { registry, tokens, originMap, prefs, recent };
 }

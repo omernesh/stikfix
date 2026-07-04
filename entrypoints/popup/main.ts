@@ -14,8 +14,8 @@
  * This file MUST NOT fetch 127.0.0.1/localhost — all HTTP is the SW's job.
  */
 
-import { SFX_MSG } from '../../lib/types.js';
-import type { HostEntry, MsgAddHost, MsgRemoveHost, MsgPairNative } from '../../lib/types.js';
+import { SFX_MSG, SFX_LIST_RECENT, SFX_START_HOST, isLaunchable } from '../../lib/types.js';
+import type { HostEntry, MsgAddHost, MsgRemoveHost, MsgPairNative, MsgListRecent, MsgStartHost, RecentProject, MsgListRecentResponse } from '../../lib/types.js';
 import { sfxRegistry, sfxTokens, sfxPrefs } from '../../lib/storage.js';
 
 // ---------------------------------------------------------------------------
@@ -36,6 +36,10 @@ const reviewBtn = document.getElementById('sfx-review-btn') as HTMLButtonElement
 const toggleErrorEl = document.getElementById('sfx-toggle-error') as HTMLElement;
 const hintsCheckbox = document.getElementById('sfx-hints-checkbox') as HTMLInputElement;
 const routingLineEl = document.getElementById('sfx-routing-line')!;
+
+// Recent projects section
+const recentSectionEl = document.getElementById('sfx-recent-section') as HTMLElement;
+const recentListEl = document.getElementById('sfx-recent-list') as HTMLElement;
 
 // Pairing banner elements (Phase 9 — additive, always in DOM)
 const pairingBanner = document.getElementById('sfx-pairing-banner') as HTMLElement;
@@ -365,6 +369,165 @@ function renderHosts(
     row.appendChild(tokenWrap);
 
     hostListEl.appendChild(row);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Recent projects — quick-connect list
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch recent projects from the SW and render the section.
+ * If there are no recent projects, the section stays hidden.
+ * Returns the list of liveNames so callers can refresh if needed.
+ */
+async function renderRecent(): Promise<void> {
+  let recent: RecentProject[] = [];
+  let liveNames: string[] = [];
+
+  try {
+    const msg: MsgListRecent = { type: SFX_LIST_RECENT };
+    const resp = await chrome.runtime.sendMessage(msg) as MsgListRecentResponse | null;
+
+    if (resp?.ok) {
+      recent = resp.recent;
+      liveNames = resp.liveNames;
+    } else if (resp) {
+      // SW returned an error response — log and leave section hidden
+      console.error('[stikfix] renderRecent: SW error:', resp.error);
+    }
+    // null response → SW not ready; leave hidden silently (handled by catch below)
+  } catch (err) {
+    // SW may be starting — hide the section silently
+    console.debug('[stikfix] renderRecent: SW not ready:', err);
+  }
+
+  if (recent.length === 0) {
+    recentSectionEl.hidden = true;
+    return;
+  }
+
+  // Clear and rebuild the list
+  recentListEl.replaceChildren();
+
+  for (const project of recent) {
+    const isLive = liveNames.includes(project.name);
+    const launchable = isLaunchable(project);
+    const displayPath = project.notesDir || project.root || '';
+
+    // Status dot
+    const dot = el('span');
+    dot.className = isLive ? 'sfx-dot sfx-dot--green' : 'sfx-dot sfx-dot--grey';
+    dot.setAttribute('title', isLive ? 'connected' : 'stopped');
+
+    // Project name
+    const nameEl = el('span');
+    nameEl.className = 'sfx-recent-name';
+    nameEl.textContent = project.name;
+
+    // Secondary path line
+    const infoCol = el('div');
+    infoCol.className = 'sfx-recent-info';
+    infoCol.appendChild(nameEl);
+
+    if (displayPath) {
+      const pathEl = el('span');
+      pathEl.className = 'sfx-recent-path';
+      pathEl.textContent = displayPath;
+      pathEl.title = displayPath;  // full path on hover for truncated display
+      infoCol.appendChild(pathEl);
+    } else if (!launchable) {
+      const noPathEl = el('span');
+      noPathEl.className = 'sfx-recent-no-path';
+      noPathEl.textContent = '(no path)';
+      infoCol.appendChild(noPathEl);
+    }
+
+    // Row
+    const row = el('div');
+    row.className = 'sfx-recent-row';
+    if (!launchable) {
+      row.classList.add('sfx-recent-row--disabled');
+      row.setAttribute('title', 'No project root — cannot launch');
+    }
+    row.appendChild(dot);
+    row.appendChild(infoCol);
+
+    // Quick-connect click handler (only when root is available)
+    if (isLaunchable(project)) {
+      const launchableProject = project; // narrowed: RecentProject & { root: string }
+      row.addEventListener('click', () => {
+        void doQuickConnect(row, dot, infoCol, launchableProject);
+      });
+    }
+
+    recentListEl.appendChild(row);
+  }
+
+  recentSectionEl.hidden = false;
+}
+
+/**
+ * Quick-connect a stopped (or already-running) project.
+ * Shows a spinner on the row while in flight, then re-renders both
+ * the host list and the recent list on success, or shows inline error on failure.
+ */
+async function doQuickConnect(
+  row: HTMLDivElement,
+  dot: HTMLSpanElement,
+  infoCol: HTMLDivElement,
+  project: RecentProject & { root: string },
+): Promise<void> {
+  // Disable the row and show spinner
+  row.classList.add('sfx-recent-row--connecting');
+  dot.className = 'sfx-recent-spinner';
+
+  // Remove any prior inline error from a previous attempt
+  const priorError = infoCol.querySelector('.sfx-recent-error');
+  if (priorError) {
+    infoCol.removeChild(priorError);
+  }
+
+  const connectingHint = el('span');
+  connectingHint.className = 'sfx-recent-path';
+  connectingHint.textContent = 'Connecting…';
+  infoCol.appendChild(connectingHint);
+
+  let resp: { ok: true; name: string; port: number } | { ok: false; error: string } | null = null;
+  try {
+    const msg: MsgStartHost = { type: SFX_START_HOST, root: project.root };
+    resp = await chrome.runtime.sendMessage(msg) as typeof resp;
+  } catch (err) {
+    resp = { ok: false, error: String(err) };
+  } finally {
+    // Always remove the "Connecting…" hint and spinner class
+    infoCol.removeChild(connectingHint);
+    row.classList.remove('sfx-recent-row--connecting');
+  }
+
+  if (resp && resp.ok) {
+    // Re-render host list + recent list so the newly-connected host appears
+    try {
+      const [registry, tokens] = await Promise.all([
+        sfxRegistry.getValue(),
+        sfxTokens.getValue(),
+      ]);
+      renderHosts(registry, tokens);
+      await renderRecent();
+    } catch (err) {
+      console.error('[stikfix] doQuickConnect failed for', project.root, 'resp:', resp);
+    }
+    // Dot stays green regardless of refresh failure — connection succeeded
+    dot.className = 'sfx-dot sfx-dot--green';
+  } else {
+    // Show inline error — never fail silently (project rule)
+    console.error('[stikfix] doQuickConnect failed for', project.root, 'resp:', resp);
+    dot.className = 'sfx-dot sfx-dot--grey';
+
+    const errorEl = el('span');
+    errorEl.className = 'sfx-recent-error';
+    errorEl.textContent = resp?.error ?? 'Connection failed';
+    infoCol.appendChild(errorEl);
   }
 }
 
@@ -759,6 +922,7 @@ async function init(): Promise<void> {
   ]);
 
   renderHosts(registry, tokens);
+  await renderRecent();
   await loadReviewState();
   await loadHintsPref();
   await renderRoutingLine();

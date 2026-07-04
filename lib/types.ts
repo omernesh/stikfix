@@ -26,6 +26,20 @@ export interface HostEntry {
   token: string | null;
 }
 
+/**
+ * A recently-used project (Features 3 & 4). Persisted in sfxRecent so the popup
+ * can list projects to quick-connect even when their host is currently stopped.
+ * Deduped by `root` (fallback `name`), most-recent-first, capped at 8.
+ */
+export interface RecentProject {
+  name: string;        // host name / basename of root
+  notesDir: string;    // notes dir if known ('' if unknown)
+  root?: string;       // absolute project root (dirname of notesDir) — required to launch a stopped host
+  port?: number;       // last known HTTP port
+  origin?: string;     // last origin this project was routed to
+  lastUsed: number;    // epoch ms
+}
+
 // ---------------------------------------------------------------------------
 // Storage state
 // ---------------------------------------------------------------------------
@@ -43,6 +57,8 @@ export interface StorageState {
   originMap: Record<string, string>;
   /** extension preferences */
   prefs: { reviewMode: Record<string, boolean>; showHints: boolean };
+  /** recently-used projects (most-recent-first, capped at 8) */
+  recent: RecentProject[];
 }
 
 // ---------------------------------------------------------------------------
@@ -102,6 +118,13 @@ export const SFX_EDIT_ANNOTATION   = 'SFX_EDIT_ANNOTATION'   as const;
 export const SFX_DELETE_ANNOTATION = 'SFX_DELETE_ANNOTATION' as const;
 export const SFX_GET_SCREENSHOT    = 'SFX_GET_SCREENSHOT'    as const;
 
+// Recent-projects quick-connect (Features 3 & 4) — same side-effect-free
+// constraint (see invariant comment above). The popup imports these string
+// constants; they MUST NOT live in background.ts (would drag SW registrations
+// into the popup/content bundles).
+export const SFX_LIST_RECENT = 'SFX_LIST_RECENT' as const;
+export const SFX_START_HOST  = 'SFX_START_HOST'  as const;
+
 export interface MsgListAnnotations {
   type: typeof SFX_LIST_ANNOTATIONS;
   tabId: number;
@@ -130,6 +153,20 @@ export interface MsgGetScreenshot {
   tabId: number;
   serial: string;
   file: string;  // plain PNG basename — host validates confinement (T-06-02)
+}
+
+// Feature 3 — list recent projects for the popup quick-connect UI.
+// Response: { ok:true, recent: RecentProject[], liveNames: string[] } where
+// liveNames = host names currently present in sfxRegistry (connected vs stopped).
+export interface MsgListRecent {
+  type: typeof SFX_LIST_RECENT;
+}
+
+// Feature 4 — launch a STOPPED project's host and connect it.
+// Response: { ok:true, name, port } or { ok:false, error }.
+export interface MsgStartHost {
+  type: typeof SFX_START_HOST;
+  root: string;  // absolute project root to launch the host for
 }
 
 // ---------------------------------------------------------------------------
@@ -198,7 +235,9 @@ export type SfxMessage =
   | MsgDeleteAnnotation
   | MsgGetScreenshot
   | MsgPairNative
-  | MsgPickFolder;
+  | MsgPickFolder
+  | MsgListRecent
+  | MsgStartHost;
 
 // ---------------------------------------------------------------------------
 // Response shapes
@@ -207,3 +246,15 @@ export type SfxMessage =
 export type SfxResponse<T = Record<string, unknown>> =
   | ({ ok: true } & T)
   | { ok: false; error: string };
+
+// ---------------------------------------------------------------------------
+// Launch-capability guard + named response shapes
+// ---------------------------------------------------------------------------
+
+/** True when this recent project has a root and can be launched/connected via SFX_START_HOST. */
+export function isLaunchable(p: RecentProject): p is RecentProject & { root: string } {
+  return typeof p.root === 'string' && p.root.length > 0;
+}
+
+/** Response shape for SFX_LIST_RECENT (single source of truth — SW + popup + chip). */
+export type MsgListRecentResponse = SfxResponse<{ recent: RecentProject[]; liveNames: string[] }>;

@@ -15,9 +15,10 @@
  * Node builtins only — no WXT, no Chrome imports.
  */
 
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync, statSync } from 'node:fs';
+import { join, basename, resolve } from 'node:path';
 import { homedir } from 'node:os';
+import { spawn } from 'node:child_process';
 import { sendNativeMessage, readNativeMessages } from './native-msg.js';
 import { pickFolder } from './folder-picker.js';
 import { validateChosenFolder } from './validate-folder.js';
@@ -36,6 +37,99 @@ interface StikFixConfig {
   root: string;
   name: string;
   notesDir: string;
+  /**
+   * Absolute path to the runnable HTTP host bundle (dist/host/src/index.js),
+   * written by `npx stikfix init`. Read by START_HOST to spawn the detached
+   * host. Optional for backward compatibility with older configs (fallback
+   * resolves it relative to this native host's own location).
+   */
+  hostEntry?: string;
+  /**
+   * Absolute path to the Node executable used to run the HTTP host
+   * (process.execPath captured at init time). Optional — START_HOST falls back
+   * to this process's own process.execPath.
+   */
+  nodePath?: string;
+}
+
+/**
+ * Resolve the absolute path to the HTTP host entry bundle. Prefers the
+ * `hostEntry` field written into config.json by `npx stikfix init`. If absent
+ * (older config), falls back to resolving `src/index.js` relative to THIS
+ * native host bundle's own directory — the shipped layout is
+ * dist/host/stikfix-native.cjs alongside dist/host/src/index.js, so __dirname/src/index.js
+ * is the co-located HTTP host entry.
+ */
+function resolveHostEntry(cfg: StikFixConfig): string {
+  if (typeof cfg.hostEntry === 'string' && cfg.hostEntry.length > 0) {
+    return cfg.hostEntry;
+  }
+  // Fallback: dist/host/stikfix-native.cjs → dist/host/src/index.js
+  // In the esbuild CJS bundle, __dirname is the bundle's directory.
+  return join(__dirname, 'src', 'index.js');
+}
+
+/**
+ * Handle a START_HOST native message: validate `root` is an existing directory,
+ * then SPAWN the HTTP host as a DETACHED process (never bind/listen here —
+ * invariant T-09-07) so it outlives this one-shot native process. Replies
+ * HOST_STARTING on success, ERROR on invalid input. `out` is injectable for tests.
+ *
+ * Returns true if the host was spawned (caller should exit 0), false on a
+ * validation error (caller should exit 1). The actual process.exit is left to
+ * the caller so this helper stays unit-testable without side effects.
+ */
+export function handleStartHost(
+  cfg: StikFixConfig,
+  root: unknown,
+  spawnFn: typeof spawn = spawn,
+  out?: { write(b: Buffer): boolean },
+): boolean {
+  const emit = (msg: object) => (out ? sendNativeMessage(msg, out) : sendNativeMessage(msg));
+
+  if (typeof root !== 'string' || root.length === 0) {
+    emit({ type: 'ERROR', error: 'START_HOST requires a non-empty "root" string.' });
+    return false;
+  }
+
+  // Normalize the incoming root (collapse `..`, consistent separators) before
+  // using it for the directory check and the spawned host's --root arg. No
+  // confinement check — cross-project roots over the extension-exclusive native
+  // channel are intentional; normalization is the correct hardening.
+  const resolvedRoot = resolve(root);
+
+  // Validate root is an existing directory (no silent failure).
+  try {
+    if (!statSync(resolvedRoot).isDirectory()) {
+      emit({ type: 'ERROR', error: `START_HOST root is not a directory: ${resolvedRoot}` });
+      return false;
+    }
+  } catch {
+    emit({ type: 'ERROR', error: `START_HOST root does not exist: ${resolvedRoot}` });
+    return false;
+  }
+
+  const nodePath =
+    typeof cfg.nodePath === 'string' && cfg.nodePath.length > 0 ? cfg.nodePath : process.execPath;
+  const hostEntry = resolveHostEntry(cfg);
+
+  // CRITICAL (T-09-07): the native host MUST NOT bind/listen itself. It only
+  // spawns a SEPARATE, detached process that is the HTTP host. Detached +
+  // stdio:'ignore' + unref() so the child outlives this one-shot native process.
+  try {
+    const child = spawnFn(nodePath, [hostEntry, '--root', resolvedRoot], {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true,
+    });
+    child.unref();
+  } catch (err) {
+    emit({ type: 'ERROR', error: `Failed to start host: ${String((err as Error).message)}` });
+    return false;
+  }
+
+  emit({ type: 'HOST_STARTING', root: resolvedRoot });
+  return true;
 }
 
 // ---------------------------------------------------------------------------
@@ -103,22 +197,55 @@ export function main(): void {
   // it here would wrongly fail the folder dialog whenever .stikfix-token is
   // absent (e.g. host never started). Config is the only upfront requirement.
   readNativeMessages((msg) => {
-    const m = msg as { type?: string; origin?: string };
+    const m = msg as { type?: string; origin?: string; root?: string };
 
     if (m.type === 'GET_TOKEN') {
+      // Optional `root`: if the inbound message carries a valid existing
+      // directory, read the token/port/identity from THAT root instead of
+      // cfg.root. Absent/invalid → exact current behavior (backward compatible).
+      let tokenRoot = cfg.root;
+      let name = cfg.name;
+      let notesDir = cfg.notesDir;
+      if (typeof m.root === 'string' && m.root.length > 0) {
+        // Caller explicitly asked for a specific root. Normalize it (collapse
+        // `..`, consistent separators), then require it to be an existing
+        // directory. NEVER silently fall back to cfg.root — that would return a
+        // DIFFERENT project's token mislabeled as the requested one.
+        const resolvedRoot = resolve(m.root);
+        let isDir = false;
+        try {
+          isDir = statSync(resolvedRoot).isDirectory();
+        } catch {
+          isDir = false;
+        }
+        if (!isDir) {
+          sendNativeMessage({
+            type: 'ERROR',
+            error: 'GET_TOKEN root not accessible: ' + resolvedRoot,
+          });
+          process.exit(1);
+        }
+        tokenRoot = resolvedRoot;
+        name = basename(resolvedRoot);
+        notesDir = join(resolvedRoot, 'notes');
+      }
+
       // Token is required ONLY for GET_TOKEN — read it lazily here.
       let token: string;
       try {
-        token = readFileSync(join(cfg.root, '.stikfix-token'), 'utf8').trim();
+        token = readFileSync(join(tokenRoot, '.stikfix-token'), 'utf8').trim();
       } catch {
-        sendNativeMessage({ type: 'ERROR', error: '.stikfix-token not found. Start the host first.' });
+        sendNativeMessage({
+          type: 'ERROR',
+          error: 'No .stikfix-token in ' + tokenRoot + '. Start the host first.',
+        });
         process.exit(1);
       }
 
       // Port is optional — read if present; SW falls back to port scan (A5 fallback)
       let port: number | undefined;
       try {
-        const raw = readFileSync(join(cfg.root, '.stikfix-port'), 'utf8').trim();
+        const raw = readFileSync(join(tokenRoot, '.stikfix-port'), 'utf8').trim();
         const parsed = parseInt(raw, 10);
         if (!isNaN(parsed)) {
           port = parsed;
@@ -132,10 +259,17 @@ export function main(): void {
         type: 'TOKEN',
         token,
         port,
-        name: cfg.name,
-        notesDir: cfg.notesDir,
+        name,
+        notesDir,
       });
       process.exit(0);
+    }
+
+    if (m.type === 'START_HOST') {
+      // Spawn a DETACHED HTTP host for the requested root, then exit (one-shot).
+      // The native host itself NEVER binds/listens (T-09-07) — it only spawns.
+      const ok = handleStartHost(cfg, m.root);
+      process.exit(ok ? 0 : 1);
     }
 
     if (m.type === 'PICK_FOLDER') {

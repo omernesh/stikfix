@@ -18,6 +18,7 @@ import { resolveConfig, resolveConfigValues, ensureNotesDir, writeTokenFile } fr
 import { createHostServer } from './server.js';
 import { bindServer, BIND_HOST } from './bind.js';
 import { probeExistingHost } from './probe.js';
+import { startTray } from './tray.js';
 
 // ---------------------------------------------------------------------------
 // CLI parsing (preserve Phase 1 stub options block — HOST-13)
@@ -130,5 +131,35 @@ console.log(JSON.stringify({
   notesDir: cfg.notesDir,
   origins: cfg.origins,
 }));
+
+// ---------------------------------------------------------------------------
+// Windows system-tray indicator (best-effort, cosmetic, win32-only)
+// ---------------------------------------------------------------------------
+// Only reached on genuine startup — the single-instance guard above exits(0)
+// before here, so a second instance never spawns a duplicate tray.
+const tray = startTray({
+  port: boundPort,
+  root: cfg.root,
+  name: cfg.name,
+  notesDir: cfg.notesDir,
+  hostPid: process.pid,
+});
+
+// Kill the tray child when the host shuts down so a dead host has no tray.
+// (No prior signal handling existed here; these are additive.)
+let shuttingDown = false;
+function shutdown(signal: NodeJS.Signals): void {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  try { tray?.kill(); } catch { /* best-effort */ }
+  server.close(() => process.exit(0));
+  // Fallback: exit even if server.close hangs on lingering connections.
+  setTimeout(() => process.exit(0), 1000).unref();
+  void signal;
+}
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+// Belt-and-suspenders: also reap the tray on plain process exit.
+process.on('exit', () => { try { tray?.kill(); } catch { /* best-effort */ } });
 
 // Server runs indefinitely (Pitfall 2 — no process.exit here)

@@ -12,6 +12,7 @@
   },
   "include": [
     "lib/types.ts",
+    "lib/path-utils.ts",
     "lib/routing.ts",
     "lib/discovery.ts",
     "lib/capture.ts",
