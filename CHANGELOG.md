@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Critical: every note Send failed with "Host unreachable: TypeError: Failed to fetch."** The service-worker relay had been refactored to take a URL *path* and build `http://127.0.0.1:<port><path>` in one place, but the five call sites (send / list / edit / delete / screenshot) still passed **full URLs** — producing a malformed double-prefixed URL that made `fetch` throw on every request, so no note could be captured. All call sites now pass paths. A dropped note is a regression; this restores reliable capture.
+- **The relay now self-heals a stale host port.** On a network-level failure it re-runs host discovery, rematches the host (by name, else the sole live host), persists the corrected port to the registry, and retries once — so sends recover after the host restarts onto a different port (39240–39260) while Chrome stays open, instead of dead-ending. A host that is genuinely down still surfaces the visible "Host unreachable" toast (no silent drop).
+
 ## [1.3.2] - 2026-07-05
 
 ### Fixed

@@ -44,6 +44,9 @@ import {
 } from '../lib/storage.js';
 import { discoverHosts, probePort } from '../lib/discovery.js';
 import { resolveRoute, reconcileRegistry } from '../lib/routing.js';
+// Explicit import (matches what WXT auto-import injects) so this module also
+// type-checks and runs under the plain-Node lib test pipeline (tsconfig.lib).
+import { defineBackground } from 'wxt/utils/define-background';
 
 // ---------------------------------------------------------------------------
 // Type aliases for handler return shapes
@@ -219,11 +222,11 @@ function resolveFolderAwareRoute(
   return { ok: true, host: routed };
 }
 
-/** Append ?targetDir= to a relay URL when the origin maps to a folder (D-04). */
-function withTargetDir(url: string, targetDir?: string): string {
-  if (targetDir === undefined) return url;
-  const sep = url.includes('?') ? '&' : '?';
-  return `${url}${sep}targetDir=${encodeURIComponent(targetDir)}`;
+/** Append ?targetDir= to a relay path when the origin maps to a folder (D-04). */
+function withTargetDir(path: string, targetDir?: string): string {
+  if (targetDir === undefined) return path;
+  const sep = path.includes('?') ? '&' : '?';
+  return `${path}${sep}targetDir=${encodeURIComponent(targetDir)}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -432,33 +435,125 @@ async function handleSetRoute(
 }
 
 /**
- * Relay a fetch to the host with one automatic token-rotation recovery: on HTTP
- * 401, re-pair with the native host (refreshing sfxTokens) and retry the SAME
- * request once with the fresh token. Returns the final Response. Only the
- * X-Stikfix-Token header value is swapped on retry; caller init is preserved.
- * Bounded to a single retry — a persistent 401 falls through to the caller's
- * existing error mapping (user still sees "unauthorized").
+ * Injectable dependencies for relayFetchWithRepair. Defaults bind to the real
+ * SW singletons (live fetch / discovery / storage); tests override them to drive
+ * the self-heal deterministically. Internal only — not part of the message
+ * protocol and never crosses the SW↔content-script boundary.
  */
-async function relayFetchWithRepair(
+export interface RelayDeps {
+  fetchImpl?: typeof fetch;
+  discover?: () => Promise<HostEntry[]>;
+  loadRegistry?: () => Promise<Record<string, HostEntry>>;
+  saveRegistry?: (registry: Record<string, HostEntry>) => Promise<void>;
+  loadTokens?: () => Promise<Record<string, string>>;
+  repair401?: () => Promise<{ ok: true; name: string } | { ok: false; error: string }>;
+}
+
+/**
+ * Relay a fetch to the host with TWO bounded self-healing recoveries:
+ *
+ *  1. NETWORK ERROR (the underlying fetch REJECTS — connection refused). The
+ *     dominant cause is port drift: the host restarted onto a DIFFERENT free
+ *     port in the 39240–39260 discovery range while Chrome stayed open, so the
+ *     port cached in sfxRegistry is stale and every relay dead-ends. We re-run
+ *     discoverHosts(), locate the intended host (by name; else the sole live
+ *     host as a single-host fallback, mirroring resolveRoute's semantics),
+ *     PERSIST its corrected port into sfxRegistry (preserving token + other
+ *     fields), rebuild the URL on the new port and retry ONCE. If discovery
+ *     finds nothing (host truly down) the ORIGINAL error is rethrown so the
+ *     caller's existing catch still surfaces the visible "Host unreachable"
+ *     toast — no silent success, no dropped note (a dropped note is a
+ *     regression).
+ *
+ *  2. HTTP 401 (stale token after a host restart): re-pair with the native host
+ *     (refreshing sfxTokens) and retry ONCE with the fresh token.
+ *
+ * The request is addressed by `path` — everything AFTER `http://127.0.0.1:PORT`
+ * (e.g. "/annotation" or "/annotations?url=...") — NOT a full URL, so the URL
+ * can be rebuilt against a repaired port. Both repairs are bounded to a single
+ * retry each (no unbounded loops); a network retry that then 401s is still
+ * handled. Only the port and the X-Stikfix-Token header ever change on retry;
+ * caller init (method/headers/body) is preserved verbatim.
+ */
+export async function relayFetchWithRepair(
   host: HostEntry,
-  url: string,
+  path: string,
   init: RequestInit,
   token: string,
+  deps: RelayDeps = {},
 ): Promise<Response> {
+  const fetchImpl = deps.fetchImpl ?? fetch;
+  const discover = deps.discover ?? discoverHosts;
+  const loadRegistry = deps.loadRegistry ?? (() => sfxRegistry.getValue());
+  const saveRegistry = deps.saveRegistry ?? ((r: Record<string, HostEntry>) => sfxRegistry.setValue(r));
+  const loadTokens = deps.loadTokens ?? (() => sfxTokens.getValue());
+  const repair401 = deps.repair401 ?? handlePairNative;
+
+  const buildUrl = (port: number): string => `http://127.0.0.1:${port}${path}`;
   const withToken = (t: string): RequestInit => ({
     ...init,
     headers: { ...(init.headers as Record<string, string> | undefined), 'X-Stikfix-Token': t },
   });
-  let resp = await fetch(url, withToken(token));
+
+  let activePort = host.port;
+
+  // Attempt 1 — the cached port. A REJECTION here is connection-refused (host
+  // down or port drifted). A resolved Response (even non-2xx) skips the port
+  // repair and flows to the 401 branch below.
+  let resp: Response;
+  try {
+    resp = await fetchImpl(buildUrl(activePort), withToken(token));
+  } catch (netErr: unknown) {
+    const repairedPort = await repairPort();
+    if (repairedPort === null) {
+      // Host truly down — no live host discovered. Rethrow the ORIGINAL error so
+      // the caller's existing catch still produces the "Host unreachable" toast.
+      throw netErr;
+    }
+    activePort = repairedPort;
+    // Retry ONCE against the rediscovered port. A second rejection propagates to
+    // the caller's catch (still bounded, still no silent success).
+    resp = await fetchImpl(buildUrl(activePort), withToken(token));
+  }
+
+  // 401 token-rotation recovery (unchanged behavior — same port, fresh token).
   if (resp.status === 401) {
-    const repaired = await handlePairNative();
+    const repaired = await repair401();
     if (repaired.ok) {
-      const freshTokens = await sfxTokens.getValue();
+      const freshTokens = await loadTokens();
       const freshToken = freshTokens[host.name];
-      if (freshToken) resp = await fetch(url, withToken(freshToken));
+      if (freshToken) resp = await fetchImpl(buildUrl(activePort), withToken(freshToken));
     }
   }
   return resp;
+
+  /**
+   * Re-discover and locate the intended host after a network-level fetch
+   * rejection. Returns the port to retry on — persisting the corrected port into
+   * sfxRegistry when it differs from the stale cached port so subsequent relays
+   * skip re-discovery — or null when no live host is found (caller rethrows).
+   */
+  async function repairPort(): Promise<number | null> {
+    const discovered = await discover();
+    // Match by name first; else fall back to the sole live host (mirrors
+    // resolveRoute's singleHostFallback semantics).
+    let match = discovered.find((h) => h.name === host.name);
+    if (!match && discovered.length === 1) match = discovered[0];
+    if (!match) return null;
+
+    if (match.port !== activePort) {
+      // Persist the corrected port under the LIVE host's name, preserving its
+      // token and refreshing origins/notesDir (mirrors reconcileRegistry for a
+      // single host) so the next relay uses the healed port directly.
+      const [registry, tokens] = await Promise.all([loadRegistry(), loadTokens()]);
+      registry[match.name] = {
+        ...match,
+        token: tokens[match.name] ?? registry[match.name]?.token ?? match.token ?? null,
+      };
+      await saveRegistry(registry);
+    }
+    return match.port;
+  }
 }
 
 /**
@@ -532,7 +627,7 @@ async function handleSendAnnotation(
   try {
     resp = await relayFetchWithRepair(
       host,
-      `http://127.0.0.1:${host.port}/annotation`,
+      '/annotation',
       { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: requestBody },
       host.token,
     );
@@ -633,7 +728,7 @@ async function handleListAnnotations(
     resp = await relayFetchWithRepair(
       host,
       withTargetDir(
-        `http://127.0.0.1:${host.port}/annotations?url=${encodeURIComponent(tab.url)}${scope === 'all' ? '&scope=all' : ''}${includeDone ? '&done=1' : ''}`,
+        `/annotations?url=${encodeURIComponent(tab.url)}${scope === 'all' ? '&scope=all' : ''}${includeDone ? '&done=1' : ''}`,
         targetDir
       ),
       { method: 'GET' },
@@ -689,7 +784,7 @@ async function handleEditAnnotation(
     resp = await relayFetchWithRepair(
       host,
       withTargetDir(
-        `http://127.0.0.1:${host.port}/annotation/${encodeURIComponent(serial)}`,
+        `/annotation/${encodeURIComponent(serial)}`,
         targetDir
       ),
       {
@@ -744,7 +839,7 @@ async function handleDeleteAnnotation(
     resp = await relayFetchWithRepair(
       host,
       withTargetDir(
-        `http://127.0.0.1:${host.port}/annotation/${encodeURIComponent(serial)}`,
+        `/annotation/${encodeURIComponent(serial)}`,
         targetDir
       ),
       {
@@ -806,7 +901,7 @@ async function handleGetScreenshot(
     resp = await relayFetchWithRepair(
       host,
       withTargetDir(
-        `http://127.0.0.1:${host.port}/screenshot?serial=${encodeURIComponent(serial)}&file=${encodeURIComponent(file)}`,
+        `/screenshot?serial=${encodeURIComponent(serial)}&file=${encodeURIComponent(file)}`,
         targetDir
       ),
       { method: 'GET' },
