@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Simplified the popup to match an auto-connect workflow.** Removed the per-host token-entry list (token input · Apply · Clear · remove), the host-count summary, and the "+" add-host form — they were confusing and redundant now that hosts auto-connect. The popup is now just the header + Refresh, the Recent Projects quick-connect list (click to attach/launch and to switch projects), Enter Review Mode, and the routing line. Manual token entry is gone; connecting is handled by auto-connect and the native pairing button.
+- **Auto-connect now also runs on Refresh / popup-open**, not only on Chrome startup. `REFRESH_HOSTS` now silently fetches each discovered host's token via native messaging, so starting a host *after* Chrome is already running connects it the moment you open the popup — no manual token entry.
+
 ### Fixed
 - **Critical: every note Send failed with "Host unreachable: TypeError: Failed to fetch."** The service-worker relay had been refactored to take a URL *path* and build `http://127.0.0.1:<port><path>` in one place, but the five call sites (send / list / edit / delete / screenshot) still passed **full URLs** — producing a malformed double-prefixed URL that made `fetch` throw on every request, so no note could be captured. All call sites now pass paths. A dropped note is a regression; this restores reliable capture.
 - **The relay now self-heals a stale host port.** On a network-level failure it re-runs host discovery, rematches the host (by name, else the sole live host), persists the corrected port to the registry, and retries once — so sends recover after the host restarts onto a different port (39240–39260) while Chrome stays open, instead of dead-ending. A host that is genuinely down still surfaces the visible "Host unreachable" toast (no silent drop).

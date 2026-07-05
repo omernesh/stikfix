@@ -8,12 +8,10 @@
   </head>
   <body>
     <div id="sfx-popup-root">
-      <!-- Header: wordmark + host count summary + always-visible Refresh -->
+      <!-- Header: wordmark + always-visible Refresh -->
       <header id="sfx-header">
         <span id="sfx-wordmark">stikfix</span>
-        <span id="sfx-host-summary"></span>
         <button id="sfx-refresh-btn" type="button">Refresh</button>
-        <button id="sfx-add-btn" type="button" title="Add host by port">+</button>
       </header>
 
       <!-- Pairing banner (hidden by default; shown by main.ts in states 1-4) -->
@@ -26,20 +24,10 @@
         </details>
       </section>
 
-      <!-- Add host form (hidden by default) -->
-      <div id="sfx-add-form" hidden>
-        <input id="sfx-add-port" type="number" value="39240" min="1" max="65535" aria-label="host port" />
-        <button id="sfx-add-submit" type="button">Probe &amp; add</button>
-        <span id="sfx-add-error" hidden role="alert"></span>
-      </div>
-
-      <!-- Host list container (one row per discovered host) -->
-      <section id="sfx-host-list" aria-label="Discovered hosts"></section>
-
-      <!-- Empty state (shown when registry is empty) -->
+      <!-- Empty state (shown when there are no recent projects to connect) -->
       <section id="sfx-empty-state" hidden>
-        <p id="sfx-empty-msg">No hosts found on 39240&#x2013;39260.</p>
-        <p id="sfx-empty-hint">Start one with:<br><code>npx stikfix init</code></p>
+        <p id="sfx-empty-msg">No projects yet.</p>
+        <p id="sfx-empty-hint">Start a host with:<br><code>npx stikfix init</code><br>then click Refresh.</p>
       </section>
 
       <!-- Recent projects (hidden until populated by main.ts) -->

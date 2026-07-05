@@ -234,11 +234,13 @@ function withTargetDir(path: string, targetDir?: string): string {
 // ---------------------------------------------------------------------------
 
 async function handleRefreshHosts(): Promise<RefreshResponse> {
-  // Discover + reconcile + persist, then return the full set of KNOWN host
-  // names from the reconciled registry (not just freshly-discovered ones —
-  // a persisted host that is briefly offline must still be pickable in the
-  // content-script dropdown). EXT-04/EXT-07.
-  await refreshHosts();
+  // Discover + reconcile + persist AND silently fetch a token for any newly
+  // discovered host (Feature 2 auto-connect). Running this on every Refresh /
+  // popup-open means starting a host AFTER Chrome is already up connects it
+  // with no manual token entry — the user just opens the popup. autoConnect
+  // calls refreshHosts() internally (discover+reconcile), so the registry is
+  // current afterward. Best-effort and non-throwing.
+  await autoConnectDiscovered();
   const registry = await sfxRegistry.getValue();
   const hosts = Object.keys(registry);
   return { ok: true, count: hosts.length, hosts };
