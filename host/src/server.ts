@@ -17,6 +17,7 @@ import { withSerialLock, getNextSerial } from './serial.js';
 import { writeNote } from './write-note.js';
 import { listAnnotations, editNote, deleteNote } from './read-note.js';
 import { validateChosenFolder } from './validate-folder.js';
+import { isGitRepo, getLastGitSyncStatus, gitSyncNote } from './git-sync.js';
 import type { Config, AnnotationPayload } from './types.js';
 
 // ---------------------------------------------------------------------------
@@ -90,7 +91,7 @@ function setPreflightHeaders(req: http.IncomingMessage, res: http.ServerResponse
 // Route handlers
 // ---------------------------------------------------------------------------
 
-function handleStatus(req: http.IncomingMessage, res: http.ServerResponse, cfg: Config): void {
+async function handleStatus(req: http.IncomingMessage, res: http.ServerResponse, cfg: Config): Promise<void> {
   setCorsHeaders(req, res);
   const body = JSON.stringify({
     app: 'stikfix',
@@ -99,6 +100,10 @@ function handleStatus(req: http.IncomingMessage, res: http.ServerResponse, cfg: 
     root: cfg.root,
     notesDir: cfg.notesDir,
     origins: cfg.origins,
+    // git-sync surface (shared contract): is cfg.root a git work tree, and the
+    // result of the most recent git-sync attempt (null if none yet).
+    gitRepo: await isGitRepo(cfg.root),
+    gitSyncStatus: getLastGitSyncStatus(),
   });
   res.writeHead(200, { 'Content-Type': 'application/json' });
   res.end(body);
@@ -182,12 +187,22 @@ async function handleAnnotation(
   //    Writes are confined to <notesDir> (= cfg.notesDir OR <validated targetDir>/notes).
   //    targetDir is NOT persisted into the note frontmatter (routing-only field).
   try {
+    let serialNum = 0;
     const { file, serial } = await withSerialLock(async () => {
-      const serialNum = getNextSerial(notesDir);
+      serialNum = getNextSerial(notesDir);
       return writeNote(notesDir, payload, serialNum);
     });
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true, file, serial }));
+
+    // git-sync (opt-in) — AFTER the 200 is sent, outside withSerialLock, and
+    // fire-and-forget so Send stays instant. Runs iff the CLI/machine default
+    // (cfg.gitSync) OR the per-send flag (payload.gitSync) is true. Its own queue
+    // serializes concurrent notes; .catch-guarded so it can never crash the host.
+    const doSync = cfg.gitSync === true || payload.gitSync === true;
+    if (doSync) {
+      void gitSyncNote({ root: cfg.root, notesDir, serial: serialNum }).catch(() => {});
+    }
   } catch (e: unknown) {
     // CR-02: propagate statusCode from write-phase errors (e.g. bad screenshot → 400)
     const err = e as { statusCode?: number; message?: string };
@@ -440,7 +455,13 @@ export function createHostServer(cfg: Config): http.Server {
     }
 
     if (method === 'GET' && path === '/status') {
-      handleStatus(req, res, cfg);
+      handleStatus(req, res, cfg).catch((e: unknown) => {
+        if (!res.headersSent) {
+          setCorsHeaders(req, res);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, error: String(e) }));
+        }
+      });
       return;
     }
 

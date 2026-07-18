@@ -32,12 +32,33 @@ export const sfxOriginMap = storage.defineItem<Record<string, string>>(
   { fallback: {} }
 );
 
-/** Extension preferences */
-export const sfxPrefs = storage.defineItem<{ reviewMode: Record<string, boolean>; showHints: boolean }>(
+/**
+ * Extension preferences.
+ *
+ * Key choice for `gitSync` (git-sync opt-in toggle, per project):
+ *   - `reviewMode` is keyed by tabId (ephemeral — a tab-scoped UI state, reset
+ *     across browser restarts, meaningless once the tab closes). NOT reusable
+ *     for gitSync, which must persist per PROJECT, not per tab.
+ *   - `gitSync` is keyed by the STABLE host registry name (`HostEntry.name`,
+ *     i.e. the `sfxRegistry` key). This is exactly the identifier GET_ROUTE
+ *     resolves to for a tab's origin, and the same one handleSendAnnotation
+ *     (background.ts) resolves to for the host a note is sent to — so the
+ *     popup checkbox and the send-time lookup always agree on the same key.
+ *     It stays stable across tabs, popup re-opens, and host restarts/port
+ *     changes (registry entries are reconciled by name — see
+ *     lib/routing.ts reconcileRegistry — never by port).
+ */
+export const sfxPrefs = storage.defineItem<{
+  reviewMode: Record<string, boolean>;
+  showHints: boolean;
+  gitSync: Record<string, boolean>;
+}>(
   'local:sfxPrefs',
-  // showHints defaults ON. Note: prefs persisted before this field existed will
-  // lack showHints — read sites must treat missing as default (prefs.showHints !== false).
-  { fallback: { reviewMode: {}, showHints: true } }
+  // showHints defaults ON; gitSync defaults to {} (opt-in, OFF per project
+  // until the owner checks the box). Note: prefs persisted before these
+  // fields existed will lack them — read sites must treat missing as default
+  // (prefs.showHints !== false; prefs.gitSync?.[key] === true).
+  { fallback: { reviewMode: {}, showHints: true, gitSync: {} } }
 );
 
 /** Recently-used projects (most-recent-first, capped at 8) — Features 3 & 4 */

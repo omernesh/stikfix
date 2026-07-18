@@ -64,7 +64,7 @@
      events when the draggable FAB is parked over the chip (UAT overlap fix). */
   z-index: 5;
   background: var(--sfx-pill-bg);
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.20);
   border-radius: 10px;
   padding: 8px 12px;
   font-family: system-ui, -apple-system, sans-serif;
@@ -81,6 +81,27 @@
   min-width: 0;
   max-width: 400px;
   white-space: nowrap;
+}
+
+/* Drag grip — "||" hold-to-drag affordance at the chip's left edge */
+.sfx-chip-grip {
+  flex-shrink: 0;
+  font-weight: 700;
+  letter-spacing: -1px;
+  font-size: 13px;
+  line-height: 1;
+  color: rgba(249, 250, 251, 0.4);
+  cursor: grab;
+  user-select: none;
+  margin-right: 1px;
+}
+
+.sfx-chip-grip:hover {
+  color: rgba(249, 250, 251, 0.7);
+}
+
+.sfx-chip-grip:active {
+  cursor: grabbing;
 }
 
 /* Status dot */
@@ -236,23 +257,23 @@
   right: 32px;
   width: 300px;
   min-height: 160px;
-  background: #ffffff;
-  border: 1px solid #cccccc;
-  border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  background: #1b1e24;
+  border: 1px solid rgba(255, 255, 255, 0.20);
+  border-radius: 14px;
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.48), 0 3px 10px rgba(0, 0, 0, 0.32);
   display: flex;
   flex-direction: column;
   pointer-events: auto;
   font-family: system-ui, -apple-system, sans-serif;
   font-size: 14px;
-  color: #111111;
+  color: #e8eaef;
 }
 
 .sfx-card-header {
   padding: 8px 12px;
-  background: #f0f0f0;
-  border-bottom: 1px solid #cccccc;
-  border-radius: 6px 6px 0 0;
+  background: #22262e;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px 14px 0 0;
   cursor: grab;
   user-select: none;
   display: flex;
@@ -265,7 +286,7 @@
 
 .sfx-card-header-label {
   font-size: 13px;
-  color: #111111;
+  color: #e8eaef;
   font-weight: 400;
 }
 
@@ -284,20 +305,21 @@
   font-family: system-ui, -apple-system, sans-serif;
   font-size: 14px;
   line-height: 1.5;
-  color: #111111;
-  border: 1px solid #cccccc;
-  border-radius: 4px;
+  color: #e8eaef;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 9px;
   padding: 6px 8px;
-  background: #ffffff;
+  background: #14161b;
 }
 
 #sfx-card-textarea::placeholder {
-  color: #666666;
+  color: #6b7280;
 }
 
 #sfx-card-textarea:focus {
-  outline: 2px solid #1d6ed8;
-  outline-offset: 1px;
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.32);
 }
 
 .sfx-card-footer {
@@ -306,7 +328,7 @@
   flex-direction: row;
   gap: 8px;
   justify-content: flex-end;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
 }
 
 #sfx-card-send {
@@ -314,21 +336,22 @@
   font-size: 12px;
   font-weight: 600;
   padding: 5px 12px;
-  border-radius: 4px;
+  border-radius: 9px;
   border: none;
   cursor: pointer;
-  background: #1d6ed8;
+  background: #3b82f6;
   color: #ffffff;
+  box-shadow: 0 1px 4px rgba(59, 130, 246, 0.4);
 }
 
 #sfx-card-send:hover:not(:disabled) {
-  background: #1558b0;
+  background: #2f6fe0;
 }
 
 #sfx-card-send:disabled {
-  background: #f0f0f0;
-  color: #999999;
-  border: 1px solid #cccccc;
+  background: rgba(255, 255, 255, 0.06);
+  color: #6b7280;
+  border: 1px solid rgba(255, 255, 255, 0.10);
   cursor: not-allowed;
 }
 
@@ -337,15 +360,15 @@
   font-size: 12px;
   font-weight: 400;
   padding: 5px 12px;
-  border-radius: 4px;
-  border: 1px solid #cccccc;
-  background: #f0f0f0;
-  color: #666666;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: transparent;
+  color: #9aa3b2;
   cursor: pointer;
 }
 
 #sfx-card-cancel:hover {
-  background: #e0e0e0;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 /* ============================================================
@@ -360,16 +383,16 @@
   width: 320px;
   max-width: calc(100vw - 32px);
   border-radius: 6px;
-  border: 1px solid #cccccc;
-  background: #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.20);
+  background: #1b1e24;
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.48), 0 3px 10px rgba(0, 0, 0, 0.32);
   display: flex;
   flex-direction: row;
   align-items: stretch;
   overflow: hidden;
   font-family: system-ui, -apple-system, sans-serif;
   font-size: 13px;
-  color: #111111;
+  color: #e8eaef;
   pointer-events: auto;
   opacity: 1;
   transition: opacity 200ms ease;
@@ -406,7 +429,7 @@
 
 .sfx-toast-msg {
   font-size: 13px;
-  color: #111111;
+  color: #e8eaef;
   word-break: break-word;
 }
 
@@ -417,13 +440,13 @@
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
-  color: #666666;
+  color: #9aa3b2;
   flex-shrink: 0;
   align-self: center;
 }
 
 .sfx-toast-dismiss:hover {
-  color: #111111;
+  color: #e8eaef;
 }
 
 /* ============================================================
@@ -434,8 +457,8 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: #f0f0f0;
-  border: 1px solid #cccccc;
+  background: #22262e;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   cursor: pointer;
   font-size: 16px;
   display: flex;
@@ -446,13 +469,13 @@
 }
 
 .sfx-picker-btn:hover {
-  background: #e0e0e0;
+  background: #2a2f38;
 }
 
 .sfx-picker-btn.sfx-active {
-  background: #fff3e0;
+  background: rgba(245, 158, 11, 0.18);
   border-color: #ff6b00;
-  box-shadow: 0 0 0 2px rgba(255, 107, 0, 0.25);
+  box-shadow: 0 0 0 2px rgba(255, 107, 0, 0.30);
 }
 
 /* ============================================================
@@ -588,11 +611,11 @@
 .sfx-ctx-header {
   padding: 4px 12px;
   min-height: 28px;
-  background: #f8f4f0;
-  border-bottom: 1px solid #e8e0d8;
+  background: #20242b;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   font-size: 13px;
   font-weight: 400;
-  color: #444444;
+  color: #9aa3b2;
   line-height: 1.4;
   overflow: hidden;
   white-space: nowrap;
@@ -607,7 +630,7 @@
   text-overflow: ellipsis;
   font-size: 13px;
   font-weight: 400;
-  color: #444444;
+  color: #9aa3b2;
   line-height: 1.4;
 }
 
@@ -628,32 +651,34 @@
  * Phase 6: Visual design — paper aesthetic on card (UI-02, UI-03)
  * ============================================================ */
 
-/* Free-note card — warm cream paper background */
+/* Free-note card — dark glass surface (no cream paper fill) */
 #sfx-card {
-  background: #fefce8;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.22);
+  background: #1b1e24;
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.48), 0 3px 10px rgba(0, 0, 0, 0.32);
 }
 
-/* Free-note header — amber strip */
+/* Free-note header — dark strip with a tasteful amber top-accent line */
 .sfx-card-header {
-  background: #fde68a;
-  border-bottom-color: #f59e0b;
+  background: #22262e;
+  border-bottom-color: rgba(255, 255, 255, 0.07);
+  box-shadow: inset 0 2px 0 #f59e0b;
 }
 
-/* Element-note card — very light blue paper tint */
+/* Element-note card — same dark glass surface */
 #sfx-card.sfx-card-element {
-  background: #eff6ff;
+  background: #1b1e24;
 }
 
-/* Element-note header — blue strip */
+/* Element-note header — dark strip with a tasteful blue top-accent line */
 #sfx-card.sfx-card-element .sfx-card-header {
-  background: #dbeafe;
-  border-bottom-color: #93c5fd;
+  background: #22262e;
+  border-bottom-color: rgba(255, 255, 255, 0.07);
+  box-shadow: inset 0 2px 0 #60a5fa;
 }
 
 /* Toast shadow upgrade (UI-04) */
 .sfx-toast {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.20);
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.48), 0 3px 10px rgba(0, 0, 0, 0.32);
 }
 
 /* ============================================================
@@ -664,8 +689,9 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: #f0f0f0;
-  border: 1px solid #cccccc;
+  background: #2f3540;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #f2f4f8;
   cursor: pointer;
   font-size: 16px;
   display: flex;
@@ -680,7 +706,8 @@
 }
 
 .sfx-cam-btn:hover {
-  background: #e0e0e0;
+  background: #3b4250;
+  border-color: rgba(255, 255, 255, 0.34);
 }
 
 .sfx-cam-btn:disabled {
@@ -705,8 +732,8 @@
 /* Live rubber-band selection rect inside scrim */
 .sfx-cam-rect {
   position: absolute;
-  border: 2px solid #1d6ed8;
-  background: rgba(29, 110, 216, 0.12);
+  border: 2px solid #3b82f6;
+  background: rgba(59, 130, 246, 0.12);
   display: none;
   box-sizing: border-box;
   pointer-events: none;
@@ -732,7 +759,7 @@
   flex-shrink: 0;
   width: 64px;
   height: 48px;
-  border: 1px solid #cccccc;
+  border: 1px solid rgba(255, 255, 255, 0.10);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -870,7 +897,7 @@
 .sfx-pin-body-text {
   font-size: 14px;
   line-height: 1.5;
-  color: #111111;
+  color: #e8eaef;
   max-height: 200px;
   overflow-y: auto;
   white-space: pre-wrap;
@@ -881,8 +908,8 @@
 .sfx-btn-delete {
   padding: 4px 10px;
   border: 1px solid #dc2626;
-  color: #dc2626;
-  background: #ffffff;
+  color: #f87171;
+  background: transparent;
   border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
@@ -891,7 +918,7 @@
 }
 
 .sfx-btn-delete:hover {
-  background: #fee2e2;
+  background: rgba(220, 38, 38, 0.15);
 }
 
 /* Confirm delete button (destructive CTA — red filled) */
@@ -920,7 +947,7 @@
 /* Delete confirm prompt text */
 .sfx-del-confirm-text {
   font-size: 12px;
-  color: #444444;
+  color: #9aa3b2;
   font-family: system-ui, -apple-system, sans-serif;
   flex: 1;
 }

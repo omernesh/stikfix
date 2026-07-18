@@ -5,7 +5,18 @@ All notable changes to **stikfix** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.4.0] - 2026-07-18
+## [1.5.0] - 2026-07-18
+
+### Added
+- **Git-sync mode (opt-in, per project).** A new **"Sync notes to git"** toggle in the extension popup — off by default — makes the host automatically `git add` / `git commit` / `git push` after writing each captured note (and its screenshots), pathspec-limited to `notes/` so it never touches the owner's code changes. A new `--git-sync` host CLI flag sets it as a machine-level default. This lets notes captured on one computer show up (via `git pull`) on another computer where the AI agent works — notes stay plain markdown files, read exactly as before. The host uses the machine's existing git auth (SSH/credential manager); stikfix stores no token.
+- **`/status` reports git-sync state.** The host status endpoint now includes `gitRepo` (whether the project root is a git repository) and `gitSyncStatus` (whether git-sync is enabled and its last commit/push outcome), so the extension and other tooling can surface sync health.
+- **`review-notes` skill updated for git-sync.** `skill/SKILL.md` now documents pulling before reading notes (so notes pushed from another machine are visible) and committing/pushing the skill's own frontmatter edits (`status: resolved`, `reply`, etc.) in git-sync projects, since the host only auto-commits new note captures, not the skill's later edits.
+
+### Changed
+- **Dark-theme polish across the on-page UI and popup.** The on-page chip, notes panel, note cards, and toasts now share a cohesive dark surface with lighter outlines so each box stands out against the page. The chip and notes panel each gained a **`||` drag grip** signalling they can be grabbed and dragged, and the **notes panel is now draggable** by its header (previously fixed in place). The popup is a clean edge-to-edge dark surface. Purely visual — all drag, routing, and capture behaviour is unchanged.
+
+### Fixed
+- **The "Sync notes to git" toggle now persists.** It previously reset to unchecked every time the popup reopened: prefs saved before the git-sync field existed had no `gitSync` key, and the storage fallback only fills a wholly-absent item (it never back-fills a new key), so both the read and the write threw and were silently swallowed. The popup read/write and the background send path now tolerate the missing key and initialise it on first write.
 
 ### Added
 - **Annotation drawing toolbar.** A new **✎ Annotate** button on every note card opens a floating dark-pill toolbar for marking up a screenshot. Entering draw mode freezes the current page as a still image (stikfix's own UI is excluded from the capture, same as the region tool), then you can draw **arrows, lines, rectangles, circles/ellipses, and freehand marker** strokes — with a **color** picker and **stroke-thickness** control, a live drag-preview, select-move-delete, and `Ctrl+Z` undo. Clicking **Save** flattens the shapes into the captured PNG and attaches it as a normal screenshot, so it travels to disk with the note exactly like today's screenshots — no host, frontmatter, or file-format change. The on-screen preview matches the saved pixels exactly (the editor and the flattener share one draw routine).

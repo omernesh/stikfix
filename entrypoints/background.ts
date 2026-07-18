@@ -619,7 +619,23 @@ async function handleSendAnnotation(
   //    This is the ONLY fetch to 127.0.0.1 in the extension (T-03-04).
   //    For folder-mapped origins, targetDir rides in the POST body; the host
   //    re-validates it and confines the write to <targetDir>/notes (D-04).
-  const sendBody = targetDir !== undefined ? { ...payload, targetDir } : payload;
+  let sendBody: unknown = targetDir !== undefined ? { ...payload, targetDir } : payload;
+
+  // git-sync (opt-in): read fresh (not via `state.prefs` — StorageState.prefs
+  // in lib/types.ts, out of scope for this change, doesn't declare gitSync
+  // yet) so this stays fully typed without a cast. Keyed by the SAME resolved
+  // host.name the popup checkbox uses (see sfxPrefs.gitSync doc in
+  // lib/storage.ts) — mirrors the targetDir conditional immediately above:
+  // gitSync:true is attached ONLY when the toggle is on; it is OMITTED
+  // entirely (never sent as gitSync:false) when off, so gitSync-OFF traffic
+  // is byte-for-byte identical to before this feature existed.
+  const gitSyncPrefs = await sfxPrefs.getValue();
+  // Optional-chain: prefs persisted before the gitSync field existed have no
+  // gitSync key (WXT fallback never deep-merges into a partial stored object).
+  if (gitSyncPrefs.gitSync?.[host.name] === true) {
+    sendBody = { ...(sendBody as Record<string, unknown>), gitSync: true };
+  }
+
   const requestBody = JSON.stringify(sendBody);
 
   // Single shared relay with token-rotation recovery: on 401 (stale cached token
@@ -930,6 +946,73 @@ async function handleGetScreenshot(
   }
   const dataUrl = 'data:image/png;base64,' + btoa(binary);
   return { ok: true, dataUrl };
+}
+
+// ---------------------------------------------------------------------------
+// git-sync status probe — SFX_GET_GIT_STATUS (popup-only, best-effort)
+// ---------------------------------------------------------------------------
+
+/**
+ * Wire-protocol message type for the git-sync status probe. Deliberately a
+ * local string literal (not exported from lib/types.ts — out of scope for
+ * this change) mirrored verbatim in entrypoints/popup/main.ts.
+ */
+const SFX_GET_GIT_STATUS = 'SFX_GET_GIT_STATUS' as const;
+
+interface MsgGetGitStatus {
+  type: typeof SFX_GET_GIT_STATUS;
+  hostName: string;
+}
+
+type GitStatusResponse =
+  | { ok: true; gitRepo?: boolean; gitSyncStatus?: { ok: boolean; error?: string; at: number } | null }
+  | { ok: false; error: string };
+
+/**
+ * Best-effort GET /status fetch used ONLY to surface gitRepo/gitSyncStatus in
+ * the popup's "Sync notes to git" checkbox (opt-in UI nicety).
+ *
+ * Deliberately NOT folded into handleGetRoute or handleSendAnnotation: those
+ * are hot paths (every popup open, every Enter Review Mode, every Send) and
+ * must never gain new latency or a new failure mode from an unrelated status
+ * probe. This is its own message + handler, invoked only by the popup, with a
+ * short timeout so a slow/dead host can never hang anything — a failure or
+ * timeout here just means the checkbox stays enabled with no hint (the host
+ * no-ops when the project isn't a git repo, per the shared contract).
+ *
+ * /status is token-free (HOST-04/D-06 — see host/src/server.ts) so no auth
+ * header is attached.
+ */
+async function handleGetGitStatus(hostName: string): Promise<GitStatusResponse> {
+  const registry = await sfxRegistry.getValue();
+  const host = registry[hostName];
+  if (!host) {
+    return { ok: false, error: `Unknown host: ${hostName}` };
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 1500);
+  try {
+    const resp = await fetch(`http://127.0.0.1:${host.port}/status`, { signal: controller.signal });
+    if (!resp.ok) {
+      return { ok: false, error: `HTTP ${resp.status}` };
+    }
+    const body = (await resp.json()) as { gitRepo?: unknown; gitSyncStatus?: unknown };
+    const gitRepo = typeof body.gitRepo === 'boolean' ? body.gitRepo : undefined;
+    let gitSyncStatus: { ok: boolean; error?: string; at: number } | null | undefined;
+    if (body.gitSyncStatus === null) {
+      gitSyncStatus = null;
+    } else if (body.gitSyncStatus && typeof body.gitSyncStatus === 'object') {
+      gitSyncStatus = body.gitSyncStatus as { ok: boolean; error?: string; at: number };
+    } else {
+      gitSyncStatus = undefined;
+    }
+    return { ok: true, gitRepo, gitSyncStatus };
+  } catch (e: unknown) {
+    return { ok: false, error: String(e) };
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1424,7 +1507,7 @@ interface MsgGetTabId {
  */
 chrome.runtime.onMessage.addListener(
   (
-    msg: SfxMessage | MsgSetRoute | MsgGetTabId | MsgCaptureTab | MsgAddHost | MsgRemoveHost | MsgGetScreenshot,
+    msg: SfxMessage | MsgSetRoute | MsgGetTabId | MsgCaptureTab | MsgAddHost | MsgRemoveHost | MsgGetScreenshot | MsgGetGitStatus,
     sender: chrome.runtime.MessageSender,
     sendResponse: (response: unknown) => void
   ): true | void => {
@@ -1603,6 +1686,17 @@ chrome.runtime.onMessage.addListener(
             sendResponse({ ok: false, error: String(err) })
           );
         return true;
+
+      case SFX_GET_GIT_STATUS: {
+        // Popup-only best-effort probe (see handleGetGitStatus doc comment).
+        const gsMsg = msg as MsgGetGitStatus;
+        handleGetGitStatus(gsMsg.hostName)
+          .then(sendResponse)
+          .catch((err: unknown) =>
+            sendResponse({ ok: false, error: String(err) })
+          );
+        return true;
+      }
 
       case SFX_GET_SCREENSHOT: {
         // T-06-06 IDOR guard: only the tab that owns the note may fetch its screenshots

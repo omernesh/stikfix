@@ -115,6 +115,32 @@ cp /path/to/stikfix/skill/SKILL.md .claude/skills/review-notes/SKILL.md
 
 Run it on a clean directory and it just says "no unread notes." Safe to fire any time.
 
+## Git-sync mode (optional)
+
+By default stikfix is purely local: notes land in `notes/` and nothing else
+happens. **Git-sync mode** is an opt-in, per-project mode for working across
+more than one computer — capture a note on your laptop, `git pull` on your
+desktop, and your agent sees it there.
+
+- **Enable it** with the **"Sync notes to git"** toggle in the extension
+  popup for that project, or set it as a machine-level default by launching
+  the host with the `--git-sync` flag.
+- **Requirements:** the project must be a git repository with a configured
+  remote you can push to. stikfix uses your machine's existing git auth
+  (SSH key / credential manager) — it never stores or handles a token itself.
+- **What it does:** after writing a captured note (and any screenshot PNGs)
+  to disk, the host runs `git add`, `git commit`, and `git push` — all
+  pathspec-limited to `notes/`, so it only ever commits notes and never
+  touches your code changes.
+- **Multi-computer workflow:** capture notes on machine A → they're pushed
+  automatically → `git pull` on machine B → your AI agent (via the
+  `review-notes` skill) sees them. The skill also pulls before reading and
+  pushes its own frontmatter updates (`status: resolved`, `reply`, etc.) back
+  up — see [`skill/SKILL.md`](skill/SKILL.md).
+- **Repo size:** screenshots are committed as PNGs alongside their notes, so
+  the repo will grow over time with review history — something to be aware
+  of on long-lived projects.
+
 ## Demo
 
 ![stikfix demo](docs/demo-placeholder.png)

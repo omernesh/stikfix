@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
     <title>stikfix</title>
     <link rel="stylesheet" href="./popup.css" />
   </head>
@@ -44,6 +45,11 @@
           <input id="sfx-hints-checkbox" type="checkbox" />
           <span>Show hints in Pick Mode</span>
         </label>
+        <label id="sfx-gitsync-label" for="sfx-gitsync-checkbox">
+          <input id="sfx-gitsync-checkbox" type="checkbox" />
+          <span>Sync notes to git</span>
+        </label>
+        <span id="sfx-gitsync-hint" hidden></span>
       </section>
 
       <!-- Routing line for the active tab -->

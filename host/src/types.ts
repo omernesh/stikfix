@@ -64,6 +64,12 @@ export interface AnnotationPayload {
    * origin→host default path.
    */
   targetDir?: string;
+  /**
+   * Opt-in git-sync (per-send). When true, the host commits ONLY the notes/
+   * folder and pushes AFTER the 200 is sent — non-blocking. Combined with the
+   * CLI/machine default cfg.gitSync via OR: a note is synced if either is true.
+   */
+  gitSync?: boolean;
 }
 
 export interface Config {
@@ -73,4 +79,6 @@ export interface Config {
   origins: string[];
   port?: number;
   token: string;
+  /** CLI/machine default for git-sync (--git-sync / STIKFIX_GIT_SYNC). Default false. */
+  gitSync: boolean;
 }

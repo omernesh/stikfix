@@ -76,6 +76,15 @@ export function mountPanel(
   const titleRow = document.createElement('div');
   titleRow.className = 'sfx-panel-title-row';
 
+  // Drag grip — "||" affordance signalling the panel can be grabbed by its
+  // header and dragged across the screen. Visual only; the header itself is the
+  // drag surface (makeDraggableByHandle below).
+  const grip = document.createElement('span');
+  grip.className = 'sfx-panel-grip';
+  grip.textContent = '||';
+  grip.setAttribute('aria-hidden', 'true');
+  grip.title = 'Drag to move';
+
   const title = document.createElement('span');
   title.className = 'sfx-panel-title';
   title.textContent = 'Notes';
@@ -91,6 +100,7 @@ export function mountPanel(
   closeBtn.textContent = '×';
   closeBtn.addEventListener('click', () => togglePanel());
 
+  titleRow.appendChild(grip);
   titleRow.appendChild(title);
   titleRow.appendChild(count);
   titleRow.appendChild(closeBtn);
@@ -181,6 +191,77 @@ export function mountPanel(
   panel.appendChild(header);
   panel.appendChild(listEl);
   container.appendChild(panel);
+
+  // Make the panel draggable by its header (EXT-11). Position is ephemeral —
+  // not persisted — matching the chip/FAB behaviour.
+  makeDraggableByHandle(panel, header);
+}
+
+/**
+ * Make `el` draggable by grabbing `handle`. Position is clamped to the viewport
+ * and switches from the CSS top/right anchor to left/top on first drag.
+ * Yields to interactive controls inside the handle (buttons, inputs, the search
+ * field, filter chips) so their native clicks are never swallowed by drag capture.
+ */
+function makeDraggableByHandle(el: HTMLElement, handle: HTMLElement): void {
+  handle.style.cursor = 'move';
+
+  let isDragging = false;
+  let startX = 0;
+  let startY = 0;
+  let origLeft = 0;
+  let origTop = 0;
+
+  handle.addEventListener('pointerdown', (e: PointerEvent) => {
+    if (e.button !== 0) return;
+
+    // Only the header's own chrome initiates a drag — never its controls.
+    const target = e.target as HTMLElement | null;
+    if (target && target.closest('button, select, input, option, a, textarea, label')) {
+      return;
+    }
+
+    handle.setPointerCapture(e.pointerId);
+    isDragging = true;
+
+    const rect = el.getBoundingClientRect();
+    origLeft = rect.left;
+    origTop = rect.top;
+    startX = e.clientX;
+    startY = e.clientY;
+
+    // Switch to left+top positioning (the CSS anchor uses top/right).
+    el.style.right = 'auto';
+    el.style.left = `${origLeft}px`;
+    el.style.top = `${origTop}px`;
+
+    e.preventDefault();
+  });
+
+  handle.addEventListener('pointermove', (e: PointerEvent) => {
+    if (!isDragging || !handle.hasPointerCapture(e.pointerId)) return;
+
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+
+    const w = el.offsetWidth || el.getBoundingClientRect().width || 0;
+    const h = el.offsetHeight || el.getBoundingClientRect().height || 0;
+
+    const newLeft = Math.max(0, Math.min(Math.max(0, window.innerWidth - w), origLeft + dx));
+    const newTop = Math.max(0, Math.min(Math.max(0, window.innerHeight - h), origTop + dy));
+
+    el.style.left = `${newLeft}px`;
+    el.style.top = `${newTop}px`;
+  });
+
+  const endDrag = (e: PointerEvent) => {
+    if (!isDragging) return;
+    isDragging = false;
+    try { handle.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+  };
+
+  handle.addEventListener('pointerup', endDrag);
+  handle.addEventListener('pointercancel', endDrag);
 }
 
 export function togglePanel(): void {

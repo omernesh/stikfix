@@ -30,6 +30,8 @@ const refreshBtn = document.getElementById('sfx-refresh-btn') as HTMLButtonEleme
 const reviewBtn = document.getElementById('sfx-review-btn') as HTMLButtonElement;
 const toggleErrorEl = document.getElementById('sfx-toggle-error') as HTMLElement;
 const hintsCheckbox = document.getElementById('sfx-hints-checkbox') as HTMLInputElement;
+const gitsyncCheckbox = document.getElementById('sfx-gitsync-checkbox') as HTMLInputElement;
+const gitsyncHintEl = document.getElementById('sfx-gitsync-hint') as HTMLElement;
 const routingLineEl = document.getElementById('sfx-routing-line')!;
 
 // Recent projects section
@@ -371,12 +373,14 @@ async function renderRoutingLine(): Promise<void> {
     tabs = await chrome.tabs.query({ active: true, currentWindow: true });
   } catch {
     routingLineEl.textContent = 'unmapped — pick on page';
+    await setActiveHost(null);
     return;
   }
 
   const tab = tabs[0];
   if (!tab?.id || !tab.url) {
     routingLineEl.textContent = 'unmapped — pick on page';
+    await setActiveHost(null);
     return;
   }
 
@@ -385,6 +389,7 @@ async function renderRoutingLine(): Promise<void> {
     origin = new URL(tab.url).origin;
   } catch {
     routingLineEl.textContent = 'unmapped — pick on page';
+    await setActiveHost(null);
     return;
   }
 
@@ -399,11 +404,14 @@ async function renderRoutingLine(): Promise<void> {
       const host = resp.host as HostEntry;
       routingLineEl.textContent =
         '→ ' + host.name + ' · ' + host.notesDir;
+      await setActiveHost(host.name);
     } else {
       routingLineEl.textContent = 'unmapped — pick on page';
+      await setActiveHost(null);
     }
   } catch {
     routingLineEl.textContent = 'unmapped — pick on page';
+    await setActiveHost(null);
   }
 }
 
@@ -514,6 +522,127 @@ hintsCheckbox.addEventListener('change', () => {
     try {
       const prefs = await sfxPrefs.getValue();
       prefs.showHints = hintsCheckbox.checked;
+      await sfxPrefs.setValue(prefs);
+    } catch {
+      // Non-fatal — the next open re-reads current state
+    }
+  })();
+});
+
+// ---------------------------------------------------------------------------
+// Git-sync preference — per-project checkbox load + persist
+//
+// Keyed by the SAME stable identifier as background.ts's send-time lookup:
+// the resolved host's registry name (HostEntry.name — see the doc comment on
+// sfxPrefs.gitSync in lib/storage.ts). That identifier is only known once
+// renderRoutingLine() resolves a route for the active tab, so `activeHostName`
+// tracks it here and setActiveHost() is the single place that keeps the
+// checkbox's checked/enabled state and hint text in sync with it.
+//
+// Wire-protocol note: 'SFX_GET_GIT_STATUS' is duplicated as a string literal
+// (matching background.ts) rather than imported from lib/types.ts, which is
+// out of scope for this change.
+// ---------------------------------------------------------------------------
+
+const SFX_GET_GIT_STATUS = 'SFX_GET_GIT_STATUS';
+
+let activeHostName: string | null = null;
+
+function hideGitSyncHint(): void {
+  gitsyncHintEl.hidden = true;
+  gitsyncHintEl.textContent = '';
+  gitsyncHintEl.classList.remove('sfx-gitsync-hint--error');
+}
+
+function showGitSyncHint(text: string, isError: boolean): void {
+  gitsyncHintEl.textContent = text;
+  gitsyncHintEl.hidden = false;
+  gitsyncHintEl.classList.toggle('sfx-gitsync-hint--error', isError);
+}
+
+/**
+ * Best-effort gitRepo/gitSyncStatus probe (SFX_GET_GIT_STATUS → SW → host
+ * GET /status). Fire-and-forget from setActiveHost() — NEVER awaited by the
+ * routing-line render path, so a slow/dead host cannot delay popup rendering.
+ * A failed/timed-out probe leaves the checkbox enabled with no hint (host
+ * no-ops when the project isn't a git repo).
+ */
+type GitStatusProbeResponse =
+  | { ok: true; gitRepo?: boolean; gitSyncStatus?: { ok: boolean; error?: string; at: number } | null }
+  | { ok: false; error: string }
+  | null;
+
+async function probeGitStatus(hostName: string): Promise<void> {
+  let resp: GitStatusProbeResponse = null;
+  try {
+    resp = (await chrome.runtime.sendMessage({ type: SFX_GET_GIT_STATUS, hostName })) as GitStatusProbeResponse;
+  } catch {
+    resp = null;
+  }
+
+  // Stale-response guard: the active host may have changed while this probe
+  // was in flight (Refresh clicked again, different tab focused) — drop it.
+  if (activeHostName !== hostName) return;
+
+  if (!resp || !resp.ok) return; // silent — checkbox stays enabled, no hint
+
+  if (resp.gitRepo === false) {
+    gitsyncCheckbox.disabled = true;
+    showGitSyncHint("This project isn't a git repo", false);
+    return;
+  }
+
+  if (resp.gitSyncStatus && resp.gitSyncStatus.ok === false) {
+    showGitSyncHint(
+      'Last sync failed' + (resp.gitSyncStatus.error ? ': ' + resp.gitSyncStatus.error : ''),
+      true
+    );
+  } else {
+    hideGitSyncHint();
+  }
+}
+
+/**
+ * Update activeHostName + the checkbox's checked/enabled state for the newly
+ * resolved (or lost) route, then kick off a non-blocking gitRepo status probe.
+ * Called from renderRoutingLine() at every return point.
+ */
+async function setActiveHost(name: string | null): Promise<void> {
+  activeHostName = name;
+
+  try {
+    const prefs = await sfxPrefs.getValue();
+    // Optional-chain: prefs persisted before the gitSync field existed have no
+    // gitSync key (WXT fallback only fills a wholly-absent item, never deep-merges).
+    gitsyncCheckbox.checked = name ? prefs.gitSync?.[name] === true : false;
+  } catch {
+    gitsyncCheckbox.checked = false;
+  }
+
+  if (!name) {
+    gitsyncCheckbox.disabled = true;
+    hideGitSyncHint();
+    return;
+  }
+
+  // Enabled by default while the best-effort probe is in flight (or if it
+  // never resolves) — the host no-ops when the project isn't a git repo.
+  gitsyncCheckbox.disabled = false;
+  hideGitSyncHint();
+
+  void probeGitStatus(name);
+}
+
+// Persist on change — read-modify-write so other prefs are preserved (never clobbered).
+gitsyncCheckbox.addEventListener('change', () => {
+  void (async () => {
+    if (!activeHostName) return;
+    try {
+      const prefs = await sfxPrefs.getValue();
+      // Init the map if this prefs object predates the gitSync field — otherwise
+      // the assignment throws (caught below) and the toggle never persists.
+      if (!prefs.gitSync) prefs.gitSync = {};
+      prefs.gitSync[activeHostName] = gitsyncCheckbox.checked;
       await sfxPrefs.setValue(prefs);
     } catch {
       // Non-fatal — the next open re-reads current state

@@ -30,6 +30,37 @@ without any manual copy-paste.
   programmatically parse or reserialize frontmatter; alternatively, parse the YAML
   block manually as described in the steps below
 
+## Git-sync mode (optional)
+
+stikfix has an opt-in **git-sync mode**: the owner can enable a "Sync notes to
+git" toggle (per project, off by default) that makes the host automatically
+`git add`/`git commit`/`git push` each captured note (pathspec-limited to
+`notes/`, so it never touches the owner's code changes). This lets notes
+captured on one computer show up — via `git pull` — on another computer where
+you run this skill.
+
+- **Before Step 1 (discovering unread notes):** if the project is a git
+  repository, run `git pull` (or `git pull --rebase`) so you see any notes
+  pushed from other machines before you list `notes/`. If the pull fails, or
+  the project is not a git repo, just continue with whatever notes are on
+  disk locally — never block the run on this.
+- **After you resolve or flag a note:** the host only auto-commits *new* note
+  captures — your own edits to a note's frontmatter (setting
+  `status: resolved`, adding `reply:`, etc.) are plain disk writes the host
+  does not know about and will not commit or push. So, only when the project
+  is a git repo AND git-sync is in use, after writing your frontmatter
+  update(s) also stage, commit, and push just the notes directory:
+
+  ```
+  git add -- notes/ && git commit -m "stikfix: resolve NNNN" && git push
+  ```
+
+  Treat this as best-effort: if the push fails (no network, no remote,
+  auth issue), leave the change committed locally and mention it in your
+  summary rather than retrying repeatedly. In pure local mode (no git-sync)
+  do nothing git-related — the file writes described in the rest of this
+  document are already the whole job.
+
 ## Note frontmatter schema
 
 Every note file starts with a YAML frontmatter block. The fields written by the
@@ -323,5 +354,8 @@ duplicate `> flagged:` blockquote.
 - **Overwrite existing frontmatter fields** — always parse the YAML block, update
   only `status`, `reply`, and `fixed_in`, and reserialize. Never clobber `id`,
   `created`, `url`, `selector`, or any other field the extension wrote.
-- **Make network or host calls** — this skill is disk-only; do not call the stikfix
-  host HTTP API, do not POST to any endpoint
+- **Make network or host calls to the stikfix host** — this skill is disk-only with
+  respect to stikfix itself; do not call the stikfix host HTTP API, do not POST to
+  any endpoint. (The local `git` CLI — `pull`/`add`/`commit`/`push` — is explicitly
+  permitted, and expected in git-sync mode; see "Git-sync mode (optional)" above.
+  That is a plain local git operation, not a call to the stikfix host.)

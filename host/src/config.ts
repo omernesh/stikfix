@@ -86,6 +86,21 @@ export function resolveConfigValues(
     env['STIKFIX_TOKEN'] ??
     env['npm_config_token'];
 
+  // git-sync — flag (boolean) > STIKFIX_GIT_SYNC > npm_config_git_sync.
+  // Presence of --git-sync (boolean true), or env value '1'/'true', enables it.
+  // Returned under the same 'git-sync' key so it survives the double resolution
+  // (index.ts resolves once, resolveConfig resolves again).
+  const gitSyncFlag = values['git-sync'];
+  let gitSync: boolean | undefined;
+  if (typeof gitSyncFlag === 'boolean') {
+    gitSync = gitSyncFlag;
+  } else {
+    const gitSyncEnv = env['STIKFIX_GIT_SYNC'] ?? env['npm_config_git_sync'];
+    if (gitSyncEnv !== undefined) {
+      gitSync = gitSyncEnv === '1' || gitSyncEnv.toLowerCase() === 'true';
+    }
+  }
+
   return {
     root,
     origin: origins,
@@ -93,6 +108,7 @@ export function resolveConfigValues(
     'notes-dir': notesDir,
     port,
     token,
+    'git-sync': gitSync,
   };
 }
 
@@ -141,7 +157,10 @@ export function resolveConfig(values: Record<string, unknown>): Config {
   // D-07 token resolution order (npm_config_token handled in resolveConfigValues)
   const token = (v['token'] as string | undefined) ?? randomUUID();
 
-  return { root, notesDir, name, origins, port, token };
+  // git-sync default false (opt-in). resolveConfigValues resolved the three tiers.
+  const gitSync = (v['git-sync'] as boolean | undefined) ?? false;
+
+  return { root, notesDir, name, origins, port, token, gitSync };
 }
 
 // ---------------------------------------------------------------------------

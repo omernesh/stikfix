@@ -142,6 +142,16 @@ export function mountChip(
   chip.id = 'sfx-chip';
   container.appendChild(chip);
 
+  // Drag grip — "||" affordance signalling the chip can be grabbed and dragged
+  // across the screen (EXT-11). Purely visual: makeDraggable(chip) already drags
+  // from any non-interactive part of the chip; the grip just makes it discoverable.
+  const grip = document.createElement('span');
+  grip.className = 'sfx-chip-grip';
+  grip.textContent = '||';
+  grip.setAttribute('aria-hidden', 'true');
+  grip.title = 'Drag to move';
+  chip.appendChild(grip);
+
   // Status dot
   const dot = document.createElement('span');
   dot.className = 'sfx-status-dot';

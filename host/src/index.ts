@@ -32,6 +32,7 @@ const { values: rawValues } = parseArgs({
     'notes-dir': { type: 'string' },
     port: { type: 'string' },
     token: { type: 'string' },
+    'git-sync': { type: 'boolean' },
   },
   strict: false,
 });

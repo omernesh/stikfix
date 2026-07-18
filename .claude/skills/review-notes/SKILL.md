@@ -15,3 +15,5 @@ description: |
 
 Read and follow the instructions in `skill/SKILL.md` in this repository.
 The notes directory defaults to `./notes` relative to the project root.
+Opt-in **git-sync mode** (pull-before-read, commit+push after resolving) is
+also covered there — see "Git-sync mode (optional)" in `skill/SKILL.md`.
