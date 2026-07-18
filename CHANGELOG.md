@@ -5,6 +5,12 @@ All notable changes to **stikfix** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1] - 2026-07-18
+
+### Added
+
+- **The `review-notes` agent skill now installs itself.** The Windows installer offers an "Install the review-notes skill for Claude Code" task, and `npx stikfix init` installs it automatically — both to the user-level `~/.claude/skills/review-notes/SKILL.md`, so every Claude Code project can run "read my notes" with no manual copy. Pass `npx stikfix init --no-skill` to skip; `npx stikfix uninstall` removes it.
+
 ## [1.7.0] - 2026-07-18
 
 ### Added

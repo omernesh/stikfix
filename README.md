@@ -122,14 +122,18 @@ Every note becomes a markdown file in your project's `notes/` folder, named `<se
 
 The **review-notes** skill is the agent half of the loop. It works through your unread notes in serial order, applies each fix, then writes a short **`reply`** into the note and marks it **`resolved`** (the pin turns green ✓ on the page). Re-running is always idempotent — resolved, flagged, and archived notes are skipped.
 
-**Claude Code (project-local):**
+**Claude Code:** installation is now **automatic** — both the Windows installer's "Install the review-notes skill for Claude Code" task and `npx stikfix init` drop the skill into the user-level `~/.claude/skills/review-notes/SKILL.md`, so it's available in *every* Claude Code project with no manual copy. Pass `npx stikfix init --no-skill` to skip it; `npx stikfix uninstall` removes it.
 
-```bash
-mkdir -p .claude/skills/review-notes
-cp /path/to/stikfix/skill/SKILL.md .claude/skills/review-notes/SKILL.md
-```
+Fallbacks (both optional):
 
-**Any other folder-reading agent (Cursor, Codex, etc.):** point it at [`skill/SKILL.md`](skill/SKILL.md) — it's plain markdown, no Claude-specific bits. For example: *"follow the instructions in skill/SKILL.md."*
+- **Project-local install** — to pin the skill to one repo instead of user-wide:
+
+  ```bash
+  mkdir -p .claude/skills/review-notes
+  cp /path/to/stikfix/skill/SKILL.md .claude/skills/review-notes/SKILL.md
+  ```
+
+- **Any other folder-reading agent (Cursor, Codex, etc.):** point it at [`skill/SKILL.md`](skill/SKILL.md) — it's plain markdown, no Claude-specific bits. For example: *"follow the instructions in skill/SKILL.md."*
 
 **Just say the word.** Any of these kicks it off:
 

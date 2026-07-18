@@ -39,11 +39,16 @@ Name: "ext\brave";   Description: "Brave";                        Types: full cu
 [Tasks]
 Name: "startup";     Description: "Run the Stikfix host automatically when I sign in to Windows"; GroupDescription: "Startup:"
 Name: "desktopicon"; Description: "Create a desktop shortcut";    GroupDescription: "Shortcuts:"
+Name: "claudeskill"; Description: "Install the review-notes skill for Claude Code (all projects)"; GroupDescription: "AI agent:"
 
 [Files]
 Source: "..\dist\sea\stikfix-host.exe"; DestDir: "{app}"; Components: host; Flags: ignoreversion
 Source: "..\dist\crx\stikfix.crx";      DestDir: "{app}"; Components: ext;  Flags: ignoreversion
 Source: "..\public\icon\stikfix.ico";   DestDir: "{app}"; Flags: ignoreversion
+; Reference copy of the review-notes agent skill, always shipped to {app}.
+Source: "..\skill\SKILL.md";            DestDir: "{app}"; Flags: ignoreversion
+; User-level install so every Claude Code project can run "read my notes" (task-gated, default on).
+Source: "..\skill\SKILL.md";            DestDir: "{%USERPROFILE}\.claude\skills\review-notes"; Flags: ignoreversion; Tasks: claudeskill
 
 [Icons]
 Name: "{group}\Stikfix Host";         Filename: "{sys}\wscript.exe"; Parameters: "//B //Nologo ""{%USERPROFILE}\.local\share\stikfix\stikfix-host.vbs"""; IconFilename: "{app}\stikfix.ico"

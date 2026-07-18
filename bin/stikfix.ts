@@ -20,6 +20,10 @@ import { createInterface } from 'node:readline';
 import { registerNativeHost, createLauncherFiles, registerStartup, unregisterStartup, teardownHost, DEFAULT_GECKO_ID } from '../host/src/bootstrap/register.js';
 import type { TargetBrowser } from '../host/src/bootstrap/register.js';
 import { STABLE_EXTENSION_ID, MANIFEST_PUBLIC_KEY } from '../host/src/extension-id.js';
+import { installReviewNotesSkill, removeReviewNotesSkill } from './skill-install.js';
+// esbuild inlines this file's text via `--loader:.md=text` (build:host-bin);
+// tsc sees it as `string` through the ambient `*.md` module decl (bin/md-text.d.ts).
+import SKILL_MD from '../skill/SKILL.md';
 
 // ---------------------------------------------------------------------------
 // CLI parsing — positionals for subcommand dispatch
@@ -34,6 +38,7 @@ const { values, positionals } = parseArgs({
     browser: { type: 'string' },
     startup: { type: 'boolean' },
     'no-startup': { type: 'boolean' },
+    'no-skill': { type: 'boolean' },
   },
   strict: false,
 });
@@ -338,6 +343,22 @@ if (subcommand === 'init') {
   console.log('');
   console.log('  Extension ID: ' + extensionId);
   console.log('');
+
+  // Install the review-notes skill for Claude Code (user-level, all projects),
+  // unless the user opted out with --no-skill. Best-effort: a failure here never
+  // fails init (the native host is already registered) — just surfaces a warning.
+  if (values['no-skill'] === true) {
+    console.log('  Skill:        skipped — review-notes skill not installed (--no-skill).');
+  } else {
+    const skillResult = installReviewNotesSkill(homedir(), SKILL_MD);
+    if (skillResult.ok) {
+      console.log('  ✓ Installed the review-notes skill for Claude Code → ' + skillResult.path);
+    } else {
+      console.error('stikfix init: could not install review-notes skill: ' + skillResult.error + ' (copy skill/SKILL.md manually)');
+    }
+  }
+  console.log('');
+
   console.log('To keep the host up-to-date:');
   console.log('  npx --yes stikfix@latest init --root ' + root);
 
@@ -363,20 +384,30 @@ if (subcommand === 'init') {
     // Non-fatal — continue.
   }
 
+  // Best-effort removal of the user-level review-notes skill (never fails uninstall).
+  const skillRemoval = removeReviewNotesSkill(homedir());
+
   console.log('stikfix: native host unregistered.');
   console.log('  manifest removed');
   console.log('  launcher files removed');
   console.log('  startup entry removed');
   console.log('  config removed');
+  console.log(
+    skillRemoval.removed
+      ? '  review-notes skill removed'
+      : '  review-notes skill not present (nothing to remove)',
+  );
 
 // ---------------------------------------------------------------------------
 // unknown subcommand
 // ---------------------------------------------------------------------------
 
 } else {
-  console.error('Usage: npx stikfix <init|uninstall> [--root <dir>] [--browser <chrome|firefox>] [--extension-id <id>] [--port <port>]');
+  console.error('Usage: npx stikfix <init|uninstall> [--root <dir>] [--browser <chrome|firefox>] [--extension-id <id>] [--port <port>] [--no-skill]');
   console.error('');
-  console.error('  init        Register the native host and write config');
-  console.error('  uninstall   Remove the native host manifest, launchers, and config');
+  console.error('  init        Register the native host, write config, and install the review-notes skill');
+  console.error('  uninstall   Remove the native host manifest, launchers, config, and review-notes skill');
+  console.error('');
+  console.error('  --no-skill  (init) Skip installing the review-notes Claude Code skill');
   process.exit(1);
 }

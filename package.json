@@ -1,6 +1,6 @@
 {
   "name": "stikfix",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "description": "Pin sticky notes on any page — your AI reads them.",
   "license": "MIT",
   "author": "Omer Nesher <omernesher@gmail.com>",
@@ -36,6 +36,7 @@
     "dist/host/stikfix-init.cjs",
     "dist/host/stikfix-native.cjs",
     "public/icon",
+    "skill/SKILL.md",
     "README.md",
     "LICENSE"
   ],
@@ -44,7 +45,7 @@
   },
   "scripts": {
     "dev": "wxt",
-    "build:host-bin": "npx esbuild bin/stikfix.ts --platform=node --format=cjs --bundle \"--external:node:*\" --outfile=dist/host/stikfix-init.cjs && npx esbuild host/src/native-host.ts --platform=node --format=cjs --bundle \"--external:node:*\" --outfile=dist/host/stikfix-native.cjs",
+    "build:host-bin": "npx esbuild bin/stikfix.ts --platform=node --format=cjs --bundle \"--external:node:*\" \"--loader:.md=text\" --outfile=dist/host/stikfix-init.cjs && npx esbuild host/src/native-host.ts --platform=node --format=cjs --bundle \"--external:node:*\" --outfile=dist/host/stikfix-native.cjs",
     "build": "wxt build && tsc -p tsconfig.host.json && npm run build:host-bin",
     "build:firefox": "wxt build -b firefox && tsc -p tsconfig.host.json && npm run build:host-bin",
     "host": "node dist/host/src/index.js",
