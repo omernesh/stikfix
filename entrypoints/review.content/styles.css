@@ -63,15 +63,15 @@
   /* Above the FAB (4) so the chip's exit/send controls always win pointer
      events when the draggable FAB is parked over the chip (UAT overlap fix). */
   z-index: 5;
-  background: #ffffff;
-  border: 1px solid #cccccc;
-  border-radius: 6px;
+  background: var(--sfx-pill-bg);
+  border: none;
+  border-radius: 10px;
   padding: 8px 12px;
   font-family: system-ui, -apple-system, sans-serif;
   font-size: 13px;
   line-height: 1;
-  color: #111111;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  color: var(--sfx-pill-text);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
   cursor: default;
   user-select: none;
   display: flex;
@@ -99,7 +99,7 @@
 /* Route label */
 .sfx-chip-label {
   font-size: 13px;
-  color: #111111;
+  color: var(--sfx-pill-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -114,7 +114,7 @@
  * keeps a stable baseline because every control is flex-shrink:0. */
 .sfx-chip-feedback {
   font-size: 12px;
-  color: #16a34a;
+  color: #4ade80;
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
@@ -123,17 +123,17 @@
 }
 
 .sfx-chip-feedback.sfx-feedback-error {
-  color: #dc2626;
+  color: #f87171;
 }
 
 /* One-time project dropdown */
 .sfx-chip-dropdown {
   font-size: 12px;
-  border: 1px solid #cccccc;
+  border: 1px solid var(--sfx-pill-divider);
   border-radius: 4px;
   padding: 2px 4px;
-  background: #f9f9f9;
-  color: #111111;
+  background: var(--sfx-pill-btn);
+  color: var(--sfx-pill-text);
   cursor: pointer;
   max-width: 180px;
 }
@@ -143,29 +143,44 @@
   font-family: system-ui, -apple-system, sans-serif;
   font-size: 12px;
   padding: 3px 8px;
-  border: 1px solid #cccccc;
-  border-radius: 4px;
-  background: #f0f0f0;
-  color: #111111;
+  border: none;
+  border-radius: 7px;
+  background: var(--sfx-pill-btn);
+  color: var(--sfx-pill-text);
   cursor: pointer;
   line-height: 1;
   flex-shrink: 0;
+  transition: background 0.15s ease-out, transform 0.15s ease-out;
 }
 
 .sfx-chip-btn:hover {
-  background: #e0e0e0;
+  background: var(--sfx-pill-btn-hover);
+}
+
+.sfx-chip-btn:active {
+  transform: scale(0.95);
+}
+
+.sfx-chip-btn.sfx-btn-send {
+  background: var(--sfx-pill-accent);
+  color: #ffffff;
+}
+
+.sfx-chip-btn.sfx-btn-send:hover {
+  background: var(--sfx-pill-accent-hover);
 }
 
 .sfx-chip-btn.sfx-btn-exit {
   padding: 3px 6px;
   font-size: 14px;
   font-weight: bold;
-  color: #666666;
+  background: transparent;
+  color: rgba(249, 250, 251, 0.6);
 }
 
 .sfx-chip-btn.sfx-btn-exit:hover {
-  color: #111111;
-  background: #e0e0e0;
+  color: var(--sfx-pill-text);
+  background: var(--sfx-pill-btn-hover);
 }
 
 /* ============================================================
@@ -182,9 +197,9 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: #ffffff;
-  border: 1px solid #cccccc;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  background: var(--sfx-pill-bg);
+  border: none;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -192,19 +207,21 @@
   user-select: none;
   pointer-events: auto;
   font-family: system-ui, -apple-system, sans-serif;
+  transition: background 0.15s ease-out, transform 0.15s ease-out;
 }
 
 #sfx-fab:hover {
-  background: #f0f0f0;
+  background: var(--sfx-pill-btn-hover);
 }
 
 #sfx-fab:active {
-  background: #e0e0e0;
+  background: var(--sfx-pill-btn);
+  transform: scale(0.95);
 }
 
 .sfx-fab-icon {
   font-size: 20px;
-  color: #111111;
+  color: var(--sfx-pill-text);
   line-height: 1;
   pointer-events: none;
 }
@@ -600,11 +617,11 @@
 
 .sfx-chip-label.sfx-label-routed {
   cursor: pointer;
-  text-decoration: underline dotted #666666;
+  text-decoration: underline dotted var(--sfx-pill-divider);
 }
 
 .sfx-chip-label.sfx-label-routed:hover {
-  color: #1d6ed8;
+  color: var(--sfx-pill-accent);
 }
 
 /* ============================================================
@@ -952,4 +969,233 @@
   transform: scale(0.85);
   outline: 1px solid rgba(0, 0, 0, 0.18);
   outline-offset: 1px;
+}
+
+/* ============================================================
+ * Draw mode (annotation) — shared dark-pill design tokens
+ *
+ * Declared at :host scope so Wave 4 (chip/FAB reskin) can consume the exact
+ * same palette. NOTE: `all: initial` on :host does NOT reset custom properties
+ * (the `all` shorthand excludes custom props), so these survive that reset.
+ * Values are ORIGINAL (reimplemented from a visual target — no external CSS
+ * copied). REIMPLEMENT-ORIGINAL per the clean-room constraint.
+ * ============================================================ */
+:host {
+  --sfx-pill-bg: #1f2937;
+  --sfx-pill-btn: #374151;
+  --sfx-pill-btn-hover: #4b5563;
+  --sfx-pill-accent: #3b82f6;
+  --sfx-pill-accent-hover: #2563eb;
+  --sfx-pill-text: #f9fafb;
+  --sfx-pill-divider: #4b5563;
+}
+
+/* ============================================================
+ * Draw mode (annotation) — overlay + frozen background + canvas
+ * ============================================================ */
+
+/* Full-viewport modal overlay: blocks the live page, hosts bg + canvas + bar.
+   Sits above chip(5)/FAB(4)/pins(2-3)/card/hints(6) — it is a capture surface. */
+.sfx-draw-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
+  z-index: 2147483646;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.15);
+  user-select: none;
+}
+
+/* Frozen page still — captured at native px, displayed at CSS viewport size.
+   Aspect ratio matches the viewport, so `fill` maps 1 image-CSS-px : 1 screen px. */
+.sfx-draw-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Transparent drawing surface over the still — receives all pointer drawing. */
+.sfx-draw-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+/* Select tool uses a default pointer (drawing tools keep the crosshair). */
+.sfx-draw-canvas.sfx-draw-select {
+  cursor: default;
+}
+
+/* ============================================================
+ * Draw mode — floating dark-pill toolbar
+ * ============================================================ */
+
+.sfx-draw-toolbar {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2147483647;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 10px;
+  background: var(--sfx-pill-bg);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  cursor: move;
+  user-select: none;
+  font-family: system-ui, -apple-system, sans-serif;
+  max-width: calc(100vw - 32px);
+  flex-wrap: wrap;
+}
+
+.sfx-draw-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.sfx-draw-divider {
+  width: 1px;
+  align-self: stretch;
+  min-height: 24px;
+  background: var(--sfx-pill-divider);
+  flex-shrink: 0;
+}
+
+/* Base button — square, icon or short text */
+.sfx-draw-btn {
+  min-width: 34px;
+  height: 34px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  border: none;
+  border-radius: 7px;
+  background: var(--sfx-pill-btn);
+  color: var(--sfx-pill-text);
+  cursor: pointer;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  transition: background 0.15s ease-out, transform 0.15s ease-out, box-shadow 0.15s ease-out;
+  flex-shrink: 0;
+}
+
+.sfx-draw-btn:hover {
+  background: var(--sfx-pill-btn-hover);
+}
+
+.sfx-draw-btn:active {
+  transform: scale(0.95);
+}
+
+.sfx-draw-btn.sfx-draw-active {
+  background: var(--sfx-pill-accent);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+}
+
+/* Icon buttons hold an inline SVG that inherits currentColor */
+.sfx-draw-icon {
+  padding: 0;
+}
+
+.sfx-draw-icon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+  pointer-events: none;
+}
+
+/* Thickness preset buttons — narrower square */
+.sfx-draw-thick {
+  min-width: 30px;
+  width: 30px;
+}
+
+/* Colour swatches */
+.sfx-draw-swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.15s ease-out, border-color 0.15s ease-out;
+}
+
+.sfx-draw-swatch:hover {
+  transform: scale(1.12);
+}
+
+.sfx-draw-swatch.sfx-draw-active {
+  border-color: var(--sfx-pill-accent);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+}
+
+/* Native custom-colour input */
+.sfx-draw-colorinput {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.sfx-draw-colorinput::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.sfx-draw-colorinput::-webkit-color-swatch {
+  border: none;
+  border-radius: 4px;
+}
+
+/* Text action buttons */
+.sfx-draw-text {
+  padding: 0 12px;
+}
+
+/* Cancel — subtle */
+.sfx-draw-cancel {
+  background: transparent;
+  color: var(--sfx-pill-text);
+  border: 1px solid var(--sfx-pill-divider);
+}
+
+.sfx-draw-cancel:hover {
+  background: var(--sfx-pill-btn);
+}
+
+/* Save — accent-filled primary */
+.sfx-draw-save {
+  background: var(--sfx-pill-accent);
+  color: #ffffff;
+}
+
+.sfx-draw-save:hover {
+  background: var(--sfx-pill-accent-hover);
 }

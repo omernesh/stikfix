@@ -27,6 +27,7 @@ import { drawHighlightBox } from '../../lib/highlight-draw.js';
 import { buildContextSummary } from '../../lib/element-context.js';
 import type { ElementContext } from '../../lib/types.js';
 import { enterMarqueeMode } from './marquee.js';
+import { enterDrawMode } from './draw.js';
 import { mapSendOutcome } from '../../lib/error-toast.js';
 import type { SendOutcome } from '../../lib/error-toast.js';
 import { exceedsBodyCap } from '../../lib/payload-size.js';
@@ -179,6 +180,18 @@ export function openCard(
   camBtn.textContent = '📷';
   header.appendChild(camBtn);
 
+  // Annotate button — Wave 3 (draw-on-screenshot). Reuses the camera button's
+  // .sfx-cam-btn class to match visually (no new CSS). A fixed marginLeft keeps
+  // camBtn as the sole margin-left:auto item, so the pair stays grouped at the
+  // right edge (adjacent) instead of splitting the free space between them.
+  const annotateBtn = document.createElement('button');
+  annotateBtn.className = 'sfx-cam-btn';
+  annotateBtn.title = 'Annotate (draw on a screenshot)';
+  annotateBtn.setAttribute('aria-label', 'Annotate (draw on a screenshot)');
+  annotateBtn.textContent = '✎';
+  annotateBtn.style.marginLeft = '6px';
+  header.appendChild(annotateBtn);
+
   card.appendChild(header);
 
   // --- Body ---
@@ -266,6 +279,56 @@ export function openCard(
         camBtn.disabled = false;
       }
     );
+  });
+
+  // -------------------------------------------------------------------------
+  // Annotate button click — draw-on-screenshot path (Wave 3, free-note)
+  // Mirrors the camera own-UI-exclusion (hide card/chip/FAB/hover → waitTwoRafs
+  // → captureTab), then opens the draw overlay and attaches the flattened
+  // annotated PNG via the SAME thumbnail-add path the camera uses.
+  // -------------------------------------------------------------------------
+  annotateBtn.addEventListener('click', async () => {
+    annotateBtn.disabled = true;
+
+    // Identical own-UI-exclusion to the camera path (setSfxVisibilityFree) so
+    // none of stikfix's own UI bleeds into the frozen draw background.
+    function setSfxVisibilityFree(visible: boolean): void {
+      const display = visible ? '' : 'none';
+      if (activeCard) activeCard.style.display = display;
+      const chip = container.querySelector<HTMLElement>('#sfx-chip');
+      if (chip) chip.style.display = display;
+      const fab = container.querySelector<HTMLElement>('#sfx-fab');
+      if (fab) fab.style.display = display;
+      const hoverOverlay = container.querySelector<HTMLElement>('.sfx-hover-highlight');
+      if (hoverOverlay) hoverOverlay.style.display = display;
+    }
+
+    setSfxVisibilityFree(false);
+    try {
+      await waitTwoRafs();
+      const dataUrl = await captureTab(tabId);
+      // Restore own UI BEFORE the draw overlay paints: the full-viewport overlay
+      // covers it (no flash), and own UI is never left hidden underneath.
+      setSfxVisibilityFree(true);
+      const result = await enterDrawMode({
+        background: { dataUrl, dpr: window.devicePixelRatio },
+        mountRoot: container,
+      });
+      // null → user cancelled (Cancel/Esc): no-op. Non-null → attach the
+      // annotated PNG exactly like a camera capture (same thumbnail-add path).
+      if (result !== null) {
+        thumbnails.push({ kind: nextThumbnailKind(thumbnails.length), dataUrl: result });
+        renderThumbnails(thumbStrip, thumbnails);
+      }
+    } catch (_drawErr) {
+      // enterDrawMode rejects ONLY on composite failure; captureTab may also
+      // throw. No silent failure (REL-01) — surface a visible toast.
+      showToastFn('Annotation failed — nothing captured', true);
+    } finally {
+      // Guarantee own UI is restored on EVERY path (success / cancel / error).
+      setSfxVisibilityFree(true);
+      annotateBtn.disabled = false;
+    }
   });
 
   // -------------------------------------------------------------------------
@@ -616,6 +679,17 @@ export function openElementCard(
   camBtn.textContent = '📷';
   header.appendChild(camBtn);
 
+  // Annotate button — Wave 3 (draw-on-screenshot). Reuses .sfx-cam-btn to match
+  // the camera button visually (no new CSS); fixed marginLeft keeps the pair
+  // grouped at the right (see openCard for the margin rationale).
+  const annotateBtn = document.createElement('button');
+  annotateBtn.className = 'sfx-cam-btn';
+  annotateBtn.title = 'Annotate (draw on a screenshot)';
+  annotateBtn.setAttribute('aria-label', 'Annotate (draw on a screenshot)');
+  annotateBtn.textContent = '✎';
+  annotateBtn.style.marginLeft = '6px';
+  header.appendChild(annotateBtn);
+
   card.appendChild(header);
 
   // --- Context header (read-only strip — D-03 / ELEM-07) ---
@@ -719,6 +793,54 @@ export function openElementCard(
         camBtn.disabled = false;
       }
     );
+  });
+
+  // -------------------------------------------------------------------------
+  // Annotate button click — draw-on-screenshot path (Wave 3, element-note)
+  // Mirrors the element camera own-UI-exclusion (setSfxVisibilityElem), then
+  // opens the draw overlay and attaches the annotated PNG via the SAME
+  // thumbnail-add path (offset 1 — reserves +1 for the element auto-highlight).
+  // -------------------------------------------------------------------------
+  annotateBtn.addEventListener('click', async () => {
+    annotateBtn.disabled = true;
+
+    // Identical own-UI-exclusion to the element camera path (setSfxVisibilityElem).
+    function setSfxVisibilityElem(visible: boolean): void {
+      const display = visible ? '' : 'none';
+      if (activeCard) activeCard.style.display = display;
+      const chip = container.querySelector<HTMLElement>('#sfx-chip');
+      if (chip) chip.style.display = display;
+      const fab = container.querySelector<HTMLElement>('#sfx-fab');
+      if (fab) fab.style.display = display;
+      const hoverOverlay = container.querySelector<HTMLElement>('.sfx-hover-highlight');
+      if (hoverOverlay) hoverOverlay.style.display = display;
+    }
+
+    setSfxVisibilityElem(false);
+    try {
+      await waitTwoRafs();
+      const dataUrl = await captureTab(tabId);
+      // Restore own UI BEFORE the draw overlay paints (overlay covers it → no flash).
+      setSfxVisibilityElem(true);
+      const result = await enterDrawMode({
+        background: { dataUrl, dpr: window.devicePixelRatio },
+        mountRoot: container,
+      });
+      // null → cancelled: no-op. Non-null → attach as a region thumbnail with
+      // baseOffset 1 (+2, +3, …), matching the element camera numbering.
+      if (result !== null) {
+        thumbnails.push({ kind: nextThumbnailKind(thumbnails.length, 1), dataUrl: result });
+        renderThumbnails(thumbStrip, thumbnails, 1);
+      }
+    } catch (_drawErr) {
+      // enterDrawMode rejects ONLY on composite failure; captureTab may also
+      // throw. No silent failure (REL-01) — surface a visible toast.
+      showToastFn('Annotation failed — nothing captured', true);
+    } finally {
+      // Guarantee own UI is restored on EVERY path (success / cancel / error).
+      setSfxVisibilityElem(true);
+      annotateBtn.disabled = false;
+    }
   });
 
   // -------------------------------------------------------------------------

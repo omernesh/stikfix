@@ -16,6 +16,7 @@
     "lib/routing.ts",
     "lib/discovery.ts",
     "lib/capture.ts",
+    "lib/draw-model.ts",
     "lib/element-context.ts",
     "lib/highlight-draw.ts",
     "lib/marquee.ts",
