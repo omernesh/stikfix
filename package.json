@@ -1,6 +1,6 @@
 {
   "name": "stikfix",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "Pin sticky notes on any page — your AI reads them.",
   "license": "MIT",
   "author": "Omer Nesher <omernesher@gmail.com>",
@@ -32,6 +32,7 @@
   },
   "files": [
     "dist/host/src",
+    "dist/lib/pin-position.js",
     "dist/host/stikfix-init.cjs",
     "dist/host/stikfix-native.cjs",
     "public/icon",
