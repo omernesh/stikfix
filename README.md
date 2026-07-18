@@ -28,7 +28,7 @@ No cloud. No accounts. No sign-up. Everything stays on `127.0.0.1` — **your co
 ## How it feels to use
 
 1. Click **Enter Review Mode** on any page.
-2. Drop a **sticky note** — free-floating, or click an element to anchor it. Anchored notes auto-capture the CSS selector, computed styles, `outerHTML`, the bounding box, an auto-highlighted screenshot, and the React component name. No describing required.
+2. Drop a **sticky note** — free-floating, or click an element to anchor it. Anchored notes auto-capture the CSS selector, computed styles, `outerHTML`, the bounding box, an auto-highlighted screenshot, and the React component name. No describing required. Want to point at something exactly? **Draw an arrow, box, or circle right on a screenshot** and it rides along with the note.
 3. Tell your agent **"read my notes."** It reads the fresh `.md` files, makes the fixes, and **writes a reply back into each note** — so the pin turns **green ✓** right on the page with a one-line "here's what I changed" (no fix is lost in a chat log). Anything ambiguous turns **amber** with the agent's clarifying question.
 4. Glance at the pins (or open the **notes panel** to filter/search/jump), drop a few more, repeat. Pins update live as the agent works — no refresh. Your UI gets tighter every loop.
 
@@ -36,7 +36,7 @@ No cloud. No accounts. No sign-up. Everything stays on `127.0.0.1` — **your co
 
 ### Windows: one-click installer (recommended)
 
-1. Download **`stikfix-setup-1.6.0.exe`** from the [latest release](https://github.com/omernesh/stikfix/releases/latest).
+1. Download the latest **`stikfix-setup-<version>.exe`** from the [latest release](https://github.com/omernesh/stikfix/releases/latest).
 2. Run it. It needs **administrator rights** — it writes a browser policy so the extension can install itself.
 3. Pick a setup type:
    - **Complete** — installs the host, force-installs the extension into every Chromium browser it finds (Chrome/Edge/Brave), sets the host to run on Windows login, and adds a desktop shortcut. Fully automatic — no terminal.
@@ -48,6 +48,17 @@ No cloud. No accounts. No sign-up. Everything stays on `127.0.0.1` — **your co
 The installer ships **`stikfix-host.exe`**, a self-contained binary — no Node.js needs to be installed on the machine. Re-run the health check anytime with `stikfix-host.exe doctor`, or the **"Stikfix Health Check"** shortcut it adds to the Start menu. To remove everything — host, browser policy entry, startup entry, native-messaging registration — use Windows **Add or remove programs**.
 
 For advanced use or troubleshooting, the same binary takes subcommands directly: `stikfix-host.exe serve --root <dir>`, `stikfix-host.exe doctor` (prints the health checklist), `stikfix-host.exe register` / `stikfix-host.exe uninstall`.
+
+#### Staying up to date
+
+stikfix keeps itself current with **no reinstalling by hand**:
+
+- **Extension** — auto-updates silently. The installer registers a self-hosted update manifest via enterprise policy, so Chrome/Edge/Brave pull new versions on their own, exactly like a Web Store extension.
+- **Host** — checks GitHub for a newer release on startup and every ~6 hours. When one is available, the **system-tray icon** shows an *update available* balloon and an **Update Stikfix (vX.Y.Z)** item in its right-click menu. Click it and stikfix downloads the new installer, **verifies its SHA-256**, and runs it (one Windows permission prompt) to replace and restart the host — your notes folder and settings are preserved.
+
+The **system-tray icon** is also your at-a-glance host status: green when the host is running, and its menu lets you open the notes folder, stop the host, or apply a pending update.
+
+> Already on an older build? Install the latest `stikfix-setup-<version>.exe` once; from then on, every future version offers itself from the tray with a single click.
 
 ### Developer path (macOS, Linux, or from source on Windows)
 
@@ -95,12 +106,14 @@ Open your app, click **Enter Review Mode**, and start dropping notes. The first 
 - **Free notes** — a draggable post-it you can drop anywhere on the page. Captures URL, title, timestamp, viewport, and a screenshot.
 - **Element notes** — click any element and the note auto-captures a robust unique CSS selector ([`@medv/finder`](https://github.com/antonmedv/finder)), curated computed styles, truncated `outerHTML`, bounding box, `data-*`, accessibility role/label, the best-effort **React component name**, and an **auto element-highlight screenshot** showing exactly which element you meant.
 - **Region / marquee capture** — the camera tool dims the page, gives you a crosshair, and lets you drag a rectangle. stikfix hides its own UI, captures, and crops the screenshot DPR-correctly. Stack multiple per note; each is a deletable thumbnail.
+- **Annotation drawing** — mark up exactly what you mean instead of describing it. The pencil tool freezes the current view as a screenshot and drops you into a drawing canvas with **arrow, line, rectangle, circle, and freehand pen** tools, a color palette, and S/M/L thickness. Your drawing is flattened onto the screenshot and attached to the note, so your agent sees the annotated image — pixel-for-pixel.
 - **Persistent on-page pins** — notes stay visible as pins on the page across reloads. View, edit, and delete them in place — backed by host-side CRUD over the localhost relay. Overlapping pins fan out automatically so dense pages stay readable.
 - **Two-way status, on the page** — pins reflect the loop: **unread** (yellow), **flagged** (amber — the agent needs you to clarify, with its question on hover), **resolved** (green ✓ — fixed, with the agent's reply on hover). Resolved notes stay visible so you can verify the fix; archived (`read`) notes disappear.
 - **Notes panel** — a chip-toggled list of every note: counts by status, filter chips, text search, and click-to-jump that scrolls right to the pin. Flip **All pages** to browse every note across the project, not just the current page.
 - **Live updates** — while Review Mode is on, pins and the panel refresh on their own (~4s, only when the tab is visible) as the agent writes replies and resolves notes. No manual reload.
 - **Per-origin project routing** — the first note on a new site opens an OS folder picker; after that, every tab routes to the right project's `notes/` folder automatically. No per-note picking.
 - **Cross-browser host** — one `npx stikfix init` registers Chrome and Edge in a single pass. On Windows, the one-click installer does this (and the browser-side install) for you.
+- **Self-updating** — the browser extension auto-updates via enterprise policy; the Windows host checks GitHub and offers a **SHA-256-verified, one-click update** from its system-tray icon (which also shows live running/stopped status). See [Staying up to date](#staying-up-to-date).
 - **The `review-notes` AI skill** — the portable agent half of the loop (see below).
 
 ## How notes reach your AI
