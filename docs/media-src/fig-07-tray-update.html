@@ -28,7 +28,8 @@ html,body{width:1600px;height:1000px;overflow:hidden;position:relative;
 .tray-glyph{color:#e5e7eb;font-size:14px;opacity:.85}
 .tray-chevron{color:#e5e7eb;font-size:12px;opacity:.7}
 .tray-stikfix{position:relative;width:26px;height:26px;border-radius:6px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center}
-.tray-stikfix .mark{width:16px;height:16px;border-radius:4px;background:linear-gradient(135deg,#6d69ea,#7c3aed)}
+.tray-stikfix .mark{width:18px;height:18px;border-radius:4px;overflow:hidden;display:flex}
+.tray-stikfix .mark svg{width:18px;height:18px;border-radius:4px;display:block}
 .tray-stikfix .badge{position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:#3b82f6;border:1.5px solid #18181b}
 .taskbar-clock{text-align:right;line-height:1.3;margin-left:6px}
 .taskbar-clock .time{font-weight:600}
@@ -45,7 +46,8 @@ html,body{width:1600px;height:1000px;overflow:hidden;position:relative;
 /* ---------- Windows toast / balloon notification ---------- */
 .toast-balloon{position:absolute;bottom:340px;right:24px;width:320px;background:rgba(38,38,42,.97);border:1px solid rgba(255,255,255,.09);border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.5);padding:14px 16px;z-index:20}
 .toast-balloon-head{display:flex;align-items:center;gap:9px;margin-bottom:8px}
-.toast-balloon .mark{width:20px;height:20px;border-radius:5px;background:linear-gradient(135deg,#6d69ea,#7c3aed);flex-shrink:0}
+.toast-balloon .mark{width:22px;height:22px;border-radius:5px;overflow:hidden;flex-shrink:0;display:flex}
+.toast-balloon .mark svg{width:22px;height:22px;border-radius:5px;display:block}
 .toast-balloon-title{color:#e8eaef;font-size:13px;font-weight:700;flex:1}
 .toast-balloon-time{color:#9aa3b2;font-size:11px}
 .toast-balloon-body{color:#c8ceda;font-size:12.5px;line-height:1.5}
@@ -71,7 +73,7 @@ html,body{width:1600px;height:1000px;overflow:hidden;position:relative;
 </div>
 
 <div class="toast-balloon">
-  <div class="toast-balloon-head"><div class="mark"></div><span class="toast-balloon-title">Stikfix</span><span class="toast-balloon-time">now</span></div>
+  <div class="toast-balloon-head"><div class="mark"><svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="512" height="512" rx="116" fill="#6a4fe6"/><g transform="translate(146 168) rotate(-7 118 126)"><path d="M0,20 Q0,0 20,0 L176,0 L236,60 L236,232 Q236,252 216,252 L20,252 Q0,252 0,232 Z" fill="#FACC15"/><path d="M176,0 L236,60 L188,60 Q176,60 176,48 Z" fill="#EAB308"/><g fill="#92400E" opacity=".55"><rect x="34" y="92" width="150" height="16" rx="8"/><rect x="34" y="128" width="168" height="16" rx="8"/></g></g><g><path d="M296,156 A52,52 0 1 1 400,156 Q400,229 348,290 Q296,229 296,156 Z" fill="#F43F5E"/><path d="M315,140 A33,33 0 0 1 360,118" stroke="#fff" stroke-opacity=".5" stroke-width="10" stroke-linecap="round" fill="none"/><circle cx="348" cy="156" r="22" fill="#fff"/></g></svg></div><span class="toast-balloon-title">Stikfix</span><span class="toast-balloon-time">now</span></div>
   <div class="toast-balloon-body">Update available — version 1.7.2 is ready to install.</div>
 </div>
 
@@ -89,7 +91,7 @@ html,body{width:1600px;height:1000px;overflow:hidden;position:relative;
       <span class="tray-glyph">🔊</span>
       <span class="tray-glyph">🔋</span>
       <span class="tray-chevron">︿</span>
-      <div class="tray-stikfix"><div class="mark"></div><span class="badge"></span></div>
+      <div class="tray-stikfix"><div class="mark"><svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="512" height="512" rx="116" fill="#6a4fe6"/><g transform="translate(146 168) rotate(-7 118 126)"><path d="M0,20 Q0,0 20,0 L176,0 L236,60 L236,232 Q236,252 216,252 L20,252 Q0,252 0,232 Z" fill="#FACC15"/><path d="M176,0 L236,60 L188,60 Q176,60 176,48 Z" fill="#EAB308"/></g><g><path d="M296,156 A52,52 0 1 1 400,156 Q400,229 348,290 Q296,229 296,156 Z" fill="#F43F5E"/><circle cx="348" cy="156" r="22" fill="#fff"/></g></svg></div><span class="badge"></span></div>
     </div>
     <div class="taskbar-clock"><div class="time">3:41 PM</div><div class="date">7/18/2026</div></div>
   </div>

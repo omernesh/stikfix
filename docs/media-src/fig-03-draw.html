@@ -90,12 +90,12 @@ html,body{width:1600px;height:1000px;overflow:hidden;position:relative;backgroun
         <button class="btn-secondary">Downgrade</button></div>
       <div class="plan-card featured"><div class="plan-name">Pro</div><div class="plan-price">$49<span>/mo</span></div>
         <ul class="plan-features"><li>Unlimited projects</li><li>Advanced analytics</li></ul>
-        <button class="btn-primary">Upgrade to Pro</button></div>
+        <button class="btn-primary" id="cta-btn">Upgrade to Pro</button></div>
       <div class="plan-card"><div class="plan-name">Enterprise</div><div class="plan-price">$199<span>/mo</span></div>
         <ul class="plan-features"><li>SSO &amp; audit logs</li><li>Dedicated CSM</li></ul>
         <button class="btn-secondary">Contact sales</button></div>
     </div>
-    <div class="payment-box">
+    <div class="payment-box" id="pay-box">
       <div class="payment-icon"></div>
       <div><div class="payment-text">Visa •••• 4242</div><div class="payment-sub">Your card is charged on the 1st of each month.</div></div>
     </div>
@@ -109,8 +109,8 @@ html,body{width:1600px;height:1000px;overflow:hidden;position:relative;backgroun
       <path d="M0,0 L12,6 L0,12 z" fill="#ef4444"/>
     </marker>
   </defs>
-  <path d="M480,300 C560,340 640,400 715,528" stroke="#ef4444" stroke-width="6" fill="none" stroke-linecap="round" marker-end="url(#redarrow)"/>
-  <rect x="920" y="686" width="336" height="90" rx="6" fill="none" stroke="#f97316" stroke-width="6"/>
+  <path id="draw-arrow" d="M470,210 C560,250 660,320 720,392" stroke="#ef4444" stroke-width="6" fill="none" stroke-linecap="round" marker-end="url(#redarrow)"/>
+  <rect id="draw-box" x="256" y="462" width="656" height="80" rx="6" fill="none" stroke="#f97316" stroke-width="6"/>
 </svg>
 
 <div class="sfx-draw-toolbar">
@@ -154,9 +154,28 @@ html,body{width:1600px;height:1000px;overflow:hidden;position:relative;backgroun
 
 <svg class="callout-lines" width="1600" height="1000">
   <defs><marker id="arrow3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#fbbf24"/></marker></defs>
-  <path d="M1200,880 C1150,850 1050,810 970,780" stroke="#fbbf24" stroke-width="3" fill="none" marker-end="url(#arrow3)"/>
+  <path id="c3-arrow" d="M560,636 C520,600 500,570 480,548" stroke="#fbbf24" stroke-width="3" fill="none" marker-end="url(#arrow3)"/>
 </svg>
-<div class="callout" style="left:1140px;top:892px;">Mark it up. Your drawing rides along.</div>
+<div class="callout" style="left:470px;top:648px;">Mark it up. Your drawing rides along.</div>
+
+<script>
+addEventListener('load',()=>{
+  const btn=document.getElementById('cta-btn').getBoundingClientRect();
+  const pay=document.getElementById('pay-box').getBoundingClientRect();
+  // red drawn arrow points onto the CTA button (top-center)
+  const ax=btn.left+btn.width/2, ay=btn.top;
+  document.getElementById('draw-arrow').setAttribute('d',
+    `M470,210 C560,250 ${Math.round(ax-70)},${Math.round(ay-70)} ${Math.round(ax)},${Math.round(ay-2)}`);
+  // orange drawn box hugs the payment row (a real element with text)
+  const o=8, box=document.getElementById('draw-box');
+  box.setAttribute('x',Math.round(pay.left-o)); box.setAttribute('y',Math.round(pay.top-o));
+  box.setAttribute('width',Math.round(pay.width+2*o)); box.setAttribute('height',Math.round(pay.height+2*o));
+  // callout leader up to the orange box (bottom-center)
+  const bx=pay.left+pay.width/2, by=pay.top+pay.height+o;
+  document.getElementById('c3-arrow').setAttribute('d',
+    `M560,644 C520,600 ${Math.round(bx)},${Math.round(by+50)} ${Math.round(bx)},${Math.round(by+8)}`);
+});
+</script>
 
 </body>
 </html>

@@ -37,8 +37,8 @@ html,body{width:1600px;height:1000px;overflow:hidden;position:relative;backgroun
 .browser-addr .lock{color:#9ca3af}
 .browser-icons{margin-left:auto;display:flex;align-items:center;gap:16px}
 .ext-icon{width:26px;height:26px;border-radius:7px;background:#cbd0da}
-.ext-icon.active{background:linear-gradient(135deg,#6d69ea,#7c3aed);box-shadow:0 0 0 5px rgba(124,58,237,.18);position:relative}
-.ext-icon.active::after{content:"";position:absolute;inset:6px;background:#fde047;border-radius:2px}
+.ext-icon.active{background:transparent;box-shadow:0 0 0 5px rgba(124,58,237,.18);position:relative;display:flex;align-items:center;justify-content:center}
+.ext-icon.active > svg{width:26px;height:26px;border-radius:7px;display:block}
 
 /* ---------- popup notch pointer ---------- */
 .notch{position:absolute;top:56px;right:96px;width:16px;height:16px;background:#16181d;transform:rotate(45deg);border-radius:3px;z-index:2}
@@ -46,7 +46,9 @@ html,body{width:1600px;height:1000px;overflow:hidden;position:relative;backgroun
 /* ---------- extension popup (adapted from popup.css) ---------- */
 .sfx-popup{position:absolute;top:64px;right:56px;width:340px;background:#16181d;color:#e8eaef;border-radius:14px;overflow:hidden;box-shadow:0 30px 70px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.28);font-family:system-ui,-apple-system,sans-serif;font-size:13px;z-index:3}
 #sfx-header{background:#1b1e24;border-bottom:1px solid rgba(255,255,255,.07);display:flex;justify-content:space-between;align-items:center;padding:14px 16px 11px}
-#sfx-wordmark{letter-spacing:-.02em;color:#e8eaef;font-size:16px;font-weight:700}
+#sfx-wordmark{letter-spacing:-.02em;color:#e8eaef;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}
+.sfx-brandmark{width:20px;height:20px;display:inline-flex;flex-shrink:0}
+.sfx-brandmark svg{width:20px;height:20px;border-radius:5px;display:block}
 #sfx-host-summary{color:#9aa3b2;font-size:11.5px}
 .sfx-host-row{background:#1b1e24;border-bottom:1px solid rgba(255,255,255,.07);display:grid;grid-template-columns:10px 1fr auto;align-items:start;gap:10px;padding:12px 16px}
 .sfx-dot{border-radius:50%;width:9px;height:9px;margin-top:4px}
@@ -97,7 +99,7 @@ html,body{width:1600px;height:1000px;overflow:hidden;position:relative;backgroun
   <div class="browser-icons">
     <div class="ext-icon"></div>
     <div class="ext-icon"></div>
-    <div class="ext-icon active"></div>
+    <div class="ext-icon active"><svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="512" height="512" rx="116" fill="#6a4fe6"/><g transform="translate(146 168) rotate(-7 118 126)"><path d="M0,28 Q0,8 20,8 L176,8 L236,68 L236,236 Q236,256 216,256 L20,256 Q0,256 0,236 Z" fill="#000" opacity=".2" transform="translate(8 14)"/><path d="M0,20 Q0,0 20,0 L176,0 L236,60 L236,232 Q236,252 216,252 L20,252 Q0,252 0,232 Z" fill="#FACC15"/><path d="M176,0 L236,60 L188,60 Q176,60 176,48 Z" fill="#EAB308"/><g fill="#92400E" opacity=".55"><rect x="34" y="92" width="150" height="16" rx="8"/><rect x="34" y="128" width="168" height="16" rx="8"/><rect x="34" y="164" width="104" height="16" rx="8"/></g></g><g><path d="M296,156 A52,52 0 1 1 400,156 Q400,229 348,290 Q296,229 296,156 Z" fill="#000" opacity=".2" transform="translate(7 12)"/><path d="M296,156 A52,52 0 1 1 400,156 Q400,229 348,290 Q296,229 296,156 Z" fill="#F43F5E"/><path d="M315,140 A33,33 0 0 1 360,118" stroke="#fff" stroke-opacity=".5" stroke-width="10" stroke-linecap="round" fill="none"/><circle cx="348" cy="156" r="22" fill="#fff"/></g></svg></div>
   </div>
 </div>
 
@@ -105,7 +107,7 @@ html,body{width:1600px;height:1000px;overflow:hidden;position:relative;backgroun
 
 <div class="sfx-popup">
   <div id="sfx-header">
-    <span id="sfx-wordmark">stikfix</span>
+    <span id="sfx-wordmark"><span class="sfx-brandmark"><svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="512" height="512" rx="116" fill="#6a4fe6"/><g transform="translate(146 168) rotate(-7 118 126)"><path d="M0,20 Q0,0 20,0 L176,0 L236,60 L236,232 Q236,252 216,252 L20,252 Q0,252 0,232 Z" fill="#FACC15"/><path d="M176,0 L236,60 L188,60 Q176,60 176,48 Z" fill="#EAB308"/><g fill="#92400E" opacity=".55"><rect x="34" y="92" width="150" height="16" rx="8"/><rect x="34" y="128" width="168" height="16" rx="8"/><rect x="34" y="164" width="104" height="16" rx="8"/></g></g><g><path d="M296,156 A52,52 0 1 1 400,156 Q400,229 348,290 Q296,229 296,156 Z" fill="#F43F5E"/><path d="M315,140 A33,33 0 0 1 360,118" stroke="#fff" stroke-opacity=".5" stroke-width="10" stroke-linecap="round" fill="none"/><circle cx="348" cy="156" r="22" fill="#fff"/></g></svg></span>stikfix</span>
     <span id="sfx-host-summary">1 connected</span>
   </div>
   <div class="sfx-host-row">

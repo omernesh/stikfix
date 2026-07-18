@@ -152,8 +152,9 @@ Fallbacks (both optional):
 
 - **Any other folder-reading agent (Cursor, Codex, etc.):** point it at [`skill/SKILL.md`](skill/SKILL.md) — it's plain markdown, no Claude-specific bits. For example: *"follow the instructions in skill/SKILL.md."*
 
-**Just say the word.** Any of these kicks it off:
+**Just say the word.** Any of these kicks it off — including the **`/review-notes`** slash command in Claude Code:
 
+- `/review-notes`
 - "read my notes"
 - "process review notes"
 - "fix sticky notes"
@@ -197,9 +198,9 @@ desktop, and your agent sees it there.
 
 ## Demo
 
-![stikfix demo](docs/demo-placeholder.png)
+![stikfix — the full drop-a-note → "read my notes" loop](docs/media/loop.gif)
 
-*Recorded walkthrough coming soon — the placeholder above will be replaced with a GIF of the full drop-a-note → "read my notes" loop.*
+*The whole loop: enter Review Mode → click the element → type what's wrong → it lands as a `.md` file → your agent fixes it and the pin turns green ✓ with its reply. See the [Getting Started guide](docs/getting-started.md) for the annotated walkthrough.*
 
 ## Cross-browser
 

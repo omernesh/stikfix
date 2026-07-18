@@ -135,7 +135,7 @@ html,body{width:1600px;height:1000px;overflow:hidden;position:relative;backgroun
   </div>
 </div>
 
-<div class="pick-highlight" style="left:733px;top:531px;width:212px;height:52px;"></div>
+<div class="pick-highlight" id="pick-hl"></div>
 
 <div class="sfx-root">
   <div id="sfx-chip">
@@ -149,7 +149,7 @@ html,body{width:1600px;height:1000px;overflow:hidden;position:relative;backgroun
   <button id="sfx-fab" aria-label="Add note"><span class="sfx-fab-icon">+</span></button>
   <div id="sfx-card">
     <div class="sfx-card-header"><span class="sfx-card-header-label">Element note</span><button class="sfx-cam-btn">📷</button></div>
-    <div class="sfx-ctx-header">button.btn-primary#checkout-btn · &lt;CheckoutButton&gt; · 212×52 · bg:#4f46e5</div>
+    <div class="sfx-ctx-header">button.btn-primary#checkout-btn · &lt;CheckoutButton&gt; · <span id="hl-dims">212×52</span> · bg:#4f46e5</div>
     <div class="sfx-card-body"><textarea id="sfx-card-textarea">This CTA sits 6px lower than the card grid — nudge up to align.</textarea></div>
     <div class="sfx-card-footer"><button id="sfx-card-send">Send</button><button id="sfx-card-cancel">Discard note</button></div>
   </div>
@@ -158,13 +158,26 @@ html,body{width:1600px;height:1000px;overflow:hidden;position:relative;backgroun
 
 <svg class="callout-lines" width="1600" height="1000">
   <defs><marker id="arrow1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#fbbf24"/></marker></defs>
-  <path d="M478,486 C560,500 630,510 728,540" stroke="#fbbf24" stroke-width="3" fill="none" marker-end="url(#arrow1)"/>
+  <path id="hl-arrow" d="M462,575 C540,530 640,470 720,420" stroke="#fbbf24" stroke-width="3" fill="none" marker-end="url(#arrow1)"/>
   <path d="M1150,462 C1210,560 1235,675 1258,726" stroke="#fbbf24" stroke-width="3" fill="none" marker-end="url(#arrow1)"/>
   <path d="M1060,858 C980,880 890,905 828,918" stroke="#fbbf24" stroke-width="3" fill="none" marker-end="url(#arrow1)"/>
 </svg>
-<div class="callout" style="left:300px;top:450px;">Click any element →</div>
+<div class="callout" style="left:300px;top:560px;">Click any element →</div>
 <div class="callout" style="left:940px;top:420px;">Auto-captures selector, styles &amp; a screenshot</div>
 <div class="callout" style="left:1000px;top:826px;">Lands as a .md file on disk</div>
+
+<script>
+addEventListener('load',()=>{
+  const r=document.getElementById('checkout-btn').getBoundingClientRect();
+  const pad=6, hl=document.getElementById('pick-hl');
+  Object.assign(hl.style,{left:(r.left-pad)+'px',top:(r.top-pad)+'px',
+    width:(r.width+2*pad)+'px',height:(r.height+2*pad)+'px'});
+  document.getElementById('hl-dims').textContent=Math.round(r.width)+'×'+Math.round(r.height);
+  const ex=r.left-pad, ey=r.top+r.height/2;
+  document.getElementById('hl-arrow').setAttribute('d',
+    `M462,575 C540,540 ${Math.round(ex-90)},${Math.round(ey+50)} ${Math.round(ex-4)},${Math.round(ey+2)}`);
+});
+</script>
 
 </body>
 </html>

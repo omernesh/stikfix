@@ -57,6 +57,8 @@ One command registers the native-messaging host for Chrome and Edge, writes conf
 
 ## Your first note (the loop)
 
+![The full stikfix loop](media/loop.gif)
+
 1. Open your app, click **Enter Review Mode**.
 2. Drop a **free note** anywhere, or click an element to anchor one — anchoring auto-captures the selector, styles, `outerHTML`, and a highlighted screenshot.
 3. Tell your agent **"read my notes."**
@@ -96,8 +98,9 @@ The **review-notes** skill is the agent half of the loop. Both install paths abo
 
 Using Cursor, Codex, or another folder-reading agent instead? Point it at `skill/SKILL.md` in this repo — it's plain markdown, nothing Claude-specific.
 
-Any of these kicks it off:
+Any of these kicks it off — including the **`/review-notes`** slash command in Claude Code:
 
+- `/review-notes`
 - "read my notes"
 - "process review notes"
 - "fix sticky notes"
