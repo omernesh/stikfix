@@ -422,11 +422,19 @@ export function createLauncherFiles(opts: LauncherOptions): LauncherResult {
     const vbsHostExe = vq(hostExe);
     const vbsRoot = vq(rootArg);
     const vbsPortArg = opts.port !== undefined ? ` --port ${opts.port}` : '';
-    // The hidden-launch line: exe mode runs `"<exe>" serve --root ...`, node
-    // mode runs `node "<hostEntry>" --root ...`. Both go through `cmd /c` so a
-    // relative `node` on PATH resolves and the window stays hidden (style 0).
+    // The hidden-launch line (window style 0).
+    //
+    // exe mode runs the ABSOLUTE exe path DIRECTLY via sh.Run — NOT through
+    // `cmd /c`. Reason: `cmd /c "<quoted exe>" ... "<quoted root>"` starts and
+    // ends with a quote, so cmd.exe strips the outer pair (documented in
+    // `cmd /?`) and mangles the spaced "C:\Program Files\..." path → the host
+    // never starts. WScript.Shell.Run parses the quoted exe path correctly, so
+    // no cmd wrapper (and no PATH lookup) is needed for an absolute exe.
+    //
+    // node mode keeps `cmd /c` so a relative `node` on PATH resolves; that line
+    // begins with `node` (not a quote), so cmd's outer-quote strip never fires.
     const vbsRunLine = useExe
-      ? `sh.Run "cmd /c """ & hostExe & """ serve --root """ & root & """${vbsPortArg}", 0, False`
+      ? `sh.Run """" & hostExe & """ serve --root """ & root & """${vbsPortArg}", 0, False`
       : `sh.Run "cmd /c node """ & hostEntry & """ --root """ & root & """${vbsPortArg}", 0, False`;
     const vbsContent = [
       'Option Explicit',

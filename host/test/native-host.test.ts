@@ -15,7 +15,7 @@ import {
   decodeNativeMessages,
   sendNativeMessage,
 } from '../src/native-msg.js';
-import { validateChosenFolder, handlePickFolder } from '../src/native-host.js';
+import { validateChosenFolder, handlePickFolder, handleStartHost } from '../src/native-host.js';
 
 // ---------------------------------------------------------------------------
 // encodeNativeMessage
@@ -325,5 +325,62 @@ describe('handlePickFolder — FOLDER_PICKED frame shape (ONB-04)', () => {
     assert.strictEqual(frame.type, 'FOLDER_PICKED');
     assert.strictEqual(frame.origin, 'https://evil.example');
     assert.strictEqual(frame.folder, null, 'system directory must be rejected to null');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// handleStartHost — detached-spawn + HOST_STARTING frame (locks the
+// spawnDetachedHost refactor behind START_HOST / GET_TOKEN auto-start).
+// ---------------------------------------------------------------------------
+
+describe('handleStartHost — spawns detached host once + emits HOST_STARTING', () => {
+  let realDir: string;
+
+  test.before(() => {
+    realDir = mkdtempSync(join(tmpdir(), 'sfx-starthost-test-'));
+  });
+
+  test.after(() => {
+    rmSync(realDir, { recursive: true, force: true });
+  });
+
+  // Minimal spawn stub: records (cmd, args, opts) and returns a child with unref().
+  function fakeSpawn() {
+    const calls: Array<{ cmd: string; args: readonly string[]; opts: unknown }> = [];
+    let unrefs = 0;
+    const spawnFn = ((cmd: string, args: readonly string[], opts: unknown) => {
+      calls.push({ cmd, args, opts });
+      return { unref: () => { unrefs += 1; } };
+    }) as unknown as typeof import('node:child_process').spawn;
+    return { spawnFn, calls, unrefCount: () => unrefs };
+  }
+
+  test('exe-mode config → spawns `<exe> serve --root <dir>` once, detached, and emits HOST_STARTING', () => {
+    const cap = captureFrame();
+    const fake = fakeSpawn();
+    const exe = process.platform === 'win32' ? 'C:\\Program Files\\Stikfix\\stikfix-host.exe' : '/opt/stikfix/stikfix-host';
+    const cfg = { root: realDir, name: 'x', notesDir: join(realDir, 'notes'), hostExe: exe };
+    const ok = handleStartHost(cfg, realDir, fake.spawnFn, cap.out);
+
+    assert.strictEqual(ok, true);
+    assert.strictEqual(fake.calls.length, 1, 'host must be spawned exactly once');
+    assert.strictEqual(fake.calls[0].cmd, exe, 'spawns the configured standalone exe');
+    assert.deepStrictEqual(fake.calls[0].args, ['serve', '--root', realDir]);
+    assert.strictEqual((fake.calls[0].opts as { detached?: boolean }).detached, true, 'must be detached');
+    assert.strictEqual(fake.unrefCount(), 1, 'child must be unref()d so it outlives the one-shot native process');
+    const frame = cap.read();
+    assert.ok(frame);
+    assert.strictEqual(frame.type, 'HOST_STARTING');
+  });
+
+  test('missing/empty root → ERROR frame, no spawn', () => {
+    const cap = captureFrame();
+    const fake = fakeSpawn();
+    const cfg = { root: realDir, name: 'x', notesDir: join(realDir, 'notes') };
+    const ok = handleStartHost(cfg, '', fake.spawnFn, cap.out);
+    assert.strictEqual(ok, false);
+    assert.strictEqual(fake.calls.length, 0, 'no spawn on invalid root');
+    const frame = cap.read();
+    assert.strictEqual(frame?.type, 'ERROR');
   });
 });

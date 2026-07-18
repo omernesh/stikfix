@@ -5,6 +5,16 @@ All notable changes to **stikfix** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2026-07-18
+
+### Fixed
+- **Installer now actually starts the host — auto-pair works on first launch.** On a fresh install the host never started, so the extension popup showed *"Auto-pair failed… Unexpected native host response"* and no tray icon appeared. Root cause: the hidden VBS launcher (and the Doctor health-check) built a `cmd /c "<exe>" … "<root>"` command line that both starts and ends with a quote, so `cmd.exe` strips the outer quotes and mangles the spaced `C:\Program Files\Stikfix\…` path — the `serve` process never ran. Fixes:
+  - The exe launcher now runs the standalone `stikfix-host.exe` **directly** via `WScript.Shell.Run` (no `cmd /c`), which quotes the spaced path correctly.
+  - The installer **starts the host automatically the moment setup finishes** (no manual step, no reboot), and gives the health-check page a moment to see it running.
+  - The **Doctor health-check page is no longer blank** — the same `cmd /c` quoting bug left the memo empty; it now captures output correctly.
+- **Auto-pair self-heals when the host isn't running.** The native-messaging host now **starts the HTTP host on demand** when a `GET_TOKEN` request arrives with no `.stikfix-token` on disk (fresh install or host stopped), polls briefly for readiness, and returns the token — so opening the extension popup "just works" without hunting for a start step.
+- **The popup surfaces the real error.** A non-token native reply previously always showed the generic *"Unexpected native host response"*; it now shows the host's actual message (e.g. *"No .stikfix-token… "*, *"Config not found. Run: npx stikfix init"*), so failures are diagnosable instead of opaque.
+
 ## [1.6.0] - 2026-07-18
 
 ### Added

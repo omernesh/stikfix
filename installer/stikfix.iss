@@ -53,6 +53,10 @@ Name: "{autodesktop}\Stikfix Host";   Filename: "{sys}\wscript.exe"; Parameters:
 
 [Run]
 Filename: "{app}\stikfix-host.exe"; Parameters: "register --root ""{code:GetNotesRoot}"" --host-exe ""{app}\stikfix-host.exe"" {code:StartupArg}"; Flags: runhidden waituntilterminated; StatusMsg: "Registering Stikfix host..."; Components: host
+; Start the host immediately so it's running the moment setup finishes (no manual
+; step, no reboot). Launches the hidden VBS (created by register above) which runs
+; `stikfix-host.exe serve` windowless and shows a brief "host is running" confirmation.
+Filename: "{sys}\wscript.exe"; Parameters: "//Nologo ""{%USERPROFILE}\.local\share\stikfix\stikfix-host.vbs"""; Flags: nowait runhidden skipifsilent; StatusMsg: "Starting Stikfix host..."; Components: host
 
 [UninstallRun]
 Filename: "{app}\stikfix-host.exe"; Parameters: "uninstall"; Flags: runhidden; RunOnceId: "StikfixTeardown"
@@ -75,9 +79,17 @@ var
   Output: AnsiString;
   ResultCode: Integer;
 begin
+  { The host was just launched (async, nowait) by the [Run] VBS. Give it a moment
+    to bind + write .stikfix-port before doctor probes GET /status, so the
+    health check reflects the running host instead of racing its startup. }
+  Sleep(2500);
   TmpFile := ExpandConstant('{tmp}\stikfix-doctor.txt');
+  { cmd /c needs ONE outer quote pair wrapping the whole command, with each
+    spaced path quoted inside it: /c ""<exe>" doctor > "<tmp>" 2>&1". Without the
+    outer pair, cmd.exe strips the leading+trailing quote (cmd /?) and the spaced
+    "C:\Program Files\Stikfix\..." path breaks → the memo came back empty. }
   if Exec(ExpandConstant('{cmd}'),
-       '/c ""' + ExpandConstant('{app}\stikfix-host.exe') + '"" doctor > ""' + TmpFile + '"" 2>&1',
+       '/c ""' + ExpandConstant('{app}\stikfix-host.exe') + '" doctor > "' + TmpFile + '" 2>&1"',
        '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
   begin
     if LoadStringFromFile(TmpFile, Output) then

@@ -117,22 +117,50 @@ export function handleStartHost(
     return false;
   }
 
+  const started = spawnDetachedHost(cfg, resolvedRoot, spawnFn);
+  if (!started.ok) {
+    emit({ type: 'ERROR', error: `Failed to start host: ${started.error}` });
+    return false;
+  }
+
+  emit({ type: 'HOST_STARTING', root: resolvedRoot });
+  return true;
+}
+
+/**
+ * Spawn the HTTP host as a DETACHED process for `resolvedRoot`, WITHOUT writing
+ * any native-messaging frame — the caller owns the single wire response for this
+ * one-shot process. Returns {ok:true} on a successful spawn, {ok:false,error} on
+ * spawn failure.
+ *
+ * Shared by handleStartHost (which then emits HOST_STARTING) and the GET_TOKEN
+ * auto-start fallback (which then polls for the freshly-written token and emits
+ * TOKEN). Reuses the exact command resolution as before:
+ *   - standalone exe install → `<hostExe> serve --root <root>`
+ *   - npx/node install       → `node <hostEntry> --root <root>`
+ *
+ * CRITICAL (T-09-07): the native host MUST NOT bind/listen itself — it only
+ * spawns a SEPARATE, detached process. NEVER writes to stdout (native-frame
+ * integrity, Pitfall 2). Detached + stdio:'ignore' + unref() so the child
+ * outlives this one-shot native process.
+ */
+function spawnDetachedHost(
+  cfg: StikFixConfig,
+  resolvedRoot: string,
+  spawnFn: typeof spawn = spawn,
+): { ok: true } | { ok: false; error: string } {
   const nodePath =
     typeof cfg.nodePath === 'string' && cfg.nodePath.length > 0 ? cfg.nodePath : process.execPath;
-  const hostEntry = resolveHostEntry(cfg);
-
-  // Standalone-exe install path: when config points at a single-executable host,
-  // spawn `<exe> serve --root <root>` (the exe self-detects the subcommand).
-  // Otherwise keep the exact prior behavior: `node <hostEntry> --root <root>`.
   const hostExe = typeof cfg.hostExe === 'string' && cfg.hostExe.length > 0 ? cfg.hostExe : undefined;
   const spawnCmd = hostExe ?? nodePath;
+  // resolveHostEntry() is only evaluated when actually needed (non-exe/node
+  // install path) — calling it unconditionally in exe-mode would hit the
+  // __dirname fallback for no reason (and __dirname is undefined in the
+  // tsc/ESM test build; production's esbuild CJS bundle is unaffected).
   const spawnArgs = hostExe
     ? ['serve', '--root', resolvedRoot]
-    : [hostEntry, '--root', resolvedRoot];
+    : [resolveHostEntry(cfg), '--root', resolvedRoot];
 
-  // CRITICAL (T-09-07): the native host MUST NOT bind/listen itself. It only
-  // spawns a SEPARATE, detached process that is the HTTP host. Detached +
-  // stdio:'ignore' + unref() so the child outlives this one-shot native process.
   try {
     const child = spawnFn(spawnCmd, spawnArgs, {
       detached: true,
@@ -140,13 +168,84 @@ export function handleStartHost(
       windowsHide: true,
     });
     child.unref();
+    return { ok: true };
   } catch (err) {
-    emit({ type: 'ERROR', error: `Failed to start host: ${String((err as Error).message)}` });
-    return false;
+    return { ok: false, error: String((err as Error).message) };
+  }
+}
+
+/**
+ * Read the optional `.stikfix-port` for `tokenRoot`, then send the final TOKEN
+ * frame and exit(0). One-shot terminal step for a successful GET_TOKEN — the
+ * only stdout write on this path.
+ */
+function sendTokenFrame(tokenRoot: string, token: string, name: string, notesDir: string): void {
+  // Port is optional — read if present; SW falls back to port scan (A5 fallback).
+  let port: number | undefined;
+  try {
+    const raw = readFileSync(join(tokenRoot, '.stikfix-port'), 'utf8').trim();
+    const parsed = parseInt(raw, 10);
+    if (!isNaN(parsed)) {
+      port = parsed;
+    }
+  } catch {
+    // .stikfix-port absent is OK — SW re-probes (A5)
   }
 
-  emit({ type: 'HOST_STARTING', root: resolvedRoot });
-  return true;
+  sendNativeMessage({ type: 'TOKEN', token, port, name, notesDir });
+  process.exit(0);
+}
+
+/**
+ * GET_TOKEN self-heal: the `.stikfix-token` is missing because the HTTP host has
+ * never started (fresh install) or was stopped. Rather than fail the pairing and
+ * make the user hunt for a "start the host" step, auto-start the host (detached)
+ * and poll briefly for the token file it writes, then return TOKEN. This makes
+ * auto-pair work on the very first popup open with no manual step — the core
+ * reliability promise (a dropped note is a regression).
+ *
+ * NEVER writes to stdout until the single terminal frame (TOKEN or ERROR).
+ */
+function autoStartAndReturnToken(
+  cfg: StikFixConfig,
+  tokenRoot: string,
+  name: string,
+  notesDir: string,
+): void {
+  const tokenPath = join(tokenRoot, '.stikfix-token');
+
+  const started = spawnDetachedHost(cfg, tokenRoot);
+  if (!started.ok) {
+    sendNativeMessage({
+      type: 'ERROR',
+      error: 'No .stikfix-token in ' + tokenRoot + ' and the host could not be started: ' + started.error,
+    });
+    process.exit(1);
+  }
+
+  // Poll ~5s (25 × 200ms) for the freshly-started host to bind + write the token.
+  const deadline = Date.now() + 5000;
+  const tick = (): void => {
+    let tok = '';
+    try {
+      tok = readFileSync(tokenPath, 'utf8').trim();
+    } catch {
+      tok = '';
+    }
+    if (tok.length > 0) {
+      sendTokenFrame(tokenRoot, tok, name, notesDir);
+      return;
+    }
+    if (Date.now() >= deadline) {
+      sendNativeMessage({
+        type: 'ERROR',
+        error: 'Started the Stikfix host but it did not become ready in time (' + tokenRoot + ').',
+      });
+      process.exit(1);
+    }
+    setTimeout(tick, 200);
+  };
+  setTimeout(tick, 200);
 }
 
 // ---------------------------------------------------------------------------
@@ -248,38 +347,24 @@ export function main(): void {
       }
 
       // Token is required ONLY for GET_TOKEN — read it lazily here.
-      let token: string;
+      let token = '';
       try {
         token = readFileSync(join(tokenRoot, '.stikfix-token'), 'utf8').trim();
       } catch {
-        sendNativeMessage({
-          type: 'ERROR',
-          error: 'No .stikfix-token in ' + tokenRoot + '. Start the host first.',
-        });
-        process.exit(1);
+        token = '';
       }
 
-      // Port is optional — read if present; SW falls back to port scan (A5 fallback)
-      let port: number | undefined;
-      try {
-        const raw = readFileSync(join(tokenRoot, '.stikfix-port'), 'utf8').trim();
-        const parsed = parseInt(raw, 10);
-        if (!isNaN(parsed)) {
-          port = parsed;
-        }
-      } catch {
-        // .stikfix-port absent is OK — SW re-probes (A5)
+      if (token.length > 0) {
+        // Happy path: host already running, token on disk → send it and exit.
+        sendTokenFrame(tokenRoot, token, name, notesDir);
+        return;
       }
 
-      // Send token + port (if known) + host identity, then exit (one-shot)
-      sendNativeMessage({
-        type: 'TOKEN',
-        token,
-        port,
-        name,
-        notesDir,
-      });
-      process.exit(0);
+      // Token missing → the host isn't running yet (fresh install / stopped).
+      // Self-heal: start the host and poll for the token, then send TOKEN. This
+      // keeps the terminal-frame contract (one TOKEN or one ERROR) intact.
+      autoStartAndReturnToken(cfg, tokenRoot, name, notesDir);
+      return;
     }
 
     if (m.type === 'START_HOST') {

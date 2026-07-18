@@ -1064,10 +1064,17 @@ function fetchTokenViaNative(
           return;
         }
 
-        const r = response as { type?: string; token?: string; port?: number; name?: string; notesDir?: string } | null;
+        const r = response as { type?: string; token?: string; port?: number; name?: string; notesDir?: string; error?: string } | null;
 
         if (!r || r.type !== 'TOKEN' || typeof r.token !== 'string' || typeof r.name !== 'string') {
-          resolve({ ok: false, error: 'Unexpected native host response' });
+          // Surface the host's own structured error (e.g. "No .stikfix-token…",
+          // "Config not found. Run: npx stikfix init") instead of a generic mask —
+          // no silent failures, the user sees exactly what to fix.
+          const detail =
+            r && r.type === 'ERROR' && typeof r.error === 'string' && r.error.length > 0
+              ? r.error
+              : 'Unexpected native host response';
+          resolve({ ok: false, error: detail });
           return;
         }
 
