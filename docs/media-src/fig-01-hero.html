@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>stikfix — Hero</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1600px;height:1000px;overflow:hidden;position:relative;background:#f4f5f8;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+
+/* ---------- Beacon app backdrop (mock SaaS) ---------- */
+.app{position:absolute;inset:0}
+.app-topbar{position:absolute;top:0;left:0;right:0;height:60px;background:#fff;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;padding:0 28px;gap:28px}
+.app-logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;color:#111827}
+.app-logo-mark{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#6366f1,#4f46e5);position:relative}
+.app-logo-mark::after{content:"";position:absolute;inset:7px;background:#fff;border-radius:2px;transform:rotate(45deg)}
+.app-nav{display:flex;gap:26px;font-size:14px;color:#6b7280;font-weight:500}
+.app-nav span.active{color:#4f46e5;font-weight:700;position:relative}
+.app-nav span.active::after{content:"";position:absolute;left:0;right:0;bottom:-21px;height:2px;background:#4f46e5}
+.app-topbar-right{margin-left:auto;display:flex;align-items:center;gap:16px}
+.app-avatar{width:32px;height:32px;border-radius:50%;background:#e0e7ff;color:#4338ca;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center}
+
+.app-sidebar{position:absolute;top:60px;left:0;bottom:0;width:220px;background:#fbfbfd;border-right:1px solid #e5e7eb;padding:20px 12px}
+.app-sidebar-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;font-size:13.5px;color:#6b7280;font-weight:500;margin-bottom:2px}
+.app-sidebar-item .dot{width:6px;height:6px;border-radius:50%;background:#c7cbd4}
+.app-sidebar-item.active{background:#eef1ff;color:#4338ca;font-weight:700}
+.app-sidebar-item.active .dot{background:#4f46e5}
+
+.app-main{position:absolute;top:60px;left:220px;right:0;bottom:0;padding:40px 44px}
+.app-title{font-size:25px;font-weight:800;color:#111827}
+.app-subtitle{font-size:14px;color:#6b7280;margin-top:6px}
+
+.plan-row{display:flex;gap:24px;margin-top:34px}
+.plan-card{flex:1;background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:24px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.plan-card.featured{border:2px solid #4f46e5;box-shadow:0 10px 26px rgba(79,70,229,.16);position:relative}
+.plan-badge{position:absolute;top:-13px;left:24px;background:#4f46e5;color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.02em}
+.plan-name{font-size:12.5px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em}
+.plan-price{font-size:32px;font-weight:800;color:#111827;margin-top:10px}
+.plan-price span{font-size:14px;font-weight:500;color:#9ca3af}
+.plan-features{list-style:none;margin-top:18px;display:flex;flex-direction:column;gap:9px}
+.plan-features li{font-size:13px;color:#4b5563;display:flex;gap:8px;align-items:center}
+.plan-features li::before{content:"✓";color:#16a34a;font-weight:700}
+.btn-primary{margin-top:22px;width:100%;background:#4f46e5;color:#fff;border:none;border-radius:9px;padding:13px 0;font-size:14px;font-weight:700;cursor:pointer}
+.btn-secondary{margin-top:22px;width:100%;background:#fff;color:#374151;border:1px solid #d1d5db;border-radius:9px;padding:13px 0;font-size:14px;font-weight:700}
+
+.payment-box{margin-top:30px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px 24px;display:flex;align-items:center;gap:16px;max-width:640px}
+.payment-icon{width:40px;height:28px;border-radius:5px;background:linear-gradient(135deg,#374151,#111827)}
+.payment-text{font-size:13px;color:#374151;font-weight:600}
+.payment-sub{font-size:12px;color:#9aa3b2;margin-top:2px}
+
+/* ---------- stikfix UI (adapted from review.css) ---------- */
+.sfx-root{position:absolute;inset:0;pointer-events:none;z-index:500;font-family:system-ui,-apple-system,sans-serif;
+  --sfx-pill-bg:#1f2937;--sfx-pill-btn:#374151;--sfx-pill-accent:#3b82f6;--sfx-pill-text:#f9fafb;--sfx-pill-divider:#4b5563}
+#sfx-chip{pointer-events:auto;position:absolute;top:16px;right:16px;z-index:5;background:var(--sfx-pill-bg);color:var(--sfx-pill-text);white-space:nowrap;border:1px solid rgba(255,255,255,.2);border-radius:10px;display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.sfx-chip-grip{letter-spacing:-1px;color:rgba(249,250,251,.4);font-weight:700}
+.sfx-status-dot{background:#22c55e;border-radius:50%;flex-shrink:0;width:8px;height:8px}
+.sfx-chip-label{color:var(--sfx-pill-text)}
+.sfx-chip-label.sfx-label-routed{text-decoration:underline dotted var(--sfx-pill-divider)}
+.sfx-chip-btn{background:var(--sfx-pill-btn);color:var(--sfx-pill-text);border:none;border-radius:7px;padding:3px 9px;font-size:12px}
+.sfx-chip-btn.sfx-btn-send{background:var(--sfx-pill-accent);color:#fff}
+.sfx-chip-btn.sfx-picker-btn{background:#22262e;border:1px solid rgba(255,255,255,.12);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0}
+.sfx-chip-btn.sfx-btn-exit{color:rgba(249,250,251,.6);background:none;padding:3px 6px;font-size:14px;font-weight:700}
+
+#sfx-fab{position:absolute;bottom:32px;right:32px;z-index:4;background:var(--sfx-pill-bg);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;width:44px;height:44px;box-shadow:0 6px 20px rgba(0,0,0,.35);pointer-events:auto}
+.sfx-fab-icon{color:var(--sfx-pill-text);font-size:20px}
+
+#sfx-card{pointer-events:auto;position:absolute;bottom:88px;right:32px;color:#e8eaef;background:#1b1e24;border:1px solid rgba(255,255,255,.2);border-radius:14px;display:flex;flex-direction:column;width:300px;box-shadow:0 14px 44px rgba(0,0,0,.48),0 3px 10px rgba(0,0,0,.32)}
+.sfx-card-header{background:#22262e;border-bottom:1px solid rgba(255,255,255,.07);border-radius:14px 14px 0 0;display:flex;align-items:center;padding:8px 12px;box-shadow:inset 0 2px #60a5fa;gap:6px}
+.sfx-card-header-label{color:#e8eaef;font-size:13px}
+.sfx-cam-btn{margin-left:auto;color:#f2f4f8;background:#2f3540;border:1px solid rgba(255,255,255,.22);border-radius:50%;flex-shrink:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:15px}
+.sfx-ctx-header{color:#9aa3b2;background:#20242b;border-bottom:1px solid rgba(255,255,255,.07);padding:7px 12px;font-size:12px;line-height:1.4}
+.sfx-card-body{padding:10px}
+#sfx-card-textarea{box-sizing:border-box;color:#e8eaef;background:#14161b;border:1px solid rgba(255,255,255,.1);border-radius:9px;width:100%;height:88px;padding:8px 10px;font-family:inherit;font-size:13.5px;line-height:1.5;resize:none}
+.sfx-card-footer{border-top:1px solid rgba(255,255,255,.07);display:flex;justify-content:flex-end;gap:8px;padding:9px 10px}
+#sfx-card-send{color:#fff;background:#3b82f6;border:none;border-radius:9px;padding:6px 14px;font-size:12px;font-weight:600}
+#sfx-card-cancel{color:#9aa3b2;background:none;border:1px solid rgba(255,255,255,.16);border-radius:9px;padding:6px 14px;font-size:12px}
+
+.sfx-toast{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);color:#e8eaef;background:#1b1e24;border:1px solid rgba(255,255,255,.2);border-radius:8px;display:flex;width:340px;font-size:13px;box-shadow:0 14px 44px rgba(0,0,0,.48),0 3px 10px rgba(0,0,0,.32);overflow:hidden;pointer-events:auto}
+.sfx-toast-stripe{background:#16a34a;width:4px;flex-shrink:0}
+.sfx-toast-body{display:flex;flex:1;align-items:center;gap:9px;padding:11px 14px}
+.sfx-toast-icon{color:#16a34a;font-size:14px}
+.sfx-toast-msg{color:#e8eaef}
+
+.pick-highlight{position:absolute;box-sizing:border-box;border:2px solid rgba(59,130,246,.95);background:rgba(59,130,246,.12);border-radius:6px;z-index:400;pointer-events:none}
+
+/* ---------- marketing callouts ---------- */
+.callout{position:absolute;z-index:900;background:#111827;color:#fff;font:700 15px/1.3 -apple-system,system-ui,sans-serif;padding:9px 16px;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.35);border:2px solid #fbbf24;white-space:nowrap}
+.callout-lines{position:absolute;top:0;left:0;pointer-events:none;z-index:850}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="app-topbar">
+    <div class="app-logo"><div class="app-logo-mark"></div>Beacon</div>
+    <div class="app-nav"><span>Dashboard</span><span>Customers</span><span class="active">Billing</span><span>Reports</span><span>Settings</span></div>
+    <div class="app-topbar-right"><div class="app-avatar">JD</div></div>
+  </div>
+  <div class="app-sidebar">
+    <div class="app-sidebar-item"><span class="dot"></span>Dashboard</div>
+    <div class="app-sidebar-item"><span class="dot"></span>Analytics</div>
+    <div class="app-sidebar-item"><span class="dot"></span>Customers</div>
+    <div class="app-sidebar-item active"><span class="dot"></span>Billing</div>
+    <div class="app-sidebar-item"><span class="dot"></span>Team</div>
+    <div class="app-sidebar-item"><span class="dot"></span>Settings</div>
+  </div>
+  <div class="app-main">
+    <div class="app-title">Billing &amp; Plans</div>
+    <div class="app-subtitle">Choose the plan that fits your team.</div>
+    <div class="plan-row">
+      <div class="plan-card">
+        <div class="plan-name">Starter</div>
+        <div class="plan-price">$19<span>/mo</span></div>
+        <ul class="plan-features"><li>1 project</li><li>Basic analytics</li><li>Email support</li></ul>
+        <button class="btn-secondary">Downgrade</button>
+      </div>
+      <div class="plan-card featured">
+        <div class="plan-badge">Most popular</div>
+        <div class="plan-name">Pro</div>
+        <div class="plan-price">$49<span>/mo</span></div>
+        <ul class="plan-features"><li>Unlimited projects</li><li>Advanced analytics</li><li>Priority support</li></ul>
+        <button class="btn-primary" id="checkout-btn">Upgrade to Pro</button>
+      </div>
+      <div class="plan-card">
+        <div class="plan-name">Enterprise</div>
+        <div class="plan-price">$199<span>/mo</span></div>
+        <ul class="plan-features"><li>SSO &amp; audit logs</li><li>Dedicated CSM</li><li>Custom contracts</li></ul>
+        <button class="btn-secondary">Contact sales</button>
+      </div>
+    </div>
+    <div class="payment-box">
+      <div class="payment-icon"></div>
+      <div><div class="payment-text">Visa •••• 4242</div><div class="payment-sub">Your card is charged on the 1st of each month.</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="pick-highlight" style="left:733px;top:531px;width:212px;height:52px;"></div>
+
+<div class="sfx-root">
+  <div id="sfx-chip">
+    <span class="sfx-chip-grip">||</span>
+    <span class="sfx-status-dot"></span>
+    <span class="sfx-chip-label sfx-label-routed">→ beacon-app · notes/</span>
+    <button class="sfx-chip-btn sfx-btn-send">Send</button>
+    <button class="sfx-chip-btn sfx-picker-btn">🎯</button>
+    <button class="sfx-chip-btn sfx-btn-exit">×</button>
+  </div>
+  <button id="sfx-fab" aria-label="Add note"><span class="sfx-fab-icon">+</span></button>
+  <div id="sfx-card">
+    <div class="sfx-card-header"><span class="sfx-card-header-label">Element note</span><button class="sfx-cam-btn">📷</button></div>
+    <div class="sfx-ctx-header">button.btn-primary#checkout-btn · &lt;CheckoutButton&gt; · 212×52 · bg:#4f46e5</div>
+    <div class="sfx-card-body"><textarea id="sfx-card-textarea">This CTA sits 6px lower than the card grid — nudge up to align.</textarea></div>
+    <div class="sfx-card-footer"><button id="sfx-card-send">Send</button><button id="sfx-card-cancel">Discard note</button></div>
+  </div>
+  <div class="sfx-toast"><div class="sfx-toast-stripe"></div><div class="sfx-toast-body"><span class="sfx-toast-icon">✓</span><span class="sfx-toast-msg">Saved to notes/0007-checkout-cta.md</span></div></div>
+</div>
+
+<svg class="callout-lines" width="1600" height="1000">
+  <defs><marker id="arrow1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#fbbf24"/></marker></defs>
+  <path d="M478,486 C560,500 630,510 728,540" stroke="#fbbf24" stroke-width="3" fill="none" marker-end="url(#arrow1)"/>
+  <path d="M1150,462 C1210,560 1235,675 1258,726" stroke="#fbbf24" stroke-width="3" fill="none" marker-end="url(#arrow1)"/>
+  <path d="M1060,858 C980,880 890,905 828,918" stroke="#fbbf24" stroke-width="3" fill="none" marker-end="url(#arrow1)"/>
+</svg>
+<div class="callout" style="left:300px;top:450px;">Click any element →</div>
+<div class="callout" style="left:940px;top:420px;">Auto-captures selector, styles &amp; a screenshot</div>
+<div class="callout" style="left:1000px;top:826px;">Lands as a .md file on disk</div>
+
+</body>
+</html>

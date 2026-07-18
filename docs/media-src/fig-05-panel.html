@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>stikfix — Notes Panel</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1600px;height:1000px;overflow:hidden;position:relative;background:#f4f5f8;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+
+/* ---------- Beacon app backdrop ---------- */
+.app{position:absolute;inset:0}
+.app-topbar{position:absolute;top:0;left:0;right:0;height:60px;background:#fff;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;padding:0 28px;gap:28px}
+.app-logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;color:#111827}
+.app-logo-mark{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#6366f1,#4f46e5);position:relative}
+.app-logo-mark::after{content:"";position:absolute;inset:7px;background:#fff;border-radius:2px;transform:rotate(45deg)}
+.app-nav{display:flex;gap:26px;font-size:14px;color:#6b7280;font-weight:500}
+.app-nav span.active{color:#4f46e5;font-weight:700}
+.app-topbar-right{margin-left:auto;display:flex;align-items:center;gap:16px}
+.app-avatar{width:32px;height:32px;border-radius:50%;background:#e0e7ff;color:#4338ca;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center}
+.app-sidebar{position:absolute;top:60px;left:0;bottom:0;width:220px;background:#fbfbfd;border-right:1px solid #e5e7eb;padding:20px 12px}
+.app-sidebar-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;font-size:13.5px;color:#6b7280;font-weight:500;margin-bottom:2px}
+.app-sidebar-item .dot{width:6px;height:6px;border-radius:50%;background:#c7cbd4}
+.app-sidebar-item.active{background:#eef1ff;color:#4338ca;font-weight:700}
+.app-sidebar-item.active .dot{background:#4f46e5}
+.app-main{position:absolute;top:60px;left:220px;right:0;bottom:0;padding:40px 44px}
+.app-title{font-size:25px;font-weight:800;color:#111827}
+.app-subtitle{font-size:14px;color:#6b7280;margin-top:6px}
+.plan-row{display:flex;gap:24px;margin-top:34px}
+.plan-card{flex:1;background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:24px}
+.plan-card.featured{border:2px solid #4f46e5}
+.plan-name{font-size:12.5px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em}
+.plan-price{font-size:32px;font-weight:800;color:#111827;margin-top:10px}
+.plan-price span{font-size:14px;font-weight:500;color:#9ca3af}
+.btn-primary{margin-top:22px;width:100%;background:#4f46e5;color:#fff;border:none;border-radius:9px;padding:13px 0;font-size:14px;font-weight:700}
+.btn-secondary{margin-top:22px;width:100%;background:#fff;color:#374151;border:1px solid #d1d5db;border-radius:9px;padding:13px 0;font-size:14px;font-weight:700}
+
+/* ---------- stikfix chip (for context) ---------- */
+#sfx-chip{position:absolute;top:16px;right:16px;z-index:5;background:#1f2937;color:#f9fafb;white-space:nowrap;border:1px solid rgba(255,255,255,.2);border-radius:10px;display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,.35);font-family:system-ui,-apple-system,sans-serif}
+.sfx-chip-grip{letter-spacing:-1px;color:rgba(249,250,251,.4);font-weight:700}
+.sfx-status-dot{background:#22c55e;border-radius:50%;width:8px;height:8px}
+.sfx-chip-btn{background:#374151;color:#f9fafb;border:none;border-radius:7px;padding:3px 9px;font-size:12px}
+.sfx-chip-btn.sfx-btn-send{background:#3b82f6;color:#fff}
+.sfx-chip-btn.sfx-panel-btn{background:#3b82f6;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0}
+.sfx-chip-btn.sfx-btn-exit{color:rgba(249,250,251,.6);background:none;padding:3px 6px;font-size:14px;font-weight:700}
+
+/* ---------- stikfix notes panel (adapted from review.css .sfx-panel-*) ---------- */
+.sfx-panel{position:absolute;top:56px;right:16px;z-index:600;color:#e8eaef;background:#1b1e24;border:1px solid rgba(255,255,255,.2);border-radius:14px;display:flex;flex-direction:column;width:360px;font-family:system-ui,-apple-system,sans-serif;font-size:13px;box-shadow:0 20px 55px rgba(0,0,0,.5),0 3px 10px rgba(0,0,0,.32);overflow:hidden}
+.sfx-panel-header{background:#22262e;border-bottom:1px solid rgba(255,255,255,.07);padding:14px 14px 10px}
+.sfx-panel-title-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.sfx-panel-grip{letter-spacing:-1px;color:rgba(255,255,255,.4);font-weight:700}
+.sfx-panel-title{color:#e8eaef;flex:1;font-size:15px;font-weight:600}
+.sfx-panel-count{color:#9aa3b2;background:#2a2f38;border-radius:10px;padding:2px 8px;font-size:11.5px;font-weight:500}
+.sfx-panel-close{color:#9aa3b2;background:none;border:none;font-size:19px;font-weight:700}
+.sfx-panel-scope-row{display:flex;align-items:center;gap:7px;margin-bottom:10px}
+.sfx-panel-scope-lbl{color:#9aa3b2;font-size:12.5px}
+.sfx-panel-filter-row{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.sfx-panel-filter-btn{color:#9aa3b2;white-space:nowrap;background:#22262e;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:4px 10px;font-size:11.5px}
+.sfx-panel-filter-btn.sfx-panel-filter-active{color:#fff;background:#3b82f6;border-color:#3b82f6}
+.sfx-panel-search{box-sizing:border-box;color:#e8eaef;background:#14161b;border:1px solid rgba(255,255,255,.1);border-radius:9px;width:100%;padding:7px 10px;font-size:12.5px;font-family:inherit}
+.sfx-panel-list{padding:6px 0}
+.sfx-panel-row{display:flex;align-items:flex-start;gap:9px;border-bottom:1px solid rgba(255,255,255,.07);padding:11px 14px}
+.sfx-panel-row:last-child{border-bottom:none}
+.sfx-panel-dot{border-radius:50%;width:9px;height:9px;margin-top:5px;flex-shrink:0}
+.sfx-panel-dot-unread{background:#dc2626}
+.sfx-panel-dot-flagged{background:#ea580c}
+.sfx-panel-dot-resolved{background:#16a34a}
+.sfx-panel-row-body{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.sfx-panel-row-top{display:flex;align-items:baseline;gap:6px;min-width:0}
+.sfx-panel-serial{color:#6b7280;font-variant-numeric:tabular-nums;font-size:11.5px;flex-shrink:0}
+.sfx-panel-time{color:#565d6b;font-size:11px;margin-left:auto;flex-shrink:0}
+.sfx-panel-mode{font-size:12.5px}
+.sfx-panel-text{color:#e8eaef;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;font-size:13.5px;flex:1;min-width:0}
+.sfx-panel-reply{color:#9aa3b2;font-size:11.5px;text-overflow:ellipsis;white-space:nowrap;overflow:hidden}
+
+/* ---------- marketing callout ---------- */
+.callout{position:absolute;z-index:900;background:#111827;color:#fff;font:700 16px/1.3 -apple-system,system-ui,sans-serif;padding:10px 18px;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.35);border:2px solid #fbbf24;white-space:nowrap}
+.callout-lines{position:absolute;top:0;left:0;pointer-events:none;z-index:850}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="app-topbar">
+    <div class="app-logo"><div class="app-logo-mark"></div>Beacon</div>
+    <div class="app-nav"><span>Dashboard</span><span>Customers</span><span class="active">Billing</span><span>Reports</span><span>Settings</span></div>
+    <div class="app-topbar-right"><div class="app-avatar">JD</div></div>
+  </div>
+  <div class="app-sidebar">
+    <div class="app-sidebar-item"><span class="dot"></span>Dashboard</div>
+    <div class="app-sidebar-item"><span class="dot"></span>Analytics</div>
+    <div class="app-sidebar-item"><span class="dot"></span>Customers</div>
+    <div class="app-sidebar-item active"><span class="dot"></span>Billing</div>
+    <div class="app-sidebar-item"><span class="dot"></span>Team</div>
+    <div class="app-sidebar-item"><span class="dot"></span>Settings</div>
+  </div>
+  <div class="app-main">
+    <div class="app-title">Billing &amp; Plans</div>
+    <div class="app-subtitle">Choose the plan that fits your team.</div>
+    <div class="plan-row">
+      <div class="plan-card"><div class="plan-name">Starter</div><div class="plan-price">$19<span>/mo</span></div><button class="btn-secondary">Downgrade</button></div>
+      <div class="plan-card featured"><div class="plan-name">Pro</div><div class="plan-price">$49<span>/mo</span></div><button class="btn-primary">Upgrade to Pro</button></div>
+      <div class="plan-card"><div class="plan-name">Enterprise</div><div class="plan-price">$199<span>/mo</span></div><button class="btn-secondary">Contact sales</button></div>
+    </div>
+  </div>
+</div>
+
+<div id="sfx-chip">
+  <span class="sfx-chip-grip">||</span>
+  <span class="sfx-status-dot"></span>
+  <span>→ beacon-app · notes/</span>
+  <button class="sfx-chip-btn sfx-btn-send">Send</button>
+  <button class="sfx-chip-btn sfx-panel-btn">📋</button>
+  <button class="sfx-chip-btn sfx-btn-exit">×</button>
+</div>
+
+<div class="sfx-panel">
+  <div class="sfx-panel-header">
+    <div class="sfx-panel-title-row">
+      <span class="sfx-panel-grip">||</span>
+      <span class="sfx-panel-title">Notes</span>
+      <span class="sfx-panel-count">5</span>
+      <button class="sfx-panel-close">×</button>
+    </div>
+    <div class="sfx-panel-scope-row">
+      <input type="checkbox" style="accent-color:#1d6ed8;width:14px;height:14px">
+      <span class="sfx-panel-scope-lbl">All pages</span>
+    </div>
+    <div class="sfx-panel-filter-row">
+      <button class="sfx-panel-filter-btn sfx-panel-filter-active">All (5)</button>
+      <button class="sfx-panel-filter-btn">Unread (2)</button>
+      <button class="sfx-panel-filter-btn">Flagged (1)</button>
+      <button class="sfx-panel-filter-btn">Resolved (2)</button>
+    </div>
+    <input type="search" class="sfx-panel-search" placeholder="Search notes…">
+  </div>
+  <div class="sfx-panel-list">
+    <div class="sfx-panel-row">
+      <span class="sfx-panel-dot sfx-panel-dot-unread"></span>
+      <div class="sfx-panel-row-body">
+        <div class="sfx-panel-row-top"><span class="sfx-panel-serial">#0009</span><span class="sfx-panel-mode">📌</span><span class="sfx-panel-text">This CTA sits 6px lower than the grid</span><span class="sfx-panel-time">2m</span></div>
+      </div>
+    </div>
+    <div class="sfx-panel-row">
+      <span class="sfx-panel-dot sfx-panel-dot-unread"></span>
+      <div class="sfx-panel-row-body">
+        <div class="sfx-panel-row-top"><span class="sfx-panel-serial">#0008</span><span class="sfx-panel-mode">🗒</span><span class="sfx-panel-text">Modal scrolls the body behind it</span><span class="sfx-panel-time">14m</span></div>
+      </div>
+    </div>
+    <div class="sfx-panel-row">
+      <span class="sfx-panel-dot sfx-panel-dot-flagged"></span>
+      <div class="sfx-panel-row-body">
+        <div class="sfx-panel-row-top"><span class="sfx-panel-serial">#0007</span><span class="sfx-panel-mode">📌</span><span class="sfx-panel-text">Apply new price to annual plans?</span><span class="sfx-panel-time">1h</span></div>
+        <div class="sfx-panel-reply">⚠ Should this apply to annual too, or monthly only?</div>
+      </div>
+    </div>
+    <div class="sfx-panel-row">
+      <span class="sfx-panel-dot sfx-panel-dot-resolved"></span>
+      <div class="sfx-panel-row-body">
+        <div class="sfx-panel-row-top"><span class="sfx-panel-serial">#0006</span><span class="sfx-panel-mode">📌</span><span class="sfx-panel-text">Contrast fails AA — #9aa is too light</span><span class="sfx-panel-time">3h</span></div>
+        <div class="sfx-panel-reply">✓ Bumped to #6b7280 — fixed in c92a1f0</div>
+      </div>
+    </div>
+    <div class="sfx-panel-row">
+      <span class="sfx-panel-dot sfx-panel-dot-resolved"></span>
+      <div class="sfx-panel-row-body">
+        <div class="sfx-panel-row-top"><span class="sfx-panel-serial">#0005</span><span class="sfx-panel-mode">🗒</span><span class="sfx-panel-text">Add empty-state illustration</span><span class="sfx-panel-time">1d</span></div>
+        <div class="sfx-panel-reply">✓ Added — fixed in 7fd0e21</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<svg class="callout-lines" width="1600" height="1000">
+  <defs><marker id="arrow5" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#fbbf24"/></marker></defs>
+  <path d="M980,230 C1050,270 1120,330 1180,380" stroke="#fbbf24" stroke-width="3" fill="none" marker-end="url(#arrow5)"/>
+</svg>
+<div class="callout" style="left:700px;top:200px;">Every note — filter, search, jump</div>
+
+</body>
+</html>

@@ -11,6 +11,12 @@
 [![GitHub Release](https://img.shields.io/github/v/release/omernesh/stikfix?label=Windows%20installer)](https://github.com/omernesh/stikfix/releases/latest)
 [![Chrome MV3](https://img.shields.io/badge/Chrome-MV3-blue.svg)](#load-the-extension)
 
+<br/>
+
+<img src="docs/media/01-hero.png" alt="stikfix in action — drop a note on any element and it lands as a markdown file your AI reads" width="860" />
+
+📖 **[Read the illustrated Getting Started guide →](docs/getting-started.md)**
+
 </div>
 
 ---
@@ -31,6 +37,17 @@ No cloud. No accounts. No sign-up. Everything stays on `127.0.0.1` — **your co
 2. Drop a **sticky note** — free-floating, or click an element to anchor it. Anchored notes auto-capture the CSS selector, computed styles, `outerHTML`, the bounding box, an auto-highlighted screenshot, and the React component name. No describing required. Want to point at something exactly? **Draw an arrow, box, or circle right on a screenshot** and it rides along with the note.
 3. Tell your agent **"read my notes."** It reads the fresh `.md` files, makes the fixes, and **writes a reply back into each note** — so the pin turns **green ✓** right on the page with a one-line "here's what I changed" (no fix is lost in a chat log). Anything ambiguous turns **amber** with the agent's clarifying question.
 4. Glance at the pins (or open the **notes panel** to filter/search/jump), drop a few more, repeat. Pins update live as the agent works — no refresh. Your UI gets tighter every loop.
+
+## See it in action
+
+| | |
+|:---:|:---:|
+| <img src="docs/media/02-element-context.png" alt="Element context capture" width="440"/> | <img src="docs/media/03-draw.png" alt="Annotation drawing" width="440"/> |
+| **Every note already knows the element** — selector, computed styles, component name. | **Draw arrows, boxes & circles** right on a frozen screenshot; it rides along with the note. |
+| <img src="docs/media/04-pins.png" alt="On-page pins with agent replies" width="440"/> | <img src="docs/media/05-panel.png" alt="Notes panel" width="440"/> |
+| **Your agent replies on the page** — green ✓ resolved, amber = a clarifying question. | **Filter, search & jump** to any note across the page or the whole project. |
+
+**→ [Full illustrated Getting Started guide](docs/getting-started.md)**
 
 ## Quick start
 

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>stikfix — Element Context Capture</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1600px;height:1000px;overflow:hidden;position:relative;background:#f4f5f8;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+
+/* ---------- Beacon app backdrop (dimmed) ---------- */
+.app{position:absolute;inset:0;filter:saturate(.9)}
+.app-topbar{position:absolute;top:0;left:0;right:0;height:60px;background:#fff;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;padding:0 28px;gap:28px}
+.app-logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;color:#111827}
+.app-logo-mark{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#6366f1,#4f46e5);position:relative}
+.app-logo-mark::after{content:"";position:absolute;inset:7px;background:#fff;border-radius:2px;transform:rotate(45deg)}
+.app-nav{display:flex;gap:26px;font-size:14px;color:#6b7280;font-weight:500}
+.app-nav span.active{color:#4f46e5;font-weight:700}
+.app-topbar-right{margin-left:auto;display:flex;align-items:center;gap:16px}
+.app-avatar{width:32px;height:32px;border-radius:50%;background:#e0e7ff;color:#4338ca;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center}
+.app-sidebar{position:absolute;top:60px;left:0;bottom:0;width:220px;background:#fbfbfd;border-right:1px solid #e5e7eb;padding:20px 12px}
+.app-sidebar-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;font-size:13.5px;color:#6b7280;font-weight:500;margin-bottom:2px}
+.app-sidebar-item .dot{width:6px;height:6px;border-radius:50%;background:#c7cbd4}
+.app-sidebar-item.active{background:#eef1ff;color:#4338ca;font-weight:700}
+.app-sidebar-item.active .dot{background:#4f46e5}
+.app-main{position:absolute;top:60px;left:220px;right:0;bottom:0;padding:40px 44px}
+.app-title{font-size:25px;font-weight:800;color:#111827}
+.app-subtitle{font-size:14px;color:#6b7280;margin-top:6px}
+.plan-row{display:flex;gap:24px;margin-top:34px}
+.plan-card{flex:1;background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:24px}
+.plan-card.featured{border:2px solid #4f46e5}
+.plan-name{font-size:12.5px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em}
+.plan-price{font-size:32px;font-weight:800;color:#111827;margin-top:10px}
+.plan-price span{font-size:14px;font-weight:500;color:#9ca3af}
+.btn-primary{margin-top:22px;width:100%;background:#4f46e5;color:#fff;border:none;border-radius:9px;padding:13px 0;font-size:14px;font-weight:700}
+.btn-secondary{margin-top:22px;width:100%;background:#fff;color:#374151;border:1px solid #d1d5db;border-radius:9px;padding:13px 0;font-size:14px;font-weight:700}
+
+/* ---------- scrim to focus attention on the close-up ---------- */
+.scrim{position:absolute;inset:0;background:rgba(10,12,16,.55);z-index:100}
+
+/* ---------- stikfix post-it card, enlarged for close-up ---------- */
+.sfx-card-lg{position:absolute;left:590px;top:260px;width:420px;color:#e8eaef;background:#1b1e24;border:1px solid rgba(255,255,255,.2);border-radius:16px;box-shadow:0 30px 70px rgba(0,0,0,.55);z-index:200;font-family:system-ui,-apple-system,sans-serif}
+.sfx-card-lg .hd{background:#22262e;border-bottom:1px solid rgba(255,255,255,.07);border-radius:16px 16px 0 0;display:flex;align-items:center;padding:14px 18px;box-shadow:inset 0 3px #60a5fa;gap:10px}
+.sfx-card-lg .hd-label{font-size:16px;font-weight:600;color:#e8eaef}
+.sfx-card-lg .cam{margin-left:auto;color:#f2f4f8;background:#2f3540;border:1px solid rgba(255,255,255,.22);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.sfx-card-lg .ctx{color:#c8ceda;background:#20242b;border-bottom:1px solid rgba(255,255,255,.07);padding:14px 18px;font-size:15px;line-height:1.5;font-family:ui-monospace,"Cascadia Code","Courier New",monospace}
+.sfx-card-lg .ctx b{color:#93c5fd;font-weight:600}
+.sfx-card-lg .body{padding:16px 18px}
+.sfx-card-lg textarea{box-sizing:border-box;color:#e8eaef;background:#14161b;border:1px solid rgba(255,255,255,.1);border-radius:10px;width:100%;height:130px;padding:12px 14px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;resize:none}
+.sfx-card-lg .ft{border-top:1px solid rgba(255,255,255,.07);display:flex;justify-content:flex-end;gap:10px;padding:14px 18px}
+.sfx-card-lg .send{color:#fff;background:#3b82f6;border:none;border-radius:10px;padding:9px 20px;font-size:14px;font-weight:600}
+.sfx-card-lg .cancel{color:#9aa3b2;background:none;border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:9px 20px;font-size:14px}
+
+.ring{position:absolute;left:582px;top:340px;width:436px;height:70px;border-radius:10px;border:3px solid #fbbf24;box-shadow:0 0 0 6px rgba(251,191,36,.18);z-index:210;pointer-events:none}
+
+/* ---------- marketing callout ---------- */
+.callout{position:absolute;z-index:900;background:#111827;color:#fff;font:700 17px/1.35 -apple-system,system-ui,sans-serif;padding:12px 20px;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.35);border:2px solid #fbbf24;white-space:nowrap}
+.callout-lines{position:absolute;top:0;left:0;pointer-events:none;z-index:850}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="app-topbar">
+    <div class="app-logo"><div class="app-logo-mark"></div>Beacon</div>
+    <div class="app-nav"><span>Dashboard</span><span>Customers</span><span class="active">Billing</span><span>Reports</span><span>Settings</span></div>
+    <div class="app-topbar-right"><div class="app-avatar">JD</div></div>
+  </div>
+  <div class="app-sidebar">
+    <div class="app-sidebar-item"><span class="dot"></span>Dashboard</div>
+    <div class="app-sidebar-item"><span class="dot"></span>Analytics</div>
+    <div class="app-sidebar-item"><span class="dot"></span>Customers</div>
+    <div class="app-sidebar-item active"><span class="dot"></span>Billing</div>
+    <div class="app-sidebar-item"><span class="dot"></span>Team</div>
+    <div class="app-sidebar-item"><span class="dot"></span>Settings</div>
+  </div>
+  <div class="app-main">
+    <div class="app-title">Billing &amp; Plans</div>
+    <div class="app-subtitle">Choose the plan that fits your team.</div>
+    <div class="plan-row">
+      <div class="plan-card"><div class="plan-name">Starter</div><div class="plan-price">$19<span>/mo</span></div><button class="btn-secondary">Downgrade</button></div>
+      <div class="plan-card featured"><div class="plan-name">Pro</div><div class="plan-price">$49<span>/mo</span></div><button class="btn-primary">Upgrade to Pro</button></div>
+      <div class="plan-card"><div class="plan-name">Enterprise</div><div class="plan-price">$199<span>/mo</span></div><button class="btn-secondary">Contact sales</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="scrim"></div>
+
+<div class="sfx-card-lg">
+  <div class="hd"><span class="hd-label">Element note</span><button class="cam">📷</button></div>
+  <div class="ctx"><b>button.btn-primary#checkout-btn</b> · &lt;CheckoutButton&gt; · 212×52 · bg:#4f46e5 · 24px 12px</div>
+  <div class="body"><textarea>This CTA sits 6px lower than the card grid — nudge up to align.</textarea></div>
+  <div class="ft"><button class="send">Send</button><button class="cancel">Discard note</button></div>
+</div>
+
+<div class="ring"></div>
+
+<svg class="callout-lines" width="1600" height="1000">
+  <defs><marker id="arrow2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#fbbf24"/></marker></defs>
+  <path d="M800,208 C800,240 800,290 800,338" stroke="#fbbf24" stroke-width="3" fill="none" marker-end="url(#arrow2)"/>
+</svg>
+<div class="callout" style="left:520px;top:140px;">Zero describing — the note already knows the element</div>
+
+</body>
+</html>

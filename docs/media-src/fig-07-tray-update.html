@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>stikfix — Self-Updating Tray Host</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1600px;height:1000px;overflow:hidden;position:relative;
+  font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif}
+
+/* ---------- mock Windows 11 desktop ---------- */
+.desktop{position:absolute;inset:0;background:
+  radial-gradient(1000px 700px at 15% 10%,#3a6bd8 0%,transparent 60%),
+  radial-gradient(1200px 800px at 85% 90%,#6a3ad8 0%,transparent 55%),
+  linear-gradient(160deg,#1c2c5b 0%,#132043 55%,#0c1730 100%)}
+.desk-icon{position:absolute;width:64px;display:flex;flex-direction:column;align-items:center;gap:6px;opacity:.85}
+.desk-icon .glyph{width:40px;height:40px;border-radius:6px;background:rgba(255,255,255,.14)}
+.desk-icon span{color:#fff;font-size:11.5px;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+
+/* ---------- Windows 11 taskbar ---------- */
+.taskbar{position:absolute;left:0;right:0;bottom:0;height:48px;background:rgba(24,24,27,.92);border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;padding:0 14px}
+.taskbar-center{position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:22px}
+.win-start{width:22px;height:22px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2px}
+.win-start span{background:#7dd3fc;border-radius:1px}
+.tb-icon{width:22px;height:22px;border-radius:5px;background:rgba(255,255,255,.5)}
+.taskbar-right{margin-left:auto;display:flex;align-items:center;gap:16px;color:#e5e7eb;font-size:12px}
+.tray-cluster{display:flex;align-items:center;gap:14px}
+.tray-glyph{color:#e5e7eb;font-size:14px;opacity:.85}
+.tray-chevron{color:#e5e7eb;font-size:12px;opacity:.7}
+.tray-stikfix{position:relative;width:26px;height:26px;border-radius:6px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center}
+.tray-stikfix .mark{width:16px;height:16px;border-radius:4px;background:linear-gradient(135deg,#6d69ea,#7c3aed)}
+.tray-stikfix .badge{position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:#3b82f6;border:1.5px solid #18181b}
+.taskbar-clock{text-align:right;line-height:1.3;margin-left:6px}
+.taskbar-clock .time{font-weight:600}
+.taskbar-clock .date{font-size:10.5px;color:#9ca3af}
+
+/* ---------- Win11-style tray context menu (mica/fluent look) ---------- */
+.tray-menu{position:absolute;bottom:56px;right:24px;width:270px;background:rgba(38,38,42,.97);border:1px solid rgba(255,255,255,.08);border-radius:9px;box-shadow:0 20px 50px rgba(0,0,0,.5);padding:6px;z-index:20}
+.tray-menu-item{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:6px;color:#e8eaef;font-size:13.5px}
+.tray-menu-item .ico{width:18px;text-align:center;font-size:14px}
+.tray-menu-item.update{background:rgba(59,130,246,.22);font-weight:700;color:#fff}
+.tray-menu-item.update .ico{color:#60a5fa}
+.tray-menu-divider{height:1px;background:rgba(255,255,255,.09);margin:5px 4px}
+
+/* ---------- Windows toast / balloon notification ---------- */
+.toast-balloon{position:absolute;bottom:340px;right:24px;width:320px;background:rgba(38,38,42,.97);border:1px solid rgba(255,255,255,.09);border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.5);padding:14px 16px;z-index:20}
+.toast-balloon-head{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+.toast-balloon .mark{width:20px;height:20px;border-radius:5px;background:linear-gradient(135deg,#6d69ea,#7c3aed);flex-shrink:0}
+.toast-balloon-title{color:#e8eaef;font-size:13px;font-weight:700;flex:1}
+.toast-balloon-time{color:#9aa3b2;font-size:11px}
+.toast-balloon-body{color:#c8ceda;font-size:12.5px;line-height:1.5}
+
+/* ---------- marketing callout ---------- */
+.callout{position:absolute;z-index:900;background:#111827;color:#fff;font:700 16px/1.3 -apple-system,system-ui,sans-serif;padding:10px 18px;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.4);border:2px solid #fbbf24;white-space:nowrap}
+.callout-lines{position:absolute;top:0;left:0;pointer-events:none;z-index:850}
+</style>
+</head>
+<body>
+
+<div class="desktop">
+  <div class="desk-icon" style="left:40px;top:48px;"><div class="glyph"></div><span>This PC</span></div>
+  <div class="desk-icon" style="left:40px;top:150px;"><div class="glyph"></div><span>Recycle Bin</span></div>
+</div>
+
+<div class="tray-menu">
+  <div class="tray-menu-item update"><span class="ico">⬆</span> Update Stikfix (v1.7.2)</div>
+  <div class="tray-menu-divider"></div>
+  <div class="tray-menu-item"><span class="ico">📁</span> Open notes folder</div>
+  <div class="tray-menu-item"><span class="ico">■</span> Stop host</div>
+  <div class="tray-menu-item"><span class="ico">✕</span> Quit tray</div>
+</div>
+
+<div class="toast-balloon">
+  <div class="toast-balloon-head"><div class="mark"></div><span class="toast-balloon-title">Stikfix</span><span class="toast-balloon-time">now</span></div>
+  <div class="toast-balloon-body">Update available — version 1.7.2 is ready to install.</div>
+</div>
+
+<div class="taskbar">
+  <div class="taskbar-center">
+    <div class="win-start"><span></span><span></span><span></span><span></span></div>
+    <div class="tb-icon"></div>
+    <div class="tb-icon"></div>
+    <div class="tb-icon"></div>
+    <div class="tb-icon"></div>
+  </div>
+  <div class="taskbar-right">
+    <div class="tray-cluster">
+      <span class="tray-glyph">📶</span>
+      <span class="tray-glyph">🔊</span>
+      <span class="tray-glyph">🔋</span>
+      <span class="tray-chevron">︿</span>
+      <div class="tray-stikfix"><div class="mark"></div><span class="badge"></span></div>
+    </div>
+    <div class="taskbar-clock"><div class="time">3:41 PM</div><div class="date">7/18/2026</div></div>
+  </div>
+</div>
+
+<svg class="callout-lines" width="1600" height="1000">
+  <defs><marker id="arrow7" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#fbbf24"/></marker></defs>
+  <path d="M980,700 C1080,720 1180,750 1290,782" stroke="#fbbf24" stroke-width="3" fill="none" marker-end="url(#arrow7)"/>
+</svg>
+<div class="callout" style="left:640px;top:668px;">Self-updating — SHA-256 verified, one click</div>
+
+</body>
+</html>
