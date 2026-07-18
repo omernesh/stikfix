@@ -5,9 +5,13 @@ All notable changes to **stikfix** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.4.0] - 2026-07-18
+
+### Added
+- **Annotation drawing toolbar.** A new **✎ Annotate** button on every note card opens a floating dark-pill toolbar for marking up a screenshot. Entering draw mode freezes the current page as a still image (stikfix's own UI is excluded from the capture, same as the region tool), then you can draw **arrows, lines, rectangles, circles/ellipses, and freehand marker** strokes — with a **color** picker and **stroke-thickness** control, a live drag-preview, select-move-delete, and `Ctrl+Z` undo. Clicking **Save** flattens the shapes into the captured PNG and attaches it as a normal screenshot, so it travels to disk with the note exactly like today's screenshots — no host, frontmatter, or file-format change. The on-screen preview matches the saved pixels exactly (the editor and the flattener share one draw routine).
 
 ### Changed
+- **Chip and floating "+" button refreshed to a dark-pill look.** The on-page chip and FAB now use the same dark slate + blue-accent styling as the new drawing toolbar (rounded corners, softer shadow, hover/press feedback) for a cohesive on-page UI. Purely visual — all drag, routing, and button behavior is unchanged; the green/red host-connection dot keeps its meaning.
 - **Simplified the popup to match an auto-connect workflow.** Removed the per-host token-entry list (token input · Apply · Clear · remove), the host-count summary, and the "+" add-host form — they were confusing and redundant now that hosts auto-connect. The popup is now just the header + Refresh, the Recent Projects quick-connect list (click to attach/launch and to switch projects), Enter Review Mode, and the routing line. Manual token entry is gone; connecting is handled by auto-connect and the native pairing button.
 - **Auto-connect now also runs on Refresh / popup-open**, not only on Chrome startup. `REFRESH_HOSTS` now silently fetches each discovered host's token via native messaging, so starting a host *after* Chrome is already running connects it the moment you open the popup — no manual token entry.
 
