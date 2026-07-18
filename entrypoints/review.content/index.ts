@@ -63,6 +63,12 @@ export default defineContentScript({
       // z-index 2147483647 is set in :host via styles.css (cssInjectionMode:'ui')
       // WXT does not expose zIndex as an option for createShadowRootUi
 
+      // Stop keyboard events (keydown/keyup/keypress) originating inside our
+      // shadow UI from bubbling to the page — otherwise site-level hotkeys
+      // (GitHub's "s"=search, etc.) fire while typing a note, making notes
+      // unwritable. WXT's isolateEvents adds stopPropagation at the host.
+      isolateEvents: true,
+
       onMount(container: HTMLElement) {
         // Shared toast adapter — defined ABOVE mountChip so it is in scope for
         // the picker handler (onPickerClick) passed as mountChip's 3rd arg (D-01/D-08)

@@ -5,6 +5,13 @@ All notable changes to **stikfix** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.2] - 2026-07-18
+
+### Fixed
+
+- **Notes are writable on sites with keyboard shortcuts.** Typing a note on pages like GitHub no longer triggers the site's hotkeys (e.g. "s" focusing GitHub search). The review UI's shadow root now isolates keyboard events (`isolateEvents`) so keydown/keyup/keypress originating inside a note never bubble to the page.
+- **System-tray icon shows the stikfix logo instead of a generic Windows icon.** The tray helper now loads `stikfix.ico` from the host executable's own directory (where the installer ships it), fixing the fallback-to-stock-icon on real installs.
+
 ## [1.6.1] - 2026-07-18
 
 ### Fixed

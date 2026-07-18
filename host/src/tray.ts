@@ -21,7 +21,7 @@
 
 import { spawn, type ChildProcess } from 'node:child_process';
 import { writeFileSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { homedir } from 'node:os';
 
 export interface TrayOptions {
@@ -59,6 +59,7 @@ export function trayScriptPath(): string {
  */
 export const TRAY_PS1 = String.raw`param(
   [int]$Port,
+  [string]$IconPath,
   [string]$Root,
   [string]$Name,
   [string]$NotesDir,
@@ -78,6 +79,7 @@ try {
 # --- Resolve a custom app icon, else fall back to a stock icon -------------
 function Get-BaseIcon {
   $candidates = @(
+    $IconPath,
     (Join-Path $PSScriptRoot 'stikfix.ico'),
     (Join-Path $Root '.output\chrome-mv3\icon\stikfix.ico'),
     (Join-Path $Root 'public\icon\stikfix.ico')
@@ -207,6 +209,9 @@ export function startTray(opts: TrayOptions): ChildProcess | null {
     mkdirSync(join(homedir(), '.local', 'share', 'stikfix'), { recursive: true });
     writeFileSync(ps1Path, TRAY_PS1, { encoding: 'utf8' });
 
+    // Installed host ships stikfix.ico next to the exe ({app}\stikfix.ico). For npx/dev this points at node's dir and simply won't resolve — Get-BaseIcon falls back to a stock icon.
+    const iconPath = join(dirname(process.execPath), 'stikfix.ico');
+
     const child = spawn(
       'powershell.exe',
       [
@@ -219,6 +224,8 @@ export function startTray(opts: TrayOptions): ChildProcess | null {
         ps1Path,
         '-Port',
         String(opts.port),
+        '-IconPath',
+        iconPath,
         '-Root',
         opts.root,
         '-Name',

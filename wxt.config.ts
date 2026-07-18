@@ -13,7 +13,7 @@ export default defineConfig({
   manifest: ({ browser }) => ({
     name: 'stikfix',
     description: 'Pin sticky notes on any page — your AI reads them.',
-    version: '1.6.1',
+    version: '1.6.2',
     icons: {
       16: '/icon/16.png',
       32: '/icon/32.png',
