@@ -1,6 +1,6 @@
 {
   "name": "stikfix",
-  "version": "1.6.2",
+  "version": "1.7.0",
   "description": "Pin sticky notes on any page — your AI reads them.",
   "license": "MIT",
   "author": "Omer Nesher <omernesher@gmail.com>",
@@ -53,6 +53,7 @@
     "check": "tsc --noEmit && tsc --noEmit -p tsconfig.host.json && node scripts/clean-room-check.mjs && node scripts/host-smoke-test.mjs && npm run test:lib && npm test",
     "pack:crx": "node scripts/pack-crx.mjs",
     "gen:update-xml": "node scripts/gen-update-xml.mjs",
+    "gen:latest-json": "node scripts/gen-latest-json.mjs",
     "build:sea": "node scripts/build-sea.mjs",
     "build:installer": "node scripts/build-installer.mjs",
     "postinstall": "node -e \"try{require.resolve('wxt');require('node:child_process').execSync('wxt prepare',{stdio:'inherit'})}catch(e){}\""

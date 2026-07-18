@@ -15,11 +15,12 @@ import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { pathToFileURL } from 'node:url';
 import type { AddressInfo } from 'node:net';
-import { resolveConfig, resolveConfigValues, ensureNotesDir, writeTokenFile } from './config.js';
+import { resolveConfig, resolveConfigValues, ensureNotesDir, writeTokenFile, VERSION } from './config.js';
 import { createHostServer } from './server.js';
 import { bindServer, BIND_HOST } from './bind.js';
 import { probeExistingHost } from './probe.js';
 import { startTray } from './tray.js';
+import { runUpdateCheck } from './update-check.js';
 
 /**
  * Start the HTTP host. Extracted from the former top-level module body so the
@@ -157,12 +158,23 @@ export async function startHttpHost(argv: string[] = process.argv.slice(2)): Pro
     hostPid: process.pid,
   });
 
+  // Host auto-update: check GitHub for a newer release on startup and every 6h.
+  // Fire-and-forget + fully swallowed — a failed check must never crash or block
+  // the host. runUpdateCheck updates the module state surfaced on GET /status.
+  void runUpdateCheck(VERSION).catch(() => {});
+  const updateTimer = setInterval(() => {
+    void runUpdateCheck(VERSION).catch(() => {});
+  }, 6 * 60 * 60 * 1000);
+  // .unref() so the interval never keeps the process alive on its own.
+  updateTimer.unref();
+
   // Kill the tray child when the host shuts down so a dead host has no tray.
   // (No prior signal handling existed here; these are additive.)
   let shuttingDown = false;
   function shutdown(signal: NodeJS.Signals): void {
     if (shuttingDown) return;
     shuttingDown = true;
+    try { clearInterval(updateTimer); } catch { /* best-effort */ }
     try { tray?.kill(); } catch { /* best-effort */ }
     server.close(() => process.exit(0));
     // Fallback: exit even if server.close hangs on lingering connections.

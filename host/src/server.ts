@@ -18,6 +18,7 @@ import { writeNote } from './write-note.js';
 import { listAnnotations, editNote, deleteNote } from './read-note.js';
 import { validateChosenFolder } from './validate-folder.js';
 import { isGitRepo, getLastGitSyncStatus, gitSyncNote } from './git-sync.js';
+import { getUpdateState } from './update-check.js';
 import type { Config, AnnotationPayload } from './types.js';
 
 // ---------------------------------------------------------------------------
@@ -104,6 +105,9 @@ async function handleStatus(req: http.IncomingMessage, res: http.ServerResponse,
     // result of the most recent git-sync attempt (null if none yet).
     gitRepo: await isGitRepo(cfg.root),
     gitSyncStatus: getLastGitSyncStatus(),
+    // Host auto-update surface (public, non-secret): whether a newer release is
+    // available and where to get it. Consumed by the tray for 1-click apply.
+    update: getUpdateState(),
   });
   res.writeHead(200, { 'Content-Type': 'application/json' });
   res.end(body);

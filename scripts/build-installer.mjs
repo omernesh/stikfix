@@ -82,7 +82,15 @@ execFileSync(iscc, [`/DAppVersion=${version}`, issPath], { cwd: repoRoot, stdio:
 const outExe = join(repoRoot, 'dist', 'installer', `stikfix-setup-${version}.exe`);
 if (!existsSync(outExe)) fail(`installer not produced: ${outExe}`);
 const sizeMb = (statSync(outExe).size / (1024 * 1024)).toFixed(2);
+
+// 6) Generate the host auto-update manifest (latest.json) from the built installer.
+//    Runs AFTER the installer exists so it hashes the exact shipped .exe.
+runNpm('gen:latest-json');
+const latestJson = join(repoRoot, 'dist', 'installer', 'latest.json');
+if (!existsSync(latestJson)) fail(`latest.json not produced: ${latestJson}`);
+
 log('');
 log('SUCCESS');
-log(`installer: ${outExe}`);
-log(`size:      ${sizeMb} MB`);
+log(`installer:   ${outExe}`);
+log(`size:        ${sizeMb} MB`);
+log(`latest.json: ${latestJson}`);

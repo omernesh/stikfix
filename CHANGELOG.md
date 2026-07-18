@@ -5,6 +5,17 @@ All notable changes to **stikfix** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-07-18
+
+### Added
+
+- **Host auto-update (notify + 1-click apply).** The host now checks GitHub for a newer release on startup and every 6 hours and advertises it on `GET /status` (`update.available` / `latestVersion`). The system-tray icon shows an "update available" balloon and an **Update Stikfix (vX.Y.Z)** menu item; clicking it downloads the new installer, verifies its SHA-256, and runs it (one Windows permission prompt) to replace and restart the host. The browser extension continues to auto-update via Chrome's extension policy.
+- Each release now publishes a `latest.json` manifest (version, download URL, SHA-256) consumed by the host update checker.
+
+### Changed
+
+- The Windows installer now stops a running host before copying files, remembers the chosen notes folder across (re)installs, and starts the host after a silent update.
+
 ## [1.6.2] - 2026-07-18
 
 ### Fixed

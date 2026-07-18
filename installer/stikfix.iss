@@ -56,7 +56,7 @@ Filename: "{app}\stikfix-host.exe"; Parameters: "register --root ""{code:GetNote
 ; Start the host immediately so it's running the moment setup finishes (no manual
 ; step, no reboot). Launches the hidden VBS (created by register above) which runs
 ; `stikfix-host.exe serve` windowless and shows a brief "host is running" confirmation.
-Filename: "{sys}\wscript.exe"; Parameters: "//Nologo ""{%USERPROFILE}\.local\share\stikfix\stikfix-host.vbs"""; Flags: nowait runhidden skipifsilent; StatusMsg: "Starting Stikfix host..."; Components: host
+Filename: "{sys}\wscript.exe"; Parameters: "//Nologo ""{%USERPROFILE}\.local\share\stikfix\stikfix-host.vbs"""; Flags: nowait runhidden; StatusMsg: "Starting Stikfix host..."; Components: host
 
 [UninstallRun]
 Filename: "{app}\stikfix-host.exe"; Parameters: "uninstall"; Flags: runhidden; RunOnceId: "StikfixTeardown"
@@ -70,6 +70,16 @@ var
 function ExeExistsIn(const Base, SubPath: String): Boolean;
 begin
   Result := (Base <> '') and FileExists(AddBackslash(Base) + SubPath);
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  ResultCode: Integer;
+begin
+  { Best-effort: stop any running host so its exe can be overwritten. Nonzero
+    result (not running) is fine and ignored. Elevated installer can taskkill. }
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM stikfix-host.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Result := '';
 end;
 
 { Run the doctor health check and surface its output on the Verification page. }
@@ -126,6 +136,8 @@ begin
 end;
 
 procedure InitializeWizard();
+var
+  StoredNotesRoot: String;
 begin
   NotesPage := CreateInputDirPage(
     wpSelectTasks,
@@ -135,7 +147,13 @@ begin
     False,
     '');
   NotesPage.Add('');
-  NotesPage.Values[0] := ExpandConstant('{userdocs}\stikfix-notes');
+  { Restore the previously-chosen notes folder so a (silent) re-install/update
+    does not reset it to the default. Falls back to the default when unset. }
+  if RegQueryStringValue(HKLM, 'Software\Stikfix', 'NotesRoot', StoredNotesRoot)
+     and (StoredNotesRoot <> '') then
+    NotesPage.Values[0] := StoredNotesRoot
+  else
+    NotesPage.Values[0] := ExpandConstant('{userdocs}\stikfix-notes');
 
   VerifyPage := CreateOutputMsgMemoPage(
     wpInstalling,
@@ -227,6 +245,9 @@ procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
   begin
+    { Persist the chosen notes folder so a later silent update restores it as the
+      default (RegWriteStringValue creates the key/value implicitly). }
+    RegWriteStringValue(HKLM, 'Software\Stikfix', 'NotesRoot', GetNotesRoot(''));
     if WizardIsComponentSelected('ext\chrome') and ChromeInstalled() then
       WriteForcelistPolicy(HKLM, 'Software\Policies\Google\Chrome\ExtensionInstallForcelist');
     if WizardIsComponentSelected('ext\edge') and EdgeInstalled() then

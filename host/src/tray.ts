@@ -68,6 +68,13 @@ export const TRAY_PS1 = String.raw`param(
 
 $ErrorActionPreference = 'SilentlyContinue'
 
+# --- Update state (script scope) --------------------------------------------
+# Set when GET /status reports an available update; consumed by the update menu
+# item's click handler. UpdateShown gates the one-time "update available" balloon.
+$script:UpdateShown = $false
+$script:PendingUrl = ''
+$script:PendingSha = ''
+
 try {
   Add-Type -AssemblyName System.Windows.Forms
   Add-Type -AssemblyName System.Drawing
@@ -111,6 +118,45 @@ Set-SafeText "stikfix - $Name - starting on :$Port"
 # --- Context menu -----------------------------------------------------------
 $menu = New-Object System.Windows.Forms.ContextMenuStrip
 
+# Update item — first in the menu, hidden until an update is detected. Clicking
+# it downloads the new installer, verifies its SHA-256, and runs it (one UAC
+# prompt). The elevated installer stops the old host, swaps files, and restarts
+# it; this tray self-disposes when the old host process dies.
+$miUpdate = New-Object System.Windows.Forms.ToolStripMenuItem
+$miUpdate.Text = 'Update Stikfix'
+$miUpdate.Add_Click({
+  $url = $script:PendingUrl
+  $sha = $script:PendingSha
+  if ([string]::IsNullOrEmpty($url) -or [string]::IsNullOrEmpty($sha)) {
+    try { $notify.ShowBalloonTip(5000, 'Stikfix', 'Update details unavailable', [System.Windows.Forms.ToolTipIcon]::Warning) } catch { }
+    return
+  }
+  try { $notify.ShowBalloonTip(5000, 'Stikfix', 'Downloading Stikfix update...', [System.Windows.Forms.ToolTipIcon]::Info) } catch { }
+  $tmp = Join-Path $env:TEMP 'stikfix-update-setup.exe'
+  try {
+    $wc = New-Object System.Net.WebClient
+    $wc.DownloadFile($url, $tmp)
+    $wc.Dispose()
+  } catch {
+    try { $notify.ShowBalloonTip(5000, 'Stikfix', 'Download failed', [System.Windows.Forms.ToolTipIcon]::Error) } catch { }
+    return
+  }
+  # Security gate: verify SHA-256 before executing the installer.
+  $actual = ''
+  try { $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $tmp).Hash } catch { }
+  if ([string]::IsNullOrEmpty($actual) -or ($actual -ine $sha)) {
+    try { Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue } catch { }
+    try { $notify.ShowBalloonTip(5000, 'Stikfix', 'Update verification failed - not installing.', [System.Windows.Forms.ToolTipIcon]::Error) } catch { }
+    return
+  }
+  try {
+    $notify.ShowBalloonTip(5000, 'Stikfix', "Installing update - you'll see a permission prompt.", [System.Windows.Forms.ToolTipIcon]::Info)
+    Start-Process -FilePath $tmp -ArgumentList '/SILENT','/SUPPRESSMSGBOXES','/NORESTART'
+  } catch {
+    try { $notify.ShowBalloonTip(5000, 'Stikfix', 'Could not launch the update installer.', [System.Windows.Forms.ToolTipIcon]::Error) } catch { }
+  }
+})
+
 $miOpen = New-Object System.Windows.Forms.ToolStripMenuItem
 $miOpen.Text = 'Open notes folder'
 $miOpen.Add_Click({
@@ -136,6 +182,14 @@ $miQuit.Add_Click({
 [void]$menu.Items.Add((New-Object System.Windows.Forms.ToolStripSeparator))
 [void]$menu.Items.Add($miStop)
 [void]$menu.Items.Add($miQuit)
+
+# Update item + its separator go FIRST (index 0/1), hidden until an update lands.
+$sepUpdate = New-Object System.Windows.Forms.ToolStripSeparator
+$menu.Items.Insert(0, $sepUpdate)
+$menu.Items.Insert(0, $miUpdate)
+$miUpdate.Visible = $false
+$sepUpdate.Visible = $false
+
 $notify.ContextMenuStrip = $menu
 
 # --- Status polling ---------------------------------------------------------
@@ -145,17 +199,35 @@ function Test-HostAlive {
   return [bool]$proc
 }
 
-function Test-StatusOk {
+# Fetch /status, read + parse the JSON body, and return a hashtable:
+#   @{ Ok = <bool health>; Update = <the .update object or $null> }
+# Any failure (throw, non-200, unparseable body) => @{ Ok = $false; Update = $null }.
+function Get-HostStatus {
   try {
     $req = [System.Net.WebRequest]::Create("http://127.0.0.1:$Port/status")
     $req.Method = 'GET'
     $req.Timeout = 1500
     $resp = $req.GetResponse()
     $code = [int]$resp.StatusCode
+    $body = ''
+    try {
+      $stream = $resp.GetResponseStream()
+      $reader = New-Object System.IO.StreamReader($stream)
+      $body = $reader.ReadToEnd()
+      $reader.Close()
+    } catch { }
     $resp.Close()
-    return ($code -eq 200)
+    if ($code -ne 200) { return @{ Ok = $false; Update = $null } }
+    $update = $null
+    try {
+      $json = $body | ConvertFrom-Json
+      if ($json -and ($json.PSObject.Properties.Name -contains 'update')) {
+        $update = $json.update
+      }
+    } catch { }
+    return @{ Ok = $true; Update = $update }
   } catch {
-    return $false
+    return @{ Ok = $false; Update = $null }
   }
 }
 
@@ -167,13 +239,47 @@ function Update-State {
     return
   }
 
-  if (Test-StatusOk) {
+  $status = Get-HostStatus
+  $ok = $status.Ok
+  $update = $status.Update
+
+  # Compute the base running/stopped tooltip; the update suffix is appended below.
+  if ($ok) {
     $notify.Icon = $iconRunning
-    Set-SafeText "stikfix - $Name - running on :$Port"
+    $tip = "stikfix - $Name - running on :$Port"
   } else {
     $notify.Icon = $iconStopped
-    Set-SafeText "stikfix - $Name - not responding"
+    $tip = "stikfix - $Name - not responding"
   }
+
+  # Surface an available update (guarded — $update is $null on old hosts).
+  $hasUpdate = $false
+  try { $hasUpdate = ($update -ne $null) -and ($update.available -eq $true) } catch { $hasUpdate = $false }
+
+  if ($hasUpdate) {
+    $latest = $update.latestVersion
+    $script:PendingUrl = [string]$update.url
+    $script:PendingSha = [string]$update.sha256
+    try {
+      $miUpdate.Text = "Update Stikfix (v$latest)"
+      $miUpdate.Visible = $true
+      $sepUpdate.Visible = $true
+    } catch { }
+    $tip = "$tip - update v$latest available"
+    if ($script:UpdateShown -eq $false) {
+      try {
+        $notify.ShowBalloonTip(5000, 'Stikfix update available', "Version $latest is ready. Right-click the tray icon then Update Stikfix.", [System.Windows.Forms.ToolTipIcon]::Info)
+      } catch { }
+      $script:UpdateShown = $true
+    }
+  } else {
+    try {
+      $miUpdate.Visible = $false
+      $sepUpdate.Visible = $false
+    } catch { }
+  }
+
+  Set-SafeText $tip
 }
 
 $timer = New-Object System.Windows.Forms.Timer
