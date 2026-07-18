@@ -1,6 +1,6 @@
 {
   "name": "stikfix",
-  "version": "1.5.1",
+  "version": "1.6.0",
   "description": "Pin sticky notes on any page — your AI reads them.",
   "license": "MIT",
   "author": "Omer Nesher <omernesher@gmail.com>",
@@ -51,13 +51,19 @@
     "test:lib": "tsc -p tsconfig.lib.json && node --test \"dist/lib/lib/test/**/*.test.js\"",
     "test": "tsc -p tsconfig.host.json && node --test \"dist/host/test/**/*.test.js\"",
     "check": "tsc --noEmit && tsc --noEmit -p tsconfig.host.json && node scripts/clean-room-check.mjs && node scripts/host-smoke-test.mjs && npm run test:lib && npm test",
+    "pack:crx": "node scripts/pack-crx.mjs",
+    "gen:update-xml": "node scripts/gen-update-xml.mjs",
+    "build:sea": "node scripts/build-sea.mjs",
+    "build:installer": "node scripts/build-installer.mjs",
     "postinstall": "node -e \"try{require.resolve('wxt');require('node:child_process').execSync('wxt prepare',{stdio:'inherit'})}catch(e){}\""
   },
   "devDependencies": {
     "@medv/finder": "4.0.2",
     "@types/chrome": "0.1.42",
     "@types/node": "25.9.1",
+    "crx3": "2.0.0",
     "interactjs": "1.10.27",
+    "postject": "1.0.0-alpha.6",
     "typescript": "6.0.3",
     "wxt": "0.20.26"
   },

@@ -20,9 +20,33 @@ import type { Config } from './types.js';
 // VERSION — read from package.json at runtime (Pattern 11)
 // dist/host/src/config.js → ../../../package.json
 // ---------------------------------------------------------------------------
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const _pkg = JSON.parse(readFileSync(join(__dirname, '../../../package.json'), 'utf8')) as { version: string };
-export const VERSION: string = _pkg.version;
+// Build-time constant injected by the SEA build (scripts/build-sea.mjs via
+// esbuild --define). Undefined in the normal tsc/node build, where the version
+// is read from package.json on disk instead. Declared so both builds type-check.
+declare const __STIKFIX_VERSION__: string | undefined;
+
+function resolveVersion(): string {
+  // 1. SEA exe: the bundle has no package.json at a stable relative path, so the
+  //    version is inlined at build time. `typeof` guards against ReferenceError
+  //    in builds where the constant was never defined.
+  try {
+    if (typeof __STIKFIX_VERSION__ === 'string' && __STIKFIX_VERSION__.length > 0) {
+      return __STIKFIX_VERSION__;
+    }
+  } catch {
+    // Not defined in this build — fall through to the on-disk read.
+  }
+  // 2. Normal tsc/node build: dist/host/src/config.js → ../../../package.json.
+  try {
+    const dir = dirname(fileURLToPath(import.meta.url));
+    const pkg = JSON.parse(readFileSync(join(dir, '../../../package.json'), 'utf8')) as { version: string };
+    return pkg.version;
+  } catch {
+    return '0.0.0';
+  }
+}
+
+export const VERSION: string = resolveVersion();
 
 // ---------------------------------------------------------------------------
 // resolveConfigValues — three-tier env resolution (exported for testing)

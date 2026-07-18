@@ -10,14 +10,14 @@
  * Node builtins only — no WXT, no Chrome imports.
  */
 
-import { mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';
+import { mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, join, basename, dirname } from 'node:path';
 import { homedir } from 'node:os';
 import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline';
 
-import { registerNativeHost, unregisterNativeHost, createLauncherFiles, registerStartup, unregisterStartup, DEFAULT_GECKO_ID } from '../host/src/bootstrap/register.js';
+import { registerNativeHost, createLauncherFiles, registerStartup, unregisterStartup, teardownHost, DEFAULT_GECKO_ID } from '../host/src/bootstrap/register.js';
 import type { TargetBrowser } from '../host/src/bootstrap/register.js';
 import { STABLE_EXTENSION_ID, MANIFEST_PUBLIC_KEY } from '../host/src/extension-id.js';
 
@@ -311,9 +311,12 @@ if (subcommand === 'init') {
   console.log('  2. Start the backend — double-click the desktop launcher:');
 
   if (process.platform === 'win32') {
-    const lnkPath = join(homedir(), 'Desktop', 'Stikfix Host.lnk');
+    // createLauncherFiles resolves the REAL Desktop folder (OneDrive Known
+    // Folder Move aware) at shortcut-creation time and reports the ACTUAL
+    // .lnk path it wrote in `written` — never assume join(home, 'Desktop', ...).
+    const lnkPath = launcherResult.written.find((p) => p.endsWith('.lnk')) ?? '';
     const batchPath = launcherResult.written.find((p) => p.endsWith('.bat')) ?? '';
-    if (existsSync(lnkPath)) {
+    if (lnkPath && existsSync(lnkPath)) {
       console.log('       Desktop shortcut: "Stikfix Host" (icon on your Desktop)');
     } else if (batchPath) {
       console.log('       Batch file: ' + batchPath);
@@ -344,22 +347,21 @@ if (subcommand === 'init') {
 
 } else if (subcommand === 'uninstall') {
   const browser: TargetBrowser = resolveBrowser(values['browser']);
-  try {
-    unregisterNativeHost({ browser });
-  } catch (err) {
-    console.error('stikfix uninstall: error removing native-host manifest:', String(err));
+
+  // Shared teardown (also used by the standalone exe's `uninstall` subcommand)
+  // — removes the native-host manifest/registry keys/launchers, the startup
+  // autoload entry, and config.json. Each step is idempotent internally.
+  const teardown = teardownHost({ browser });
+
+  if (teardown.manifestError) {
+    console.error('stikfix uninstall: error removing native-host manifest:', teardown.manifestError);
     // Continue to remove config file even if manifest removal failed
   }
 
-  // Remove the Windows startup autoload Run entry (idempotent; no-op off-win32).
-  try {
-    unregisterStartup();
-  } catch (err) {
-    console.error('stikfix uninstall: error removing startup entry:', String(err));
+  if (teardown.startupError) {
+    console.error('stikfix uninstall: error removing startup entry:', teardown.startupError);
     // Non-fatal — continue.
   }
-
-  rmSync(CONFIG_PATH, { force: true });
 
   console.log('stikfix: native host unregistered.');
   console.log('  manifest removed');

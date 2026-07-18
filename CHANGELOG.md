@@ -5,6 +5,17 @@ All notable changes to **stikfix** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-07-18
+
+### Added
+- **One-click Windows installer (`stikfix-setup-x.y.z.exe`).** A signed Inno Setup installer replaces the terminal-only `npx stikfix init` flow for non-developer machines. It offers a **Complete** install (host + every detected Chromium browser + run-on-startup + desktop icon, fully automatic) or a **Custom** install where you pick components (host, per-browser extension) and tasks (run-on-startup, desktop shortcut). The wizard finishes with a **post-install health check** (Doctor) showing a ✓/✗ verification of every part of the setup.
+- **Standalone host binary (`stikfix-host.exe`, Node SEA).** The host now ships as a single self-contained executable that needs **no Node.js on the target machine** — resolving the most common fresh-install failure. It multiplexes every role by subcommand: `serve` (HTTP host), `native` (native-messaging, auto-detected when a browser launches it), `register` (non-interactive setup), `doctor` (health check, `--json` supported), and `uninstall` (idempotent teardown).
+- **Automatic cross-browser extension install via signed CRX + policy.** The extension is packed into a CRX3 signed with the project key (stable ID `ccdfmbhd…`) and force-installed into Chrome/Edge/Brave via `ExtensionInstallForcelist`, pointed at a self-hosted update manifest on GitHub Releases. The policy writer is idempotent and never clobbers unrelated forcelist entries; uninstall removes only stikfix's entry.
+- **Build tooling:** `npm run pack:crx`, `npm run gen:update-xml`, `npm run build:sea`, and `npm run build:installer` (orchestrates build → SEA → CRX → update manifest → ISCC into `dist/installer/`).
+
+### Fixed
+- **Desktop shortcut now lands on the real Desktop under OneDrive.** The launcher shortcut hardcoded `%USERPROFILE%\Desktop`, which does not exist when OneDrive "Known Folder Move" redirects the Desktop — so shortcut creation failed. It now resolves the actual Desktop via `[Environment]::GetFolderPath('Desktop')` (and the installer uses Inno's OneDrive-aware `{autodesktop}`).
+
 ## [1.5.1] - 2026-07-18
 
 ### Fixed

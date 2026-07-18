@@ -8,6 +8,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![npm](https://img.shields.io/npm/v/stikfix.svg)](https://www.npmjs.com/package/stikfix)
+[![GitHub Release](https://img.shields.io/github/v/release/omernesh/stikfix?label=Windows%20installer)](https://github.com/omernesh/stikfix/releases/latest)
 [![Chrome MV3](https://img.shields.io/badge/Chrome-MV3-blue.svg)](#load-the-extension)
 
 </div>
@@ -33,7 +34,26 @@ No cloud. No accounts. No sign-up. Everything stays on `127.0.0.1` — **your co
 
 ## Quick start
 
-### 1. Install the host (one command)
+### Windows: one-click installer (recommended)
+
+1. Download **`stikfix-setup-1.6.0.exe`** from the [latest release](https://github.com/omernesh/stikfix/releases/latest).
+2. Run it. It needs **administrator rights** — it writes a browser policy so the extension can install itself.
+3. Pick a setup type:
+   - **Complete** — installs the host, force-installs the extension into every Chromium browser it finds (Chrome/Edge/Brave), sets the host to run on Windows login, and adds a desktop shortcut. Fully automatic — no terminal.
+   - **Custom** — pick components (the host; which browsers get the extension) and tasks (run-on-startup, desktop shortcut) individually, and choose your notes folder.
+4. The wizard finishes with a **post-install health check** that verifies the host binds, native messaging is registered, the browser force-install policy is set, and the notes folder is writable.
+5. Open Chrome/Edge/Brave — the extension is already there, next time the browser starts. You'll see **"Installed by your organization"** next to it; that's expected and correct for a self-hosted extension. It's force-installed via enterprise policy (`ExtensionInstallForcelist`) pointed at a self-hosted update manifest, not a Chrome Web Store listing.
+6. Open your app, click **Enter Review Mode**, and start dropping notes.
+
+The installer ships **`stikfix-host.exe`**, a self-contained binary — no Node.js needs to be installed on the machine. Re-run the health check anytime with `stikfix-host.exe doctor`, or the **"Stikfix Health Check"** shortcut it adds to the Start menu. To remove everything — host, browser policy entry, startup entry, native-messaging registration — use Windows **Add or remove programs**.
+
+For advanced use or troubleshooting, the same binary takes subcommands directly: `stikfix-host.exe serve --root <dir>`, `stikfix-host.exe doctor` (prints the health checklist), `stikfix-host.exe register` / `stikfix-host.exe uninstall`.
+
+### Developer path (macOS, Linux, or from source on Windows)
+
+Everything the Windows installer automates above, you can also do by hand — this is the path for macOS/Linux, or for building and loading the extension from source.
+
+#### 1. Install the host (one command)
 
 ```bash
 npx stikfix init --root /path/to/your/project
@@ -48,9 +68,9 @@ This turnkey installer:
 
 > **Keep it current:** re-run `npx --yes stikfix@latest init --root /path/to/your/project` anytime to update the host.
 
-### 2. Load the extension
+#### 2. Load the extension
 
-For v1.0 the extension is loaded **unpacked** (a Chrome Web Store listing is coming next):
+On the developer path the extension is loaded **unpacked** (a Chrome Web Store listing is coming next — the Windows installer above already force-installs it automatically, so unpacked loading isn't needed there):
 
 1. Open `chrome://extensions` (or `edge://extensions`).
 2. Turn on **Developer mode**.
@@ -58,15 +78,15 @@ For v1.0 the extension is loaded **unpacked** (a Chrome Web Store listing is com
 
 The loaded ID matches what the installer printed — nothing to type. (Building `.output/chrome-mv3/` from source is covered under [Development](#development).)
 
-### 3. Start the backend
+#### 3. Start the backend
 
 Double-click the **Stikfix Host** launcher on your Desktop. That's it — no commands, and double-clicking again is safe (it won't launch a second copy). The host listens on a port in the `39240–39260` range; the extension discovers it automatically.
 
-### 4. Pair in one click
+#### 4. Pair in one click
 
 Open the stikfix popup in your toolbar and hit **Pair with host**. The token is handed over automatically through the OS native-messaging channel — you never see it, never paste it. Pair once and it stays paired, even after restarts.
 
-### 5. Drop a note
+#### 5. Drop a note
 
 Open your app, click **Enter Review Mode**, and start dropping notes. The first note on a new site opens an **OS folder picker** so you can choose where that origin's notes live; it's remembered after that. When you're ready, tell your AI agent **"read my notes."**
 
@@ -80,7 +100,7 @@ Open your app, click **Enter Review Mode**, and start dropping notes. The first 
 - **Notes panel** — a chip-toggled list of every note: counts by status, filter chips, text search, and click-to-jump that scrolls right to the pin. Flip **All pages** to browse every note across the project, not just the current page.
 - **Live updates** — while Review Mode is on, pins and the panel refresh on their own (~4s, only when the tab is visible) as the agent writes replies and resolves notes. No manual reload.
 - **Per-origin project routing** — the first note on a new site opens an OS folder picker; after that, every tab routes to the right project's `notes/` folder automatically. No per-note picking.
-- **Cross-browser host** — one `npx stikfix init` registers Chrome and Edge in a single pass.
+- **Cross-browser host** — one `npx stikfix init` registers Chrome and Edge in a single pass. On Windows, the one-click installer does this (and the browser-side install) for you.
 - **The `review-notes` AI skill** — the portable agent half of the loop (see below).
 
 ## How notes reach your AI

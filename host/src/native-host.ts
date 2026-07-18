@@ -50,6 +50,14 @@ interface StikFixConfig {
    * to this process's own process.execPath.
    */
   nodePath?: string;
+  /**
+   * Absolute path to the standalone single-executable host (stikfix-host.exe),
+   * written by `stikfix-host register`. When present, START_HOST spawns
+   * `<hostExe> serve --root <root>` instead of `node <hostEntry> --root <root>`
+   * — the exe self-detects its subcommand, so no node/.cjs wrapper is involved.
+   * Absent (the npx/node install path) → exact prior `node hostEntry` behavior.
+   */
+  hostExe?: string;
 }
 
 /**
@@ -113,11 +121,20 @@ export function handleStartHost(
     typeof cfg.nodePath === 'string' && cfg.nodePath.length > 0 ? cfg.nodePath : process.execPath;
   const hostEntry = resolveHostEntry(cfg);
 
+  // Standalone-exe install path: when config points at a single-executable host,
+  // spawn `<exe> serve --root <root>` (the exe self-detects the subcommand).
+  // Otherwise keep the exact prior behavior: `node <hostEntry> --root <root>`.
+  const hostExe = typeof cfg.hostExe === 'string' && cfg.hostExe.length > 0 ? cfg.hostExe : undefined;
+  const spawnCmd = hostExe ?? nodePath;
+  const spawnArgs = hostExe
+    ? ['serve', '--root', resolvedRoot]
+    : [hostEntry, '--root', resolvedRoot];
+
   // CRITICAL (T-09-07): the native host MUST NOT bind/listen itself. It only
   // spawns a SEPARATE, detached process that is the HTTP host. Detached +
   // stdio:'ignore' + unref() so the child outlives this one-shot native process.
   try {
-    const child = spawnFn(nodePath, [hostEntry, '--root', resolvedRoot], {
+    const child = spawnFn(spawnCmd, spawnArgs, {
       detached: true,
       stdio: 'ignore',
       windowsHide: true,
@@ -289,12 +306,42 @@ export function main(): void {
   });
 }
 
-// Run only when invoked as the entry point (esbuild CJS bundle), never on import.
-// In the esbuild CJS bundle (stikfix-native.cjs), `require`/`module` are CJS
-// scope locals and `require.main === module` is true when run directly. The
-// node:test compile path emits ESM where these are undefined at runtime — the
-// `typeof` guards keep main() from running on import there.
+/**
+ * Async-friendly entry alias for the SEA dispatcher (exe-main.ts). The native
+ * message loop is event-driven, so this resolves immediately after wiring up the
+ * stdin listener; the process stays alive until stdin closes (Chrome closes the
+ * pipe) or a handler calls process.exit. Delegates to main() so the direct
+ * require.main path below is unchanged.
+ */
+export async function runNativeHost(): Promise<void> {
+  main();
+}
+
+// Compile-time flag: `true` ONLY inside the single-executable bundle (esbuild
+// --define in scripts/build-sea.mjs), where exe-main.ts dispatches native mode
+// explicitly. Undefined in the standalone stikfix-native.cjs and the node:test
+// build, so `typeof` is safely 'undefined' there and the require.main guard runs
+// as before. This is REQUIRED: in the SEA bundle esbuild shares the entry's
+// `module`/`require` across bundled CJS modules, so `require.main === module`
+// wrongly evaluates true here and would attach a stdin listener at import time —
+// whose immediate 'end' (a serve process has no native stdin) calls exit(0) and
+// tears the HTTP host down right after startup.
+declare const __STIKFIX_BUNDLED__: boolean | undefined;
+function bundledInExe(): boolean {
+  try {
+    return typeof __STIKFIX_BUNDLED__ !== 'undefined' && __STIKFIX_BUNDLED__ === true;
+  } catch {
+    return false;
+  }
+}
+
+// Run only when invoked as the entry point (standalone stikfix-native.cjs),
+// never on import. In that esbuild CJS bundle `require`/`module` are CJS scope
+// locals and `require.main === module` is true when run directly. The node:test
+// compile path emits ESM where these are undefined at runtime — the `typeof`
+// guards keep main() from running on import there.
 if (
+  !bundledInExe() &&
   typeof require !== 'undefined' &&
   typeof module !== 'undefined' &&
   require.main === module
